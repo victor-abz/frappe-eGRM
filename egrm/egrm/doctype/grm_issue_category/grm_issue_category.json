@@ -1,0 +1,159 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2025-05-17 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "category_name",
+  "label",
+  "abbreviation",
+  "column_break_1",
+  "confidentiality_level",
+  "redirection_protocol",
+  "section_break_1",
+  "assigned_department",
+  "assigned_appeal_department",
+  "assigned_escalation_department",
+  "administrative_level",
+  "grm_project_link"
+ ],
+ "fields": [
+  {
+   "fieldname": "category_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Category Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Display Label",
+   "reqd": 1
+  },
+  {
+   "fieldname": "abbreviation",
+   "fieldtype": "Data",
+   "label": "Abbreviation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "assigned_department",
+   "fieldtype": "Link",
+   "label": "Assigned Department",
+   "options": "GRM Issue Department",
+   "reqd": 1
+  },
+  {
+   "fieldname": "assigned_appeal_department",
+   "fieldtype": "Link",
+   "label": "Assigned Appeal Department",
+   "options": "GRM Issue Department"
+  },
+  {
+   "fieldname": "assigned_escalation_department",
+   "fieldtype": "Link",
+   "label": "Assigned Escalation Department",
+   "options": "GRM Issue Department"
+  },
+  {
+   "fieldname": "confidentiality_level",
+   "fieldtype": "Select",
+   "label": "Confidentiality Level",
+   "options": "Confidential\nPublic",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "redirection_protocol",
+   "fieldtype": "Select",
+   "label": "Redirection Protocol",
+   "options": "0=Assign to head\n1=Assign to least loaded",
+   "reqd": 1
+  },
+  {
+   "fieldname": "administrative_level",
+   "fieldtype": "Link",
+   "label": "Administrative Level",
+   "options": "GRM Administrative Level Type"
+  },
+  {
+   "fieldname": "grm_project_link",
+   "fieldtype": "Table",
+   "label": "Project Link",
+   "options": "GRM Project Link",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break",
+   "label": "Department Assignment"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "EGRM",
+ "name": "GRM Issue Category",
+ "name_case": "Title Case",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Project Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "GRM Department Head"
+  },
+  {
+   "read": 1,
+   "role": "GRM Field Officer"
+  },
+  {
+   "read": 1,
+   "role": "GRM Analyst"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

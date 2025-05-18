@@ -1,0 +1,149 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2025-05-17 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "administrative_id",
+  "region_name",
+  "column_break_1",
+  "project",
+  "section_break_1",
+  "administrative_level",
+  "parent_region",
+  "column_break_2",
+  "location",
+  "path_section",
+  "path"
+ ],
+ "fields": [
+  {
+   "fieldname": "administrative_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Administrative ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "region_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Region Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "administrative_level",
+   "fieldtype": "Link",
+   "label": "Administrative Level",
+   "options": "GRM Administrative Level Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "parent_region",
+   "fieldtype": "Link",
+   "label": "Parent Region",
+   "options": "GRM Administrative Region"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Geolocation",
+   "label": "Location"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project",
+   "options": "GRM Project",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break",
+   "label": "Hierarchy"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "path_section",
+   "fieldtype": "Section Break",
+   "label": "Hierarchy Path",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "path",
+   "fieldtype": "Data",
+   "label": "Materialized Path",
+   "read_only": 1,
+   "description": "Automatically generated path for efficient hierarchy queries (e.g., Country:State:District)"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "EGRM",
+ "name": "GRM Administrative Region",
+ "name_case": "Title Case",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Project Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "GRM Department Head"
+  },
+  {
+   "read": 1,
+   "role": "GRM Field Officer"
+  },
+  {
+   "read": 1,
+   "role": "GRM Analyst"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

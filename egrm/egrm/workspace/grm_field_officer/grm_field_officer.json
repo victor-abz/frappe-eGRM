@@ -1,0 +1,199 @@
+{
+  "app": "egrm",
+  "charts": [],
+  "content": "[{\"id\":\"VJaFdBxS9p\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Issue\",\"col\":3}},{\"id\":\"8Kg2LpYm3r\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"My Issues\",\"col\":3}},{\"id\":\"M3pQ7Rw9Tz\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"In Progress\",\"col\":3}},{\"id\":\"E5Hk9Lm2Pn\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Escalated Issues\",\"col\":3}},{\"id\":\"2ZBf53vWqY\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"C4rGh7mP8n\",\"type\":\"card\",\"data\":{\"card_name\":\"My Assignments\",\"col\":4}},{\"id\":\"S5Dp4Bn8Kf\",\"type\":\"card\",\"data\":{\"card_name\":\"Region Issues\",\"col\":4}},{\"id\":\"6Bz8gJd5fH\",\"type\":\"card\",\"data\":{\"card_name\":\"Issue Status\",\"col\":4}}]",
+  "creation": "2025-05-18 00:00:00",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": "",
+  "hide_custom": 0,
+  "icon": "field-officer",
+  "idx": 0,
+  "is_hidden": 0,
+  "label": "GRM Field Officer",
+  "links": [
+    {
+      "description": "View and manage assigned issues",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "My Assignments",
+      "link_count": 3,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "My Assigned Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"assignee\": \"frappe.session.user\"}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "In Progress Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"status\": \"In Progress\", \"assignee\": \"frappe.session.user\"}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Awaiting Feedback",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"status\": \"Resolved\", \"resolution_accepted\": \"0\", \"assignee\": \"frappe.session.user\"}"
+    },
+    {
+      "description": "Manage regional issues",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Region Issues",
+      "link_count": 3,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Region Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"administrative_region\": [\"in\", \"Assigned Regions\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "New Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"status\": \"Open\", \"administrative_region\": [\"in\", \"Assigned Regions\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Unassigned Region Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"assignee\": \"\", \"administrative_region\": [\"in\", \"Assigned Regions\"], \"status\": [\"not in\", [\"Resolved\", \"Closed\"]]}"
+    },
+    {
+      "description": "Track issue status",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Issue Status",
+      "link_count": 3,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Pending Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"status\": [\"not in\", [\"Resolved\", \"Closed\"]], \"assignee\": \"frappe.session.user\"}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Resolved Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"status\": \"Resolved\", \"assignee\": \"frappe.session.user\"}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Escalated Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"escalate_flag\": 1, \"assignee\": \"frappe.session.user\"}"
+    }
+  ],
+  "modified": "2025-05-18 00:00:00",
+  "modified_by": "Administrator",
+  "module": "egrm",
+  "name": "GRM Field Officer",
+  "number_cards": [],
+  "owner": "Administrator",
+  "parent_page": "",
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": "",
+  "roles": [
+    {
+      "role": "GRM Field Officer"
+    }
+  ],
+  "sequence_id": 3.0,
+  "shortcuts": [
+    {
+      "color": "Green",
+      "doc_view": "New",
+      "label": "New Issue",
+      "link_to": "GRM Issue",
+      "type": "DocType"
+    },
+    {
+      "color": "Blue",
+      "doc_view": "List",
+      "format": "{} Assigned",
+      "label": "My Issues",
+      "link_to": "GRM Issue",
+      "stats_filter": "{\"assignee\": \"frappe.session.user\"}",
+      "type": "DocType"
+    },
+    {
+      "color": "Orange",
+      "doc_view": "List",
+      "format": "{} In Progress",
+      "label": "In Progress",
+      "link_to": "GRM Issue",
+      "stats_filter": "{\"status\": \"In Progress\", \"assignee\": \"frappe.session.user\"}",
+      "type": "DocType"
+    },
+    {
+      "color": "Red",
+      "doc_view": "List",
+      "format": "{} Escalated",
+      "label": "Escalated Issues",
+      "link_to": "GRM Issue",
+      "stats_filter": "{\"escalate_flag\": 1, \"assignee\": \"frappe.session.user\"}",
+      "type": "DocType"
+    }
+  ],
+  "title": "GRM Field Officer"
+}

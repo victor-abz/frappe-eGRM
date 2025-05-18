@@ -1,0 +1,257 @@
+{
+  "app": "egrm",
+  "charts": [],
+  "content": "[{\"id\":\"VJaFdBxS9p\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Issue\",\"col\":3}},{\"id\":\"N6VnTK2a4s\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Project\",\"col\":3}},{\"id\":\"8Kg2LpYm3r\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Open Issues\",\"col\":3}},{\"id\":\"7Dh4jTp8Zx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"User Assignments\",\"col\":3}},{\"id\":\"2ZBf53vWqY\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"C4rGh7mP8n\",\"type\":\"card\",\"data\":{\"card_name\":\"Quick Access\",\"col\":4}},{\"id\":\"9KjNv5tR6m\",\"type\":\"card\",\"data\":{\"card_name\":\"Administration\",\"col\":4}},{\"id\":\"3TbXk2qL7p\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuration\",\"col\":4}},{\"id\":\"6Bz8gJd5fH\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+  "creation": "2025-05-17 00:00:00",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": "",
+  "hide_custom": 0,
+  "icon": "grievance",
+  "idx": 0,
+  "is_hidden": 0,
+  "label": "GRM Administrator",
+  "links": [
+    {
+      "description": "Access core GRM documents",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Quick Access",
+      "link_count": 4,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "All Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Projects",
+      "link_count": 0,
+      "link_to": "GRM Project",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Categories",
+      "link_count": 0,
+      "link_to": "GRM Issue Category",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Departments",
+      "link_count": 0,
+      "link_to": "GRM Issue Department",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "description": "Manage users and administrative regions",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Administration",
+      "link_count": 3,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "User Assignments",
+      "link_count": 0,
+      "link_to": "GRM User Project Assignment",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Administrative Regions",
+      "link_count": 0,
+      "link_to": "GRM Administrative Region",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Administrative Levels",
+      "link_count": 0,
+      "link_to": "GRM Administrative Level Type",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "description": "Configure system parameters and classification data",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Configuration",
+      "link_count": 4,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Issue Types",
+      "link_count": 0,
+      "link_to": "GRM Issue Type",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Issue Statuses",
+      "link_count": 0,
+      "link_to": "GRM Issue Status",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Citizen Groups",
+      "link_count": 0,
+      "link_to": "GRM Issue Citizen Group",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Age Groups",
+      "link_count": 0,
+      "link_to": "GRM Issue Age Group",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "description": "View issues by status and escalation",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Reports",
+      "link_count": 3,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Open Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Escalated Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Resolved Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Test",
+      "link_count": 0,
+      "link_to": "About Us Settings",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    }
+  ],
+  "modified": "2025-05-18 18:38:50.279406",
+  "modified_by": "Administrator",
+  "module": "egrm",
+  "name": "GRM Administrator",
+  "number_cards": [],
+  "owner": "Administrator",
+  "parent_page": "",
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": "",
+  "roles": [
+    {
+      "role": "GRM Administrator"
+    }
+  ],
+  "sequence_id": 0.0,
+  "shortcuts": [
+    {
+      "color": "Green",
+      "doc_view": "New",
+      "label": "New Issue",
+      "link_to": "GRM Issue",
+      "type": "DocType"
+    },
+    {
+      "color": "Blue",
+      "doc_view": "New",
+      "label": "New Project",
+      "link_to": "GRM Project",
+      "type": "DocType"
+    },
+    {
+      "color": "Red",
+      "doc_view": "List",
+      "format": "{} Open",
+      "label": "Open Issues",
+      "link_to": "GRM Issue",
+      "stats_filter": "{\"status\": [\"in\", [\"Open\", \"In Progress\"]]}",
+      "type": "DocType"
+    },
+    {
+      "color": "Orange",
+      "doc_view": "List",
+      "label": "User Assignments",
+      "link_to": "GRM User Project Assignment",
+      "type": "DocType"
+    }
+  ],
+  "title": "GRM Administrator",
+  "type": "Workspace"
+}

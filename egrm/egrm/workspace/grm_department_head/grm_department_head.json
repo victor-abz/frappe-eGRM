@@ -1,0 +1,210 @@
+{
+  "app": "egrm",
+  "charts": [],
+  "content": "[{\"id\":\"VJaFdBxS9p\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Issue\",\"col\":3}},{\"id\":\"8Kg2LpYm3r\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"My Issues\",\"col\":3}},{\"id\":\"K4jR9Fs7Ht\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Unassigned Issues\",\"col\":3}},{\"id\":\"E5Hk9Lm2Pn\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Escalated Issues\",\"col\":3}},{\"id\":\"2ZBf53vWqY\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"C4rGh7mP8n\",\"type\":\"card\",\"data\":{\"card_name\":\"Department Overview\",\"col\":4}},{\"id\":\"9KjNv5tR6m\",\"type\":\"card\",\"data\":{\"card_name\":\"Department Management\",\"col\":4}},{\"id\":\"6Bz8gJd5fH\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+  "creation": "2025-05-18 00:00:00",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": "",
+  "hide_custom": 0,
+  "icon": "department",
+  "idx": 0,
+  "is_hidden": 0,
+  "label": "GRM Department Head",
+  "links": [
+    {
+      "description": "View department issues and categories",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Department Overview",
+      "link_count": 4,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Department Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"category\": [\"in\", \"Department Categories\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "My Assigned Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"assignee\": \"frappe.session.user\"}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "My Department",
+      "link_count": 0,
+      "link_to": "GRM Issue Department",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"name\": [\"in\", \"Assigned Departments\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Department Categories",
+      "link_count": 0,
+      "link_to": "GRM Issue Category",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"assigned_department\": [\"in\", \"Assigned Departments\"]}"
+    },
+    {
+      "description": "Manage department issues and staff",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Department Management",
+      "link_count": 3,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Department Staff",
+      "link_count": 0,
+      "link_to": "GRM User Project Assignment",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"department\": [\"in\", \"Assigned Departments\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Open Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"status\": [\"in\", [\"Open\", \"In Progress\"]], \"category\": [\"in\", \"Department Categories\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Unassigned Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"assignee\": \"\", \"category\": [\"in\", \"Department Categories\"]}"
+    },
+    {
+      "description": "View department performance reports",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Reports",
+      "link_count": 3,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Escalated Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"escalate_flag\": 1, \"category\": [\"in\", \"Department Categories\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Overdue Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"resolution_days\": [\">=\", 10], \"status\": [\"not in\", [\"Resolved\", \"Closed\"]], \"category\": [\"in\", \"Department Categories\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Resolved Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"status\": [\"in\", [\"Resolved\", \"Closed\"]], \"category\": [\"in\", \"Department Categories\"]}"
+    }
+  ],
+  "modified": "2025-05-18 00:00:00",
+  "modified_by": "Administrator",
+  "module": "egrm",
+  "name": "GRM Department Head",
+  "number_cards": [],
+  "owner": "Administrator",
+  "parent_page": "",
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": "",
+  "roles": [
+    {
+      "role": "GRM Department Head"
+    }
+  ],
+  "sequence_id": 2.0,
+  "shortcuts": [
+    {
+      "color": "Green",
+      "doc_view": "New",
+      "label": "New Issue",
+      "link_to": "GRM Issue",
+      "type": "DocType"
+    },
+    {
+      "color": "Blue",
+      "doc_view": "List",
+      "format": "{} Assigned",
+      "label": "My Issues",
+      "link_to": "GRM Issue",
+      "stats_filter": "{\"assignee\": \"frappe.session.user\"}",
+      "type": "DocType"
+    },
+    {
+      "color": "Yellow",
+      "doc_view": "List",
+      "format": "{} Unassigned",
+      "label": "Unassigned Issues",
+      "link_to": "GRM Issue",
+      "stats_filter": "{\"assignee\": \"\", \"category\": [\"in\", \"Department Categories\"]}",
+      "type": "DocType"
+    },
+    {
+      "color": "Red",
+      "doc_view": "List",
+      "format": "{} Escalated",
+      "label": "Escalated Issues",
+      "link_to": "GRM Issue",
+      "stats_filter": "{\"escalate_flag\": 1, \"category\": [\"in\", \"Department Categories\"]}",
+      "type": "DocType"
+    }
+  ],
+  "title": "GRM Department Head"
+}

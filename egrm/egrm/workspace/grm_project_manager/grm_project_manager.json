@@ -1,0 +1,245 @@
+{
+  "app": "egrm",
+  "charts": [],
+  "content": "[{\"id\":\"VJaFdBxS9p\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Issue\",\"col\":3}},{\"id\":\"8Kg2LpYm3r\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Open Issues\",\"col\":3}},{\"id\":\"7Dh4jTp8Zx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"User Assignments\",\"col\":3}},{\"id\":\"E5Hk9Lm2Pn\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Escalated Issues\",\"col\":3}},{\"id\":\"2ZBf53vWqY\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"C4rGh7mP8n\",\"type\":\"card\",\"data\":{\"card_name\":\"Project Management\",\"col\":4}},{\"id\":\"9KjNv5tR6m\",\"type\":\"card\",\"data\":{\"card_name\":\"Team Management\",\"col\":4}},{\"id\":\"3TbXk2qL7p\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuration\",\"col\":4}},{\"id\":\"6Bz8gJd5fH\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+  "creation": "2025-05-18 00:00:00",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": "",
+  "hide_custom": 0,
+  "icon": "project-manager",
+  "idx": 0,
+  "is_hidden": 0,
+  "label": "GRM Project Manager",
+  "links": [
+    {
+      "description": "Manage project-specific issues",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Project Management",
+      "link_count": 4,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Project Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"project\": [\"in\", \"Allowed Projects\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "My Projects",
+      "link_count": 0,
+      "link_to": "GRM Project",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"name\": [\"in\", \"Allowed Projects\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Project Categories",
+      "link_count": 0,
+      "link_to": "GRM Issue Category",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Project Departments",
+      "link_count": 0,
+      "link_to": "GRM Issue Department",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "description": "Manage project team and regions",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Team Management",
+      "link_count": 2,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "User Assignments",
+      "link_count": 0,
+      "link_to": "GRM User Project Assignment",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"project\": [\"in\", \"Allowed Projects\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Administrative Regions",
+      "link_count": 0,
+      "link_to": "GRM Administrative Region",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"project\": [\"in\", \"Allowed Projects\"]}"
+    },
+    {
+      "description": "Configure project settings",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Configuration",
+      "link_count": 4,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Issue Types",
+      "link_count": 0,
+      "link_to": "GRM Issue Type",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Issue Statuses",
+      "link_count": 0,
+      "link_to": "GRM Issue Status",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Citizen Groups",
+      "link_count": 0,
+      "link_to": "GRM Issue Citizen Group",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Age Groups",
+      "link_count": 0,
+      "link_to": "GRM Issue Age Group",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "description": "View project issue reports",
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Reports",
+      "link_count": 3,
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Card Break"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Open Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"status\": [\"in\", [\"Open\", \"In Progress\"]], \"project\": [\"in\", \"Allowed Projects\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Escalated Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"escalate_flag\": 1, \"project\": [\"in\", \"Allowed Projects\"]}"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Resolved Issues",
+      "link_count": 0,
+      "link_to": "GRM Issue",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link",
+      "filters": "{\"status\": [\"in\", [\"Resolved\", \"Closed\"]], \"project\": [\"in\", \"Allowed Projects\"]}"
+    }
+  ],
+  "modified": "2025-05-18 00:00:00",
+  "modified_by": "Administrator",
+  "module": "egrm",
+  "name": "GRM Project Manager",
+  "number_cards": [],
+  "owner": "Administrator",
+  "parent_page": "",
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": "",
+  "roles": [
+    {
+      "role": "GRM Project Manager"
+    }
+  ],
+  "sequence_id": 1.0,
+  "shortcuts": [
+    {
+      "color": "Green",
+      "doc_view": "New",
+      "label": "New Issue",
+      "link_to": "GRM Issue",
+      "type": "DocType"
+    },
+    {
+      "color": "Blue",
+      "doc_view": "List",
+      "format": "{} Open",
+      "label": "Open Issues",
+      "link_to": "GRM Issue",
+      "stats_filter": "{\"status\": [\"in\", [\"Open\", \"In Progress\"]], \"project\": [\"in\", \"Allowed Projects\"]}",
+      "type": "DocType"
+    },
+    {
+      "color": "Red",
+      "doc_view": "List",
+      "format": "{} Escalated",
+      "label": "Escalated Issues",
+      "link_to": "GRM Issue",
+      "stats_filter": "{\"escalate_flag\": 1, \"project\": [\"in\", \"Allowed Projects\"]}",
+      "type": "DocType"
+    },
+    {
+      "color": "Orange",
+      "doc_view": "List",
+      "label": "User Assignments",
+      "link_to": "GRM User Project Assignment",
+      "type": "DocType"
+    }
+  ],
+  "title": "GRM Project Manager"
+}
