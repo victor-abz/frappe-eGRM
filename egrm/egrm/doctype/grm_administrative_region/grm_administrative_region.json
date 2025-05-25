@@ -1,11 +1,9 @@
 {
  "actions": [],
- "autoname": "hash",
- "creation": "2025-05-17 00:00:00.000000",
+ "creation": "2025-05-17 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "administrative_id",
   "region_name",
   "column_break_1",
   "project",
@@ -18,13 +16,6 @@
   "path"
  ],
  "fields": [
-  {
-   "fieldname": "administrative_id",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Administrative ID",
-   "reqd": 1
-  },
   {
    "fieldname": "region_name",
    "fieldtype": "Data",
@@ -72,27 +63,25 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
    "fieldname": "path_section",
    "fieldtype": "Section Break",
-   "label": "Hierarchy Path",
-   "collapsible": 1
+   "label": "Hierarchy Path"
   },
   {
+   "description": "Automatically generated path for efficient hierarchy queries (e.g., Country:State:District)",
    "fieldname": "path",
    "fieldtype": "Data",
    "label": "Materialized Path",
-   "read_only": 1,
-   "description": "Automatically generated path for efficient hierarchy queries (e.g., Country:State:District)"
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-17 00:00:00.000000",
+ "modified": "2025-05-25 11:55:10.446183",
  "modified_by": "Administrator",
- "module": "EGRM",
+ "module": "egrm",
  "name": "GRM Administrative Region",
- "name_case": "Title Case",
- "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
@@ -143,7 +132,9 @@
    "role": "GRM Analyst"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "region_name"
 }

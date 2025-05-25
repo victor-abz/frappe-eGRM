@@ -33,15 +33,15 @@ PROJECT_TIMEOUT = 3600 * 24  # 24 hours
 def get_cached_region_hierarchy(region_id):
     """
     Get cached region hierarchy or fetch from database
-    
+
     Args:
         region_id (str): Region ID
-        
+
     Returns:
         dict: Region hierarchy
     """
     cache_key = f"{REGION_CACHE_PREFIX}hierarchy:{region_id}"
-    
+
     # Try to get from cache
     cached_data = redis.get(cache_key)
     if cached_data:
@@ -49,14 +49,14 @@ def get_cached_region_hierarchy(region_id):
             return json.loads(cached_data)
         except Exception as e:
             log.error(f"Error parsing cached region hierarchy: {str(e)}")
-    
+
     # Get region
     region = frappe.get_doc("GRM Administrative Region", region_id)
-    
+
     # Build hierarchy
     parents = []
     children = []
-    
+
     # Get parents
     current_region = region
     while current_region.parent_region:
@@ -68,17 +68,17 @@ def get_cached_region_hierarchy(region_id):
             "project": parent.project
         })
         current_region = parent
-    
+
     # Get children
     child_regions = frappe.get_all(
         "GRM Administrative Region",
         filters={"parent_region": region_id},
         fields=[
-            "name", "region_name", "administrative_id", "administrative_level", 
-            "latitude", "longitude", "project"
+            "name", "region_name" "administrative_level",
+             "project"
         ]
     )
-    
+
     for child in child_regions:
         children.append({
             "id": child.name,
@@ -86,7 +86,7 @@ def get_cached_region_hierarchy(region_id):
             "level": child.administrative_level,
             "project": child.project
         })
-    
+
     # Build result
     result = {
         "region": {
@@ -98,27 +98,27 @@ def get_cached_region_hierarchy(region_id):
         "parents": parents,
         "children": children
     }
-    
+
     # Cache result
     try:
         redis.setex(cache_key, REGION_TIMEOUT, json.dumps(result))
     except Exception as e:
         log.error(f"Error caching region hierarchy: {str(e)}")
-    
+
     return result
 
 def get_cached_region_children(region_id):
     """
     Get cached region children or fetch from database
-    
+
     Args:
         region_id (str): Region ID
-        
+
     Returns:
         list: Child regions
     """
     cache_key = f"{REGION_CACHE_PREFIX}children:{region_id}"
-    
+
     # Try to get from cache
     cached_data = redis.get(cache_key)
     if cached_data:
@@ -126,17 +126,17 @@ def get_cached_region_children(region_id):
             return json.loads(cached_data)
         except Exception as e:
             log.error(f"Error parsing cached region children: {str(e)}")
-    
+
     # Get children
     children = frappe.get_all(
         "GRM Administrative Region",
         filters={"parent_region": region_id},
         fields=[
-            "name", "region_name", "administrative_id", "administrative_level", 
+            "name", "region_name", "administrative_level",
             "latitude", "longitude", "project"
         ]
     )
-    
+
     # Enhance data
     result = []
     for child in children:
@@ -146,24 +146,24 @@ def get_cached_region_children(region_id):
             "level": child.administrative_level,
             "project": child.project
         })
-    
+
     # Cache result
     try:
         redis.setex(cache_key, REGION_TIMEOUT, json.dumps(result))
     except Exception as e:
         log.error(f"Error caching region children: {str(e)}")
-    
+
     return result
 
 def get_cached_issue_statuses():
     """
     Get cached issue statuses or fetch from database
-    
+
     Returns:
         list: Issue statuses
     """
     cache_key = f"{ISSUE_STATUS_CACHE_PREFIX}all"
-    
+
     # Try to get from cache
     cached_data = redis.get(cache_key)
     if cached_data:
@@ -171,37 +171,37 @@ def get_cached_issue_statuses():
             return json.loads(cached_data)
         except Exception as e:
             log.error(f"Error parsing cached issue statuses: {str(e)}")
-    
+
     # Get statuses
     statuses = frappe.get_all(
         "GRM Issue Status",
         fields=[
-            "name", "status_name", "description", 
-            "initial_status", "open_status", "rejected_status", 
+            "name", "status_name", "description",
+            "initial_status", "open_status", "rejected_status",
             "final_status", "appealed_status", "color"
         ]
     )
-    
+
     # Cache result
     try:
         redis.setex(cache_key, STATUS_TIMEOUT, json.dumps(statuses))
     except Exception as e:
         log.error(f"Error caching issue statuses: {str(e)}")
-    
+
     return statuses
 
 def get_cached_categories(project_id=None):
     """
     Get cached categories or fetch from database
-    
+
     Args:
         project_id (str, optional): Project ID
-        
+
     Returns:
         list: Categories
     """
     cache_key = f"{CATEGORY_CACHE_PREFIX}{project_id or 'all'}"
-    
+
     # Try to get from cache
     cached_data = redis.get(cache_key)
     if cached_data:
@@ -209,44 +209,44 @@ def get_cached_categories(project_id=None):
             return json.loads(cached_data)
         except Exception as e:
             log.error(f"Error parsing cached categories: {str(e)}")
-    
+
     # Get categories
     filters = {}
     if project_id:
         filters["project"] = project_id
-        
+
     categories = frappe.get_all(
         "GRM Issue Category",
         filters=filters,
         fields=["name", "category_name", "description", "department", "auto_assign", "active"]
     )
-    
+
     # Enhance data
     for category in categories:
         if category.department:
             department_doc = frappe.get_doc("GRM Issue Department", category.department)
             category.department_name = department_doc.department_name
-    
+
     # Cache result
     try:
         redis.setex(cache_key, CATEGORY_TIMEOUT, json.dumps(categories))
     except Exception as e:
         log.error(f"Error caching categories: {str(e)}")
-    
+
     return categories
 
 def get_cached_project(project_id):
     """
     Get cached project or fetch from database
-    
+
     Args:
         project_id (str): Project ID
-        
+
     Returns:
         dict: Project data
     """
     cache_key = f"{PROJECT_CACHE_PREFIX}{project_id}"
-    
+
     # Try to get from cache
     cached_data = redis.get(cache_key)
     if cached_data:
@@ -254,10 +254,10 @@ def get_cached_project(project_id):
             return json.loads(cached_data)
         except Exception as e:
             log.error(f"Error parsing cached project: {str(e)}")
-    
+
     # Get project
     project = frappe.get_doc("GRM Project", project_id)
-    
+
     # Build result
     result = {
         "name": project.name,
@@ -266,22 +266,22 @@ def get_cached_project(project_id):
         "active": project.active,
         "auto_submit_issues": project.auto_submit_issues
     }
-    
+
     # Cache result
     try:
         redis.setex(cache_key, PROJECT_TIMEOUT, json.dumps(result))
     except Exception as e:
         log.error(f"Error caching project: {str(e)}")
-    
+
     return result
 
 def clear_region_cache(region_id=None):
     """
     Clear region cache
-    
+
     Args:
         region_id (str, optional): Region ID
-        
+
     Returns:
         None
     """
@@ -291,12 +291,12 @@ def clear_region_cache(region_id=None):
             f"{REGION_CACHE_PREFIX}hierarchy:{region_id}",
             f"{REGION_CACHE_PREFIX}children:{region_id}"
         ]
-        
+
         # Also clear parent region's children cache
         region = frappe.get_doc("GRM Administrative Region", region_id)
         if region.parent_region:
             cache_keys.append(f"{REGION_CACHE_PREFIX}children:{region.parent_region}")
-        
+
         # Delete each key
         for key in cache_keys:
             try:
@@ -315,7 +315,7 @@ def clear_region_cache(region_id=None):
 def clear_status_cache():
     """
     Clear status cache
-    
+
     Returns:
         None
     """
@@ -329,10 +329,10 @@ def clear_status_cache():
 def clear_category_cache(project_id=None):
     """
     Clear category cache
-    
+
     Args:
         project_id (str, optional): Project ID
-        
+
     Returns:
         None
     """
@@ -354,10 +354,10 @@ def clear_category_cache(project_id=None):
 def clear_project_cache(project_id=None):
     """
     Clear project cache
-    
+
     Args:
         project_id (str, optional): Project ID
-        
+
     Returns:
         None
     """

@@ -1,7 +1,7 @@
 {
  "actions": [],
- "autoname": "hash",
- "creation": "2025-05-17 00:00:00.000000",
+ "autoname": "field:level_name",
+ "creation": "2025-05-17 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -15,7 +15,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Level Name",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "level_order",
@@ -35,12 +36,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-17 00:00:00.000000",
+ "modified": "2025-05-21 22:23:00.960021",
  "modified_by": "Administrator",
- "module": "EGRM",
+ "module": "egrm",
  "name": "GRM Administrative Level Type",
- "name_case": "Title Case",
- "naming_rule": "Random",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -91,6 +91,7 @@
    "role": "GRM Analyst"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
