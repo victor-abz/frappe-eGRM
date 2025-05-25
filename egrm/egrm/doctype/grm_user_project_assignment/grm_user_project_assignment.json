@@ -12,7 +12,18 @@
   "is_active",
   "section_break_1",
   "department",
-  "administrative_region"
+  "administrative_region",
+  "section_break_2",
+  "position_title",
+  "column_break_2",
+  "activation_code",
+  "activation_status",
+  "section_break_3",
+  "activation_expires_on",
+  "code_sent_on",
+  "column_break_3",
+  "activated_on",
+  "activation_attempts"
  ],
  "fields": [
   {
@@ -66,6 +77,71 @@
    "fieldname": "section_break_1",
    "fieldtype": "Section Break",
    "label": "Access Restrictions"
+  },
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break",
+   "label": "Government Worker Information"
+  },
+  {
+   "fieldname": "position_title",
+   "fieldtype": "Data",
+   "label": "Position Title",
+   "description": "Job title/position"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "activation_code",
+   "fieldtype": "Data",
+   "label": "Activation Code",
+   "read_only": 1,
+   "description": "6-digit activation code"
+  },
+  {
+   "fieldname": "activation_status",
+   "fieldtype": "Select",
+   "label": "Activation Status",
+   "options": "Draft\nPending Activation\nActivated\nExpired\nSuspended",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break",
+   "label": "Activation Timeline"
+  },
+  {
+   "fieldname": "activation_expires_on",
+   "fieldtype": "Datetime",
+   "label": "Activation Expires On",
+   "description": "When the activation code expires"
+  },
+  {
+   "fieldname": "code_sent_on",
+   "fieldtype": "Datetime",
+   "label": "Code Sent On",
+   "description": "When activation code was last sent"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "activated_on",
+   "fieldtype": "Datetime",
+   "label": "Activated On",
+   "description": "When user activated their account"
+  },
+  {
+   "fieldname": "activation_attempts",
+   "fieldtype": "Int",
+   "label": "Activation Attempts",
+   "default": 0,
+   "description": "Number of failed activation attempts"
   }
  ],
  "index_web_pages_for_search": 1,

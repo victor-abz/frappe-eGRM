@@ -78,7 +78,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-25 11:55:10.446183",
+ "modified": "2025-05-25 18:17:38.254140",
  "modified_by": "Administrator",
  "module": "egrm",
  "name": "GRM Administrative Region",
@@ -133,6 +133,8 @@
   }
  ],
  "row_format": "Dynamic",
+ "search_fields": "region_name",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
