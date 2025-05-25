@@ -162,18 +162,34 @@ def export_regions_template(
         # Get parent region names in bulk for better performance
         parent_region_ids = [r["parent_region"] for r in regions if r["parent_region"]]
         parent_region_names = {}
+        grandparent_region_names = {}
 
         if parent_region_ids:
             parent_regions = (
                 frappe.qb.from_("GRM Administrative Region")
-                .select("name", "region_name")
+                .select("name", "region_name", "parent_region")
                 .where(frappe.qb.Field("name").isin(parent_region_ids))
                 .run(as_dict=True)
             )
-
             parent_region_names = {
                 pr["name"]: pr["region_name"] for pr in parent_regions
             }
+
+            # Get grandparent regions (for cells, this would be districts)
+            grandparent_region_ids = [
+                pr["parent_region"] for pr in parent_regions if pr["parent_region"]
+            ]
+
+            if grandparent_region_ids:
+                grandparent_regions = (
+                    frappe.qb.from_("GRM Administrative Region")
+                    .select("name", "region_name")
+                    .where(frappe.qb.Field("name").isin(grandparent_region_ids))
+                    .run(as_dict=True)
+                )
+                grandparent_region_names = {
+                    gpr["name"]: gpr["region_name"] for gpr in grandparent_regions
+                }
 
         # Create CSV template
         with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
@@ -231,6 +247,27 @@ def export_regions_template(
             # Write actual region data
             for region in regions:
                 parent_name = parent_region_names.get(region["parent_region"], "")
+
+                # Add grandparent region name for cells (district name)
+                if region["administrative_level"] == "Cell" and region["parent_region"]:
+                    parent_info = next(
+                        (
+                            pr
+                            for pr in parent_regions
+                            if pr["name"] == region["parent_region"]
+                        ),
+                        None,
+                    )
+                    if parent_info and parent_info["parent_region"]:
+                        region["grandparent_region_name"] = (
+                            grandparent_region_names.get(
+                                parent_info["parent_region"], ""
+                            )
+                        )
+                    else:
+                        region["grandparent_region_name"] = ""
+                else:
+                    region["grandparent_region_name"] = ""
 
                 base_row = {
                     "region_id": region["name"],
@@ -421,10 +458,10 @@ class OptimizedBulkWorkerCreator:
                 f"Generating workers for regions in project {self.project_code}"
             )
 
-            # Get regions using QB
+            # Get regions with parent information using QB
             regions_query = (
                 frappe.qb.from_("GRM Administrative Region")
-                .select("name", "region_name", "administrative_level")
+                .select("name", "region_name", "administrative_level", "parent_region")
                 .where(frappe.qb.Field("project") == self.project_code)
             )
 
@@ -442,9 +479,57 @@ class OptimizedBulkWorkerCreator:
 
             self.log.info(f"Found {len(regions)} regions to process")
 
-            # Generate worker data for all regions
+            # Get complete hierarchy for all regions using recursive queries
+            parent_region_ids = [
+                r["parent_region"] for r in regions if r["parent_region"]
+            ]
+
+            # Build complete hierarchy mapping
+            region_hierarchy = {}
+
+            if parent_region_ids:
+                # Get all ancestor regions in one query
+                all_ancestor_ids = set(parent_region_ids)
+
+                # Keep fetching ancestors until we have the complete hierarchy
+                current_ids = parent_region_ids
+                while current_ids:
+                    ancestors = (
+                        frappe.qb.from_("GRM Administrative Region")
+                        .select(
+                            "name",
+                            "region_name",
+                            "administrative_level",
+                            "parent_region",
+                        )
+                        .where(frappe.qb.Field("name").isin(current_ids))
+                        .run(as_dict=True)
+                    )
+
+                    next_level_ids = []
+                    for ancestor in ancestors:
+                        region_hierarchy[ancestor["name"]] = {
+                            "region_name": ancestor["region_name"],
+                            "administrative_level": ancestor["administrative_level"],
+                            "parent_region": ancestor["parent_region"],
+                        }
+
+                        if (
+                            ancestor["parent_region"]
+                            and ancestor["parent_region"] not in all_ancestor_ids
+                        ):
+                            next_level_ids.append(ancestor["parent_region"])
+                            all_ancestor_ids.add(ancestor["parent_region"])
+
+                    current_ids = next_level_ids
+
+            # Generate worker data for all regions with complete hierarchy
             worker_data_list = []
             for region in regions:
+                # Build complete hierarchy for this region
+                hierarchy = self._build_complete_hierarchy(region, region_hierarchy)
+                region.update(hierarchy)
+
                 worker_data = self._generate_worker_data_for_region(region)
                 worker_data_list.append(worker_data)
 
@@ -478,92 +563,194 @@ class OptimizedBulkWorkerCreator:
         """Parse CSV file and return list of worker data"""
         worker_data_list = []
 
-        with open(csv_file_path, "r", encoding="utf-8") as csvfile:
-            reader = csv.DictReader(csvfile)
+        try:
+            with open(csv_file_path, "r", encoding="utf-8") as csvfile:
+                reader = csv.DictReader(csvfile)
 
-            # Validate CSV headers
-            required_headers = ["region_id", "region_name", "worker_name", "role"]
-            missing_headers = [
-                h for h in required_headers if h not in reader.fieldnames
-            ]
-            if missing_headers:
-                raise ValueError(
-                    f"CSV missing required headers: {', '.join(missing_headers)}"
-                )
+                # Validate CSV headers
+                required_headers = ["region_id", "region_name", "worker_name", "role"]
+                missing_headers = [
+                    h for h in required_headers if h not in reader.fieldnames
+                ]
+                if missing_headers:
+                    raise ValueError(
+                        f"CSV missing required headers: {', '.join(missing_headers)}"
+                    )
 
-            for row_num, row in enumerate(reader, start=2):
-                # Skip instruction rows and empty rows
-                if (
-                    row.get("region_id", "").startswith("#")
-                    or not row.get("worker_name", "").strip()
-                    or not row.get("region_id", "").strip()
-                ):
-                    continue
+                for row_num, row in enumerate(reader, start=2):
+                    # Skip instruction rows and empty rows
+                    if (
+                        row.get("region_id", "").startswith("#")
+                        or not row.get("worker_name", "").strip()
+                        or not row.get("region_id", "").strip()
+                    ):
+                        continue
 
-                try:
-                    worker_data = self._parse_csv_row(row, row_num)
-                    if worker_data:
-                        worker_data_list.append(worker_data)
-                except Exception as row_error:
-                    error_msg = f"Row {row_num}: {str(row_error)}"
-                    self.errors.append(error_msg)
-                    self.log.error(error_msg)
-                    continue
+                    try:
+                        worker_data = self._parse_csv_row(row, row_num)
+                        if worker_data:
+                            worker_data_list.append(worker_data)
+                    except Exception as row_error:
+                        error_msg = f"Row {row_num}: {str(row_error)}"
+                        self.errors.append(error_msg)
+                        self.log.error(error_msg)
+                        continue
+
+        except Exception as e:
+            self.log.error(f"Error parsing CSV file: {str(e)}")
+            raise
 
         return worker_data_list
 
     def _parse_csv_row(self, row, row_num):
         """Parse a single CSV row into worker data"""
-        # Extract and validate basic fields
-        region_id = row["region_id"].strip()
-        worker_name = row["worker_name"].strip()
-        role = row["role"].strip()
+        try:
+            # Extract and validate basic fields
+            region_id = row["region_id"].strip()
+            worker_name = row["worker_name"].strip()
+            role = row["role"].strip()
 
-        if not worker_name or not role:
-            raise ValueError("Worker name and role are required")
+            if not worker_name or not role:
+                raise ValueError("Worker name and role are required")
 
-        # Determine email and username
-        email = row.get("email", "").strip()
-        phone = row.get("phone_number", "").strip()
-        auto_generate_email = row.get("auto_generate_email", "no").strip().lower() in [
-            "yes",
-            "true",
-            "1",
-        ]
+            # Determine email and username
+            email = row.get("email", "").strip()
+            phone = row.get("phone_number", "").strip()
+            auto_generate_email = row.get(
+                "auto_generate_email", "no"
+            ).strip().lower() in [
+                "yes",
+                "true",
+                "1",
+            ]
 
-        # Generate email if needed
-        if not email and auto_generate_email:
-            email = self._generate_email_from_position(
-                row.get("position_title", "").strip() or role,
-                row["region_name"].strip(),
-            )
+            # Generate email if needed
+            if not email and auto_generate_email:
+                email = self._generate_email_from_position(
+                    row.get("position_title", "").strip() or role,
+                    row["region_name"].strip(),
+                )
 
-        # Determine username (phone or email)
-        username = phone if phone else email
-        if not username:
-            raise ValueError("Either phone_number or email must be provided")
+            # Determine username (phone or email)
+            username = phone if phone else email
+            if not username:
+                raise ValueError("Either phone_number or email must be provided")
 
-        # Validate email format if provided
-        if email and not self._is_valid_email(email):
-            raise ValueError(f"Invalid email format: {email}")
+            # Validate email format if provided
+            if email and not self._is_valid_email(email):
+                raise ValueError(f"Invalid email format: {email}")
 
-        return {
-            "worker_name": worker_name,
-            "username": username,
-            "email": email,
-            "phone": phone,
-            "role": role,
-            "position_title": row.get("position_title", "").strip() or role,
-            "region_id": region_id,
-            "region_name": row["region_name"].strip(),
+            return {
+                "worker_name": worker_name,
+                "username": username,
+                "email": email,
+                "phone": phone,
+                "role": role,
+                "position_title": row.get("position_title", "").strip() or role,
+                "region_id": region_id,
+                "region_name": row["region_name"].strip(),
+            }
+        except Exception as e:
+            self.log.error(f"Error parsing CSV row {row_num}: {str(e)}")
+            raise
+
+    def _build_complete_hierarchy(self, region, region_hierarchy):
+        """Build complete hierarchy for a region"""
+        hierarchy = {
+            "district_name": "",
+            "district_level": "",
+            "sector_name": "",
+            "sector_level": "",
+            "cell_name": "",
+            "cell_level": "",
+            "village_name": "",
+            "village_level": "",
+            "parent_name": "",
+            "parent_level": "",
+            "grandparent_name": "",
+            "grandparent_level": "",
+            "great_grandparent_name": "",
+            "great_grandparent_level": "",
         }
+
+        # Start from current region and walk up the hierarchy
+        current_region_id = region["parent_region"]
+        levels_found = []
+
+        while current_region_id and current_region_id in region_hierarchy:
+            region_info = region_hierarchy[current_region_id]
+            levels_found.append(
+                {
+                    "name": region_info["region_name"],
+                    "level": region_info["administrative_level"],
+                    "id": current_region_id,
+                }
+            )
+            current_region_id = region_info["parent_region"]
+
+        # Map levels to hierarchy positions
+        for i, level_info in enumerate(levels_found):
+            if i == 0:  # Direct parent
+                hierarchy["parent_name"] = level_info["name"]
+                hierarchy["parent_level"] = level_info["level"]
+            elif i == 1:  # Grandparent
+                hierarchy["grandparent_name"] = level_info["name"]
+                hierarchy["grandparent_level"] = level_info["level"]
+            elif i == 2:  # Great grandparent
+                hierarchy["great_grandparent_name"] = level_info["name"]
+                hierarchy["great_grandparent_level"] = level_info["level"]
+
+            # Also map by administrative level
+            if level_info["level"] == "District":
+                hierarchy["district_name"] = level_info["name"]
+                hierarchy["district_level"] = level_info["level"]
+            elif level_info["level"] == "Sector":
+                hierarchy["sector_name"] = level_info["name"]
+                hierarchy["sector_level"] = level_info["level"]
+            elif level_info["level"] == "Cell":
+                hierarchy["cell_name"] = level_info["name"]
+                hierarchy["cell_level"] = level_info["level"]
+            elif level_info["level"] == "Village":
+                hierarchy["village_name"] = level_info["name"]
+                hierarchy["village_level"] = level_info["level"]
+
+        return hierarchy
 
     def _generate_worker_data_for_region(self, region):
         """Generate worker data for a specific region"""
-        # Generate email using pattern: regionID_levelName@domain.com (using region ID for uniqueness)
-        region_id_clean = self._slugify(region["name"])  # Use unique region ID
-        level_clean = self._slugify(region["administrative_level"])
-        email = f"{region_id_clean}_{level_clean}@{self.email_domain}"
+        # Generate user-friendly email using pattern:
+        # grandParentName.grandparentLevel.parentLevelName.parentLevel.currentLevelName.currentLevel@domain
+        # Example: gisenyi.sector.amahoro.cell.amahoro.village@domain
+        # If levels don't exist, use only available levels
+
+        current_level = region["administrative_level"]
+        current_name = self._slugify(region["region_name"])
+        current_level_clean = self._slugify(current_level)
+
+        # Build email components from hierarchy
+        email_parts = []
+
+        # Add great grandparent if exists
+        if region.get("great_grandparent_name"):
+            email_parts.append(self._slugify(region["great_grandparent_name"]))
+            email_parts.append(self._slugify(region["great_grandparent_level"]))
+
+        # Add grandparent if exists
+        if region.get("grandparent_name"):
+            email_parts.append(self._slugify(region["grandparent_name"]))
+            email_parts.append(self._slugify(region["grandparent_level"]))
+
+        # Add parent if exists and different from current
+        if region.get("parent_name") and region["parent_name"] != region["region_name"]:
+            email_parts.append(self._slugify(region["parent_name"]))
+            email_parts.append(self._slugify(region["parent_level"]))
+
+        # Add current region
+        email_parts.append(current_name)
+        email_parts.append(current_level_clean)
+
+        # Create email
+        email = f"{'.'.join(email_parts)}@{self.email_domain}"
 
         # Generate worker name
         worker_name = (
@@ -799,6 +986,23 @@ class OptimizedBulkWorkerCreator:
         """Prepare assignment data for bulk insertion"""
         assignment_name = frappe.generate_hash(length=10)
 
+        # Check if this is a government worker role and generate activation code
+        government_worker_roles = ["GRM Field Officer", "GRM Department Head"]
+        activation_code = None
+        activation_status = "Activated"  # Default for non-government workers
+        activation_expires_on = None
+
+        if worker_data["role"] in government_worker_roles:
+            # Generate activation code for government workers
+            import zlib
+
+            user_email = worker_data["email"]
+            seed = f"{user_email}{assignment_name}{get_datetime()}"
+            raw_code = str(zlib.adler32(seed.encode("utf-8")))
+            activation_code = raw_code[:6]  # Take first 6 digits
+            activation_status = "Pending Activation"
+            activation_expires_on = add_to_date(get_datetime(), hours=48)
+
         return {
             "name": assignment_name,
             "user": user_name,
@@ -808,6 +1012,9 @@ class OptimizedBulkWorkerCreator:
             "administrative_region": worker_data["region_id"],
             "department": self.department,
             "is_active": 1,
+            "activation_code": activation_code,
+            "activation_status": activation_status,
+            "activation_expires_on": activation_expires_on,
             "creation": get_datetime(),
             "modified": get_datetime(),
             "owner": frappe.session.user,
@@ -1127,6 +1334,9 @@ class OptimizedBulkWorkerCreator:
                                 assignment["administrative_region"],
                                 assignment["department"],
                                 assignment["is_active"],
+                                assignment["activation_code"],
+                                assignment["activation_status"],
+                                assignment["activation_expires_on"],
                                 assignment["creation"],
                                 assignment["modified"],
                                 assignment["owner"],
@@ -1144,8 +1354,8 @@ class OptimizedBulkWorkerCreator:
                     sql = f"""
                         INSERT INTO `tabGRM User Project Assignment`
                         (`name`, `user`, `project`, `role`, `position_title`,
-                         `administrative_region`, `department`, `is_active`, `creation`, `modified`,
-                         `owner`, `modified_by`, `docstatus`)
+                         `administrative_region`, `department`, `is_active`, `activation_code`, `activation_status`,
+                         `activation_expires_on`, `creation`, `modified`, `owner`, `modified_by`, `docstatus`)
                         VALUES {values_placeholder}
                     """
 
@@ -1675,98 +1885,6 @@ def generate_worker_template(context, project_code, output_file):
         frappe.destroy()
 
 
-@click.command("create-admin-user")
-@click.option(
-    "--email",
-    help="Administrator email",
-    default="administrator@example.com",
-)
-@click.option(
-    "--password",
-    help="Administrator password",
-    default="frappe",
-)
-@click.option(
-    "--username",
-    help="Administrator username",
-    default="administrator",
-)
-@pass_context
-def create_admin_user(context, email="administrator@example.com", password="frappe", username="administrator"):
-    """
-    Create an Administrator user with System Manager role for local development.
-
-    Examples:
-    bench --site [site] create-admin-user
-    bench --site [site] create-admin-user --email "admin@company.com" --password "secure123"
-    """
-    try:
-        site = get_site(context)
-        frappe.init(site=site)
-        frappe.connect()
-
-        # Set session user to Administrator for permissions
-        frappe.set_user("Administrator")
-        frappe.flags.ignore_permissions = True
-
-        log.info(f"Creating Administrator user: {email}")
-
-        # Check if user already exists
-        existing_user = frappe.db.exists('User', email)
-        if existing_user:
-            click.echo(f"⚠️  User {email} already exists")
-            return
-
-        # Create Administrator user using direct SQL for better control
-        user_name = frappe.generate_hash(length=10)
-
-        # Insert user directly
-        frappe.db.sql("""
-            INSERT INTO `tabUser`
-            (`name`, `email`, `username`, `first_name`, `last_name`, `full_name`,
-             `enabled`, `user_type`, `send_welcome_email`, `creation`, `modified`,
-             `owner`, `modified_by`, `docstatus`)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            user_name, email, username, 'Administrator', 'User', 'Administrator User',
-            1, 'System User', 0, get_datetime(), get_datetime(),
-            'Administrator', 'Administrator', 0
-        ))
-
-        # Set password
-        from frappe.utils.password import update_password
-        update_password(user_name, password)
-
-        # Add System Manager role
-        role_name = frappe.generate_hash(length=10)
-        frappe.db.sql("""
-            INSERT INTO `tabHas Role`
-            (`name`, `parent`, `parenttype`, `parentfield`, `role`,
-             `creation`, `modified`, `owner`, `modified_by`, `docstatus`)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            role_name, user_name, 'User', 'roles', 'System Manager',
-            get_datetime(), get_datetime(), 'Administrator', 'Administrator', 0
-        ))
-
-        frappe.db.commit()
-
-        click.echo("✅ Administrator user created successfully!")
-        click.echo(f"📧 Email: {email}")
-        click.echo(f"🔑 Password: {password}")
-        click.echo(f"👤 Username: {username}")
-        click.echo("🔐 Role: System Manager")
-
-    except Exception as e:
-        frappe.db.rollback()
-        click.echo(f"❌ Error creating Administrator: {str(e)}")
-        log.error(f"Admin creation failed: {str(e)}")
-        import traceback
-        log.error(f"Full traceback: {traceback.format_exc()}")
-    finally:
-        frappe.destroy()
-
-
 # Register commands - all optimized for bulk operations
 commands = [
     export_regions_template,
@@ -1774,5 +1892,4 @@ commands = [
     auto_generate_regional_workers,
     export_activation_codes,
     generate_worker_template,
-    create_admin_user,
 ]

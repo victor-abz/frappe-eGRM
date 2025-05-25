@@ -1,13 +1,15 @@
+import logging
+import random
+import string
+import zlib
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import now, add_to_date, now_datetime, get_datetime
-import logging
-import zlib
-import random
-import string
+from frappe.utils import add_to_date, get_datetime, now, now_datetime
 
 log = logging.getLogger(__name__)
+
 
 class GRMUserProjectAssignment(Document):
     def validate(self):
@@ -47,7 +49,7 @@ class GRMUserProjectAssignment(Document):
                 "GRM Project Manager",
                 "GRM Department Head",
                 "GRM Field Officer",
-                "GRM Analyst"
+                "GRM Analyst",
             ]
 
             if self.role not in valid_grm_roles:
@@ -55,6 +57,7 @@ class GRMUserProjectAssignment(Document):
 
             # Assign the role to the user
             from frappe.permissions import add_user_permission
+
             add_user_permission("Role", self.role, self.user)
         except Exception as e:
             log.error(f"Error validating role: {str(e)}")
@@ -68,33 +71,41 @@ class GRMUserProjectAssignment(Document):
 
             # Field Officer must have an administrative region
             if self.role == "GRM Field Officer" and not self.administrative_region:
-                frappe.throw(_("Field Officer must have an administrative region assigned"))
+                frappe.throw(
+                    _("Field Officer must have an administrative region assigned")
+                )
 
             # If department is specified, check if it belongs to the project
             if self.department:
                 dept_linked_to_project = frappe.db.exists(
                     "GRM Project Link",
-                    {
-                        "parent": self.department,
-                        "project": self.project
-                    }
+                    {"parent": self.department, "project": self.project},
                 )
 
                 if not dept_linked_to_project:
-                    frappe.throw(_("Department {0} is not linked to project {1}").format(
-                        self.department, self.project))
+                    frappe.throw(
+                        _("Department {0} is not linked to project {1}").format(
+                            self.department, self.project
+                        )
+                    )
 
             # If administrative region is specified, check if it belongs to the project
             if self.administrative_region:
-                region_belongs_to_project = frappe.db.get_value(
-                    "GRM Administrative Region",
-                    self.administrative_region,
-                    "project"
-                ) == self.project
+                region_belongs_to_project = (
+                    frappe.db.get_value(
+                        "GRM Administrative Region",
+                        self.administrative_region,
+                        "project",
+                    )
+                    == self.project
+                )
 
                 if not region_belongs_to_project:
-                    frappe.throw(_("Administrative Region {0} does not belong to project {1}").format(
-                        self.administrative_region, self.project))
+                    frappe.throw(
+                        _(
+                            "Administrative Region {0} does not belong to project {1}"
+                        ).format(self.administrative_region, self.project)
+                    )
         except Exception as e:
             log.error(f"Error validating department and region: {str(e)}")
             raise
@@ -108,13 +119,16 @@ class GRMUserProjectAssignment(Document):
                     "user": self.user,
                     "project": self.project,
                     "role": self.role,
-                    "name": ["!=", self.name]
-                }
+                    "name": ["!=", self.name],
+                },
             )
 
             if existing:
-                frappe.throw(_("User {0} is already assigned to project {1} with role {2}").format(
-                    self.user, self.project, self.role))
+                frappe.throw(
+                    _(
+                        "User {0} is already assigned to project {1} with role {2}"
+                    ).format(self.user, self.project, self.role)
+                )
         except Exception as e:
             log.error(f"Error validating unique assignment: {str(e)}")
             raise
@@ -123,6 +137,7 @@ class GRMUserProjectAssignment(Document):
         try:
             # Add project permission to the user
             from frappe.permissions import add_user_permission
+
             add_user_permission("GRM Project", self.project, self.user)
 
             # Add department permission if applicable
@@ -131,9 +146,13 @@ class GRMUserProjectAssignment(Document):
 
             # Add region permission if applicable
             if self.administrative_region:
-                add_user_permission("GRM Administrative Region", self.administrative_region, self.user)
+                add_user_permission(
+                    "GRM Administrative Region", self.administrative_region, self.user
+                )
 
-            log.info(f"Added permissions for user {self.user} for project {self.project}")
+            log.info(
+                f"Added permissions for user {self.user} for project {self.project}"
+            )
         except Exception as e:
             log.error(f"Error setting up permissions: {str(e)}")
             frappe.throw(_("Error setting up permissions. Please check the logs."))
@@ -142,17 +161,24 @@ class GRMUserProjectAssignment(Document):
         try:
             # Remove project permission from the user
             from frappe.permissions import remove_user_permission
+
             remove_user_permission("GRM Project", self.project, self.user)
 
             # Remove department permission if applicable
             if self.department:
-                remove_user_permission("GRM Issue Department", self.department, self.user)
+                remove_user_permission(
+                    "GRM Issue Department", self.department, self.user
+                )
 
             # Remove region permission if applicable
             if self.administrative_region:
-                remove_user_permission("GRM Administrative Region", self.administrative_region, self.user)
+                remove_user_permission(
+                    "GRM Administrative Region", self.administrative_region, self.user
+                )
 
-            log.info(f"Removed permissions for user {self.user} for project {self.project}")
+            log.info(
+                f"Removed permissions for user {self.user} for project {self.project}"
+            )
         except Exception as e:
             log.error(f"Error removing permissions: {str(e)}")
             frappe.throw(_("Error removing permissions. Please check the logs."))
@@ -162,13 +188,17 @@ class GRMUserProjectAssignment(Document):
         try:
             # Check if this is a government worker role
             if self.is_government_worker_role():
-                if not self.activation_status:
-                    self.activation_status = "Draft"
-
                 # Generate activation code for new government workers
                 if not self.activation_code:
                     self.generate_activation_code()
-                    log.info(f"Generated activation code for government worker {self.user}")
+                    # Set status to Pending Activation immediately when code is generated
+                    self.activation_status = "Pending Activation"
+                    log.info(
+                        f"Generated activation code for government worker {self.user}"
+                    )
+                elif not self.activation_status:
+                    # If code exists but no status, set to Pending Activation
+                    self.activation_status = "Pending Activation"
             else:
                 # For non-government workers, set as activated
                 self.activation_status = "Activated"
@@ -182,10 +212,7 @@ class GRMUserProjectAssignment(Document):
     def is_government_worker_role(self):
         """Check if the role is for government workers"""
         try:
-            government_worker_roles = [
-                "GRM Field Officer",
-                "GRM Department Head"
-            ]
+            government_worker_roles = ["GRM Field Officer", "GRM Department Head"]
             return self.role in government_worker_roles
         except Exception as e:
             log.error(f"Error checking government worker role: {str(e)}")
@@ -201,7 +228,7 @@ class GRMUserProjectAssignment(Document):
 
             # Generate code using zlib.adler32 (similar to Django implementation)
             seed = f"{user_email}{self.name}{now()}"
-            raw_code = str(zlib.adler32(seed.encode('utf-8')))
+            raw_code = str(zlib.adler32(seed.encode("utf-8")))
 
             # Take first 6 digits
             self.activation_code = raw_code[:6]
@@ -219,7 +246,9 @@ class GRMUserProjectAssignment(Document):
         """Send email with activation code"""
         try:
             if not self.activation_code:
-                frappe.throw(_("No activation code found. Please generate a code first."))
+                frappe.throw(
+                    _("No activation code found. Please generate a code first.")
+                )
 
             user_email = frappe.db.get_value("User", self.user, "email")
             user_full_name = frappe.db.get_value("User", self.user, "full_name")
@@ -232,14 +261,21 @@ class GRMUserProjectAssignment(Document):
 
             # Use email template if exists, otherwise use basic template
             try:
-                template = frappe.get_doc("Email Template", "GRM Government Worker Activation")
-                message = frappe.render_template(template.response, {
-                    "user_name": user_full_name or self.user,
-                    "activation_code": self.activation_code,
-                    "position_title": self.position_title or "Government Worker",
-                    "expiry_date": self.activation_expires_on,
-                    "project_name": frappe.db.get_value("GRM Project", self.project, "title")
-                })
+                template = frappe.get_doc(
+                    "Email Template", "GRM Government Worker Activation"
+                )
+                message = frappe.render_template(
+                    template.response,
+                    {
+                        "user_name": user_full_name or self.user,
+                        "activation_code": self.activation_code,
+                        "position_title": self.position_title or "Government Worker",
+                        "expiry_date": self.activation_expires_on,
+                        "project_name": frappe.db.get_value(
+                            "GRM Project", self.project, "title"
+                        ),
+                    },
+                )
             except:
                 # Fallback basic email template
                 message = f"""
@@ -271,12 +307,14 @@ class GRMUserProjectAssignment(Document):
                 subject=subject,
                 message=message,
                 reference_doctype=self.doctype,
-                reference_name=self.name
+                reference_name=self.name,
             )
 
             # Update tracking fields
             self.code_sent_on = now()
-            self.activation_status = "Pending Activation"
+            # Only set to Pending Activation if not already set
+            if not self.activation_status or self.activation_status == "Draft":
+                self.activation_status = "Pending Activation"
 
             log.info(f"Activation email sent to {user_email}")
             return True
@@ -293,16 +331,23 @@ class GRMUserProjectAssignment(Document):
                 frappe.throw(_("Worker is already activated"))
 
             if self.activation_status == "Expired":
-                frappe.throw(_("Activation code has expired. Please request a new code."))
+                frappe.throw(
+                    _("Activation code has expired. Please request a new code.")
+                )
 
             if self.activation_status == "Suspended":
                 frappe.throw(_("Account is suspended. Please contact administrator."))
 
             # Check expiration
-            if self.activation_expires_on and get_datetime(self.activation_expires_on) < now_datetime():
+            if (
+                self.activation_expires_on
+                and get_datetime(self.activation_expires_on) < now_datetime()
+            ):
                 self.activation_status = "Expired"
                 self.save()
-                frappe.throw(_("Activation code has expired. Please request a new code."))
+                frappe.throw(
+                    _("Activation code has expired. Please request a new code.")
+                )
 
             # Check attempt limits
             if self.activation_attempts >= 5:
@@ -314,7 +359,11 @@ class GRMUserProjectAssignment(Document):
             if self.activation_code != activation_code:
                 self.activation_attempts += 1
                 self.save()
-                frappe.throw(_(f"Invalid activation code. Attempts remaining: {5 - self.activation_attempts}"))
+                frappe.throw(
+                    _(
+                        f"Invalid activation code. Attempts remaining: {5 - self.activation_attempts}"
+                    )
+                )
 
             # Activate the worker
             self.activation_status = "Activated"
@@ -380,16 +429,23 @@ class GRMUserProjectAssignment(Document):
         """Check code expiration and attempt limits"""
         try:
             # Auto-expire codes if past expiration
-            if (self.activation_status == "Pending Activation" and
-                self.activation_expires_on and
-                get_datetime(self.activation_expires_on) < now_datetime()):
+            if (
+                self.activation_status == "Pending Activation"
+                and self.activation_expires_on
+                and get_datetime(self.activation_expires_on) < now_datetime()
+            ):
                 self.activation_status = "Expired"
                 log.info(f"Auto-expired activation code for {self.user}")
 
             # Check attempt limits
-            if self.activation_attempts >= 5 and self.activation_status not in ["Activated", "Suspended"]:
+            if self.activation_attempts >= 5 and self.activation_status not in [
+                "Activated",
+                "Suspended",
+            ]:
                 self.activation_status = "Suspended"
-                log.info(f"Auto-suspended account for {self.user} due to too many failed attempts")
+                log.info(
+                    f"Auto-suspended account for {self.user} due to too many failed attempts"
+                )
 
         except Exception as e:
             log.error(f"Error validating activation status: {str(e)}")
@@ -411,12 +467,17 @@ class GRMUserProjectAssignment(Document):
                 "GRM User Project Assignment",
                 filters={
                     "project": self.project,
-                    "role": ["in", ["GRM Field Officer", "GRM Department Head"]]
+                    "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
                 },
                 fields=[
-                    "user", "activation_code", "activation_status",
-                    "position_title", "administrative_region", "department", "activation_expires_on"
-                ]
+                    "user",
+                    "activation_code",
+                    "activation_status",
+                    "position_title",
+                    "administrative_region",
+                    "department",
+                    "activation_expires_on",
+                ],
             )
 
             # Create CSV content
@@ -424,31 +485,46 @@ class GRMUserProjectAssignment(Document):
             writer = csv.writer(output)
 
             # Write headers
-            writer.writerow([
-                "Email", "Activation_Code", "Status", "Position",
-                "Region", "Department", "Expires_On"
-            ])
+            writer.writerow(
+                [
+                    "Email",
+                    "Activation_Code",
+                    "Status",
+                    "Position",
+                    "Region",
+                    "Department",
+                    "Expires_On",
+                ]
+            )
 
             # Write data
             for assignment in assignments:
                 user_email = frappe.db.get_value("User", assignment.user, "email")
                 region_name = ""
                 if assignment.administrative_region:
-                    region_name = frappe.db.get_value("GRM Administrative Region", assignment.administrative_region, "region_name")
+                    region_name = frappe.db.get_value(
+                        "GRM Administrative Region",
+                        assignment.administrative_region,
+                        "region_name",
+                    )
 
                 department_name = ""
                 if assignment.department:
-                    department_name = frappe.db.get_value("GRM Issue Department", assignment.department, "department_name")
+                    department_name = frappe.db.get_value(
+                        "GRM Issue Department", assignment.department, "department_name"
+                    )
 
-                writer.writerow([
-                    user_email or "",
-                    assignment.activation_code or "",
-                    assignment.activation_status or "",
-                    assignment.position_title or "",
-                    region_name,
-                    department_name,
-                    assignment.activation_expires_on or ""
-                ])
+                writer.writerow(
+                    [
+                        user_email or "",
+                        assignment.activation_code or "",
+                        assignment.activation_status or "",
+                        assignment.position_title or "",
+                        region_name,
+                        department_name,
+                        assignment.activation_expires_on or "",
+                    ]
+                )
 
             csv_content = output.getvalue()
             output.close()
@@ -471,8 +547,9 @@ def export_project_activation_codes(project_code):
             frappe.throw(_("No permission to export activation codes"))
 
         import csv
-        import tempfile
         import os
+        import tempfile
+
         from frappe.utils.file_manager import save_file
 
         # Get all government worker assignments for this project
@@ -480,50 +557,72 @@ def export_project_activation_codes(project_code):
             "GRM User Project Assignment",
             filters={
                 "project": project_code,
-                "role": ["in", ["GRM Field Officer", "GRM Department Head"]]
+                "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
             },
             fields=[
-                "user", "activation_code", "activation_status",
-                "position_title", "administrative_region", "department", "activation_expires_on"
-            ]
+                "user",
+                "activation_code",
+                "activation_status",
+                "position_title",
+                "administrative_region",
+                "department",
+                "activation_expires_on",
+            ],
         )
 
         if not assignments:
             frappe.throw(_("No government worker assignments found for this project"))
 
         # Create temporary file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False
+        ) as tmp_file:
             writer = csv.writer(tmp_file)
 
             # Write headers
-            writer.writerow([
-                "Email", "Activation_Code", "Status", "Position",
-                "Region", "Department", "Expires_On"
-            ])
+            writer.writerow(
+                [
+                    "Email",
+                    "Activation_Code",
+                    "Status",
+                    "Position",
+                    "Region",
+                    "Department",
+                    "Expires_On",
+                ]
+            )
 
             # Write data
             for assignment in assignments:
                 user_email = frappe.db.get_value("User", assignment.user, "email")
                 region_name = ""
                 if assignment.administrative_region:
-                    region_name = frappe.db.get_value("GRM Administrative Region", assignment.administrative_region, "region_name")
+                    region_name = frappe.db.get_value(
+                        "GRM Administrative Region",
+                        assignment.administrative_region,
+                        "region_name",
+                    )
 
                 department_name = ""
                 if assignment.department:
-                    department_name = frappe.db.get_value("GRM Issue Department", assignment.department, "department_name")
+                    department_name = frappe.db.get_value(
+                        "GRM Issue Department", assignment.department, "department_name"
+                    )
 
-                writer.writerow([
-                    user_email or "",
-                    assignment.activation_code or "",
-                    assignment.activation_status or "",
-                    assignment.position_title or "",
-                    region_name,
-                    department_name,
-                    assignment.activation_expires_on or ""
-                ])
+                writer.writerow(
+                    [
+                        user_email or "",
+                        assignment.activation_code or "",
+                        assignment.activation_status or "",
+                        assignment.position_title or "",
+                        region_name,
+                        department_name,
+                        assignment.activation_expires_on or "",
+                    ]
+                )
 
         # Read file content and create download
-        with open(tmp_file.name, 'r') as f:
+        with open(tmp_file.name, "r") as f:
             content = f.read()
 
         # Clean up temp file
