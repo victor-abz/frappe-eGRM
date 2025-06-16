@@ -30,13 +30,13 @@ has_permission = {
 }
 
 # Document Events
-doc_events = {
-    "GRM Issue": {
-        "on_update": "egrm.doctype.grm_issue.grm_issue.on_update",
-        "on_submit": "egrm.doctype.grm_issue.grm_issue.on_submit",
-        "on_cancel": "egrm.doctype.grm_issue.grm_issue.on_cancel"
-    }
-}
+# doc_events = {
+#     "GRM Issue": {
+#         "on_update": "egrm.doctype.grm_issue.grm_issue.on_update",
+#         "on_submit": "egrm.doctype.grm_issue.grm_issue.on_submit",
+#         "on_cancel": "egrm.doctype.grm_issue.grm_issue.on_cancel"
+#     }
+# }
 
 # Scheduled Tasks
 scheduler_events = {

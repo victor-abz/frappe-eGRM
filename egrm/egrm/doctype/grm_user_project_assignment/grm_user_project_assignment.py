@@ -640,3 +640,56 @@ def export_project_activation_codes(project_code):
     except Exception as e:
         log.error(f"Error exporting project activation codes: {str(e)}")
         frappe.throw(_(f"Error exporting activation codes: {str(e)}"))
+
+
+def get_user_assignments(user):
+    """
+    Get user's region assignments from GRM User Project Assignment
+    Automatically gets all active assignments for the user across all projects
+
+    Args:
+        user (str): User email (from session)
+
+    Returns:
+        list: List of user assignments with region details
+    """
+    try:
+        # Build filters for user assignments - get all active assignments
+        assignment_filters = {
+            "user": user,
+            "is_active": 1,
+            "activation_status": "Activated",
+        }
+
+        # Get user assignments that have administrative regions
+        assignments = frappe.get_all(
+            "GRM User Project Assignment",
+            fields=[
+                "name",
+                "user",
+                "project",
+                "role",
+                "administrative_region",
+                "department",
+            ],
+            filters=assignment_filters,
+        )
+
+        # Filter out assignments without regions
+        region_assignments = [a for a in assignments if a.administrative_region]
+
+        frappe.log(
+            f"Found {len(region_assignments)} region assignments for user {user}"
+        )
+
+        # Log the projects and regions for debugging
+        projects = list(set([a.project for a in region_assignments]))
+        regions = list(set([a.administrative_region for a in region_assignments]))
+        frappe.log(f"User {user} has access to projects: {projects}")
+        frappe.log(f"User {user} is assigned to regions: {regions}")
+
+        return projects, regions
+
+    except Exception as e:
+        frappe.log_error(f"Error getting user region assignments: {str(e)}")
+        return []
