@@ -91,7 +91,6 @@ def list(
                 "contact_information",
                 "contact_medium",
                 "ongoing_issue",
-                "internal_code",
                 "auto_increment_id",
             ],
             limit=limit,
@@ -270,7 +269,8 @@ def create(issue_data):
 
         # Set geolocation coordinates if provided
         if issue_data.get("coordinates"):
-            issue.geolocation_coordinates = issue_data.get("coordinates")
+            frappe.log(f"sdfsadfasdfad: {issue_data.get("coordinates")}")
+            issue.issue_location = issue_data.get("coordinates")
 
         # Set related fields
         if issue_data.get("category"):

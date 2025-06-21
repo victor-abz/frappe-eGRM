@@ -111,7 +111,7 @@ class GRMIssue(Document):
 
             frappe.log(f"Before validate for GRM Issue {self.name}")
         except Exception as e:
-            frappe.log(f"Error in before_validate for GRM Issue: {str(e)}")
+            frappe.log_error(f"Error in before_validate: {str(e)}")
             raise
 
     def validate(self):
@@ -138,12 +138,8 @@ class GRMIssue(Document):
 
     def on_update(self):
         try:
-            # Add log entry for changes
-            self.add_update_log()
-
             # Check for escalation needs
             self.check_escalation()
-
             frappe.log(f"Updated GRM Issue {self.name}")
         except Exception as e:
             frappe.log(f"Error updating GRM Issue: {str(e)}")
@@ -174,28 +170,6 @@ class GRMIssue(Document):
 
     def generate_codes(self):
         try:
-            # Generate sequential ID for the project
-            if not self.auto_increment_id:
-                key = f"grm-issue-{self.project}"
-                self.auto_increment_id = cint(frappe.db.get_global(key) or 0) + 1
-                frappe.db.set_global(key, self.auto_increment_id)
-
-            # Generate internal code based on project, category, and sequential ID
-            if not self.internal_code:
-                category_abbr = (
-                    frappe.db.get_value(
-                        "GRM Issue Category", self.category, "abbreviation"
-                    )
-                    or "CAT"
-                )
-                project_code = (
-                    frappe.db.get_value("GRM Project", self.project, "project_code")
-                    or "PRJ"
-                )
-                self.internal_code = (
-                    f"{project_code}-{category_abbr}-{self.auto_increment_id:04d}"
-                )
-
             # Generate tracking code with some randomness for security
             if not self.tracking_code:
                 project_code = (
@@ -321,13 +295,10 @@ class GRMIssue(Document):
                         )
                     )
 
-            frappe.log(
-                f"************** All validated"
-            )
+            frappe.log(f"************** All validated")
         except Exception as e:
             frappe.log(f"Error validating project entities: {str(e)}")
             raise
-
 
     def validate_dates(self):
         try:
@@ -342,44 +313,12 @@ class GRMIssue(Document):
             # Check that resolution_date is not before created_date
             if (
                 self.resolution_date
-                and self.created_date
-                and getdate(self.resolution_date) < getdate(self.created_date)
+                and self.creation
+                and getdate(self.resolution_date) < getdate(self.creation)
             ):
                 frappe.throw(_("Resolution Date cannot be before Created Date"))
         except Exception as e:
             frappe.log(f"Error validating dates: {str(e)}")
-            raise
-
-    def add_update_log(self):
-        try:
-            # Get old values
-            if not self.is_new():
-                old_values = frappe.get_doc("GRM Issue", self.name)
-
-                # Check for changes in important fields
-                fields_to_check = [
-                    "status",
-                    "assignee",
-                    "category",
-                    "issue_type",
-                    "administrative_region",
-                    "escalate_flag",
-                    "resolution_accepted",
-                    "rating",
-                ]
-
-                for field in fields_to_check:
-                    if self.get(field) != old_values.get(field):
-                        old_value = old_values.get(field) or "None"
-                        new_value = self.get(field) or "None"
-                        log_text = _("Changed {0} from {1} to {2}").format(
-                            frappe.meta.get_label("GRM Issue", field),
-                            old_value,
-                            new_value,
-                        )
-                        self.add_log(log_text, frappe.session.user)
-        except Exception as e:
-            frappe.log(f"Error adding update log: {str(e)}")
             raise
 
     def add_log(self, text, user=None):
@@ -419,11 +358,11 @@ class GRMIssue(Document):
                     if status_is_open:
                         from datetime import datetime, timedelta
 
-                        created_date = datetime.strptime(
-                            str(self.created_date), "%Y-%m-%d %H:%M:%S.%f"
+                        creation = datetime.strptime(
+                            str(self.creation), "%Y-%m-%d %H:%M:%S.%f"
                         )
                         now = now_datetime()
-                        days_open = (now - created_date).days
+                        days_open = (now - creation).days
 
                         if days_open > auto_escalation_days:
                             # Set escalate flag

@@ -581,6 +581,7 @@ def create_issue_from_sync(issue_data, user):
 
         # Set geolocation coordinates if provided
         if issue_data.get("coordinates"):
+            frappe.log(f"sdfsadfasdfad: {issue_data.get("coordinates")}")
             issue.issue_location = issue_data.get("coordinates")
 
         # Set reporter
@@ -588,7 +589,6 @@ def create_issue_from_sync(issue_data, user):
 
         # Save issue
         issue.insert()
-        frappe.log("******** SUCCESSFUL INSERT ********")
 
         return {"status": "success", "data": issue.as_dict()}
 

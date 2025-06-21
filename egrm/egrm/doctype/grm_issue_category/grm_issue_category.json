@@ -1,7 +1,6 @@
 {
  "actions": [],
- "autoname": "hash",
- "creation": "2025-05-17 00:00:00.000000",
+ "creation": "2025-05-17 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -69,7 +68,7 @@
    "fieldname": "redirection_protocol",
    "fieldtype": "Select",
    "label": "Redirection Protocol",
-   "options": "0=Assign to head\n1=Assign to least loaded",
+   "options": "0\n1",
    "reqd": 1
   },
   {
@@ -97,12 +96,10 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-17 00:00:00.000000",
+ "modified": "2025-06-16 19:31:32.837643",
  "modified_by": "Administrator",
- "module": "EGRM",
+ "module": "egrm",
  "name": "GRM Issue Category",
- "name_case": "Title Case",
- "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
@@ -153,7 +150,10 @@
    "role": "GRM Analyst"
   }
  ],
+ "row_format": "Dynamic",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "category_name"
 }

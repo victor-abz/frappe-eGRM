@@ -448,7 +448,7 @@ def get_allowed_statuses(issue):
         log.error(f"Error getting allowed statuses: {str(e)}")
         return []
 
-
+@frappe.whitelist()
 def get_category_stats(category):
     """
     Get statistics for a category

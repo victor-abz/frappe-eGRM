@@ -1,30 +1,28 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:{internal_code}",
+ "autoname": "format:ISS-{MM}{YY}-{####}",
  "creation": "2025-05-17 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "issue_details_section",
-  "internal_code",
-  "tracking_code",
-  "auto_increment_id",
-  "column_break_1",
-  "status",
   "project",
+  "issue_date",
+  "intake_date",
   "category",
   "issue_type",
-  "section_break_1",
+  "status",
+  "tracking_code",
+  "column_break_1",
   "description",
+  "section_break_xotr",
+  "issue_location",
   "section_break_2",
-  "assignee",
   "reporter",
+  "assignee",
   "column_break_2",
   "administrative_region",
-  "issue_location",
-  "intake_date",
-  "issue_date",
   "citizen_information_section",
   "citizen_type",
   "citizen",
@@ -56,25 +54,12 @@
  ],
  "fields": [
   {
-   "fieldname": "internal_code",
-   "fieldtype": "Data",
-   "label": "Internal Code",
-   "read_only": 1,
-   "unique": 1
-  },
-  {
    "fieldname": "tracking_code",
    "fieldtype": "Data",
    "in_standard_filter": 1,
    "label": "Tracking Code",
    "read_only": 1,
    "unique": 1
-  },
-  {
-   "fieldname": "auto_increment_id",
-   "fieldtype": "Int",
-   "label": "Sequential ID",
-   "read_only": 1
   },
   {
    "fieldname": "description",
@@ -89,6 +74,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "GRM Issue Status",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -194,12 +180,14 @@
   {
    "fieldname": "resolution_days",
    "fieldtype": "Int",
-   "label": "Resolution Days"
+   "label": "Resolution Days",
+   "read_only": 1
   },
   {
    "fieldname": "resolution_date",
    "fieldtype": "Datetime",
-   "label": "Resolution Date"
+   "label": "Resolution Date",
+   "read_only": 1
   },
   {
    "fieldname": "intake_date",
@@ -230,25 +218,29 @@
    "default": "0",
    "fieldname": "confirmed",
    "fieldtype": "Check",
-   "label": "Confirmed"
+   "label": "Confirmed",
+   "read_only": 1
   },
   {
    "default": "Pending",
    "fieldname": "resolution_accepted",
    "fieldtype": "Select",
    "label": "Resolution Accepted",
-   "options": "Pending\nAccepted\nRejected"
+   "options": "Pending\nAccepted\nRejected",
+   "read_only": 1
   },
   {
    "fieldname": "rating",
    "fieldtype": "Int",
-   "label": "Rating"
+   "label": "Rating",
+   "read_only": 1
   },
   {
    "default": "0",
    "fieldname": "escalate_flag",
    "fieldtype": "Check",
-   "label": "Escalate Flag"
+   "label": "Escalate Flag",
+   "read_only": 1
   },
   {
    "fieldname": "project",
@@ -283,7 +275,8 @@
    "no_copy": 1,
    "options": "GRM Issue",
    "print_hide": 1,
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "issue_details_section",
@@ -293,10 +286,6 @@
   {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_1",
-   "fieldtype": "Section Break"
   },
   {
    "fieldname": "section_break_2",
@@ -339,12 +328,16 @@
    "fieldname": "escalation_section",
    "fieldtype": "Section Break",
    "label": "Escalation"
+  },
+  {
+   "fieldname": "section_break_xotr",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-08 13:57:51.631680",
+ "modified": "2025-06-16 21:25:55.374749",
  "modified_by": "Administrator",
  "module": "egrm",
  "name": "GRM Issue",
