@@ -581,6 +581,11 @@ def validate_issue_data(issue_data):
         ):
             validation_errors.append("Invalid administrative region")
 
+    # Validate assignee if provided
+    if issue_data.get("assignee"):
+        if not frappe.db.exists("User", issue_data["assignee"]):
+            validation_errors.append("Invalid assignee")
+
     return validation_errors
 
 
@@ -589,6 +594,12 @@ def create_issue_from_sync(issue_data, user):
     try:
         # Log incoming data for debugging
         frappe.log(f"Issue data to be created: {issue_data}")
+
+        # Log assignment data specifically
+        if issue_data.get("assignee"):
+            frappe.log(f"Assignment data - Assignee: {issue_data['assignee']}")
+            if not frappe.db.exists("User", issue_data["assignee"]):
+                frappe.log(f"Warning: Assignee {issue_data['assignee']} does not exist")
 
         # First check for duplicate based on key fields
         existing_issue = find_duplicate_issue(issue_data)
@@ -618,6 +629,7 @@ def create_issue_from_sync(issue_data, user):
             "ongoing_issue": "ongoing_issue",
             "confirmed": "confirmed",
             "tracking_code": "tracking_code",
+            "assignee": "assignee",
         }
 
         # Set fields using mapping

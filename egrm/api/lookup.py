@@ -77,6 +77,9 @@ def categories(project_id=None):
             category.auto_assign = 0  # Default value
             category.active = 1  # Default value
 
+            # Log category data for debugging
+            frappe.log(f"Category data: {category.as_dict()}")
+
         frappe.log(f"Returning {len(categories)} categories")
         return {"status": "success", "data": categories}
 
@@ -766,4 +769,119 @@ def projects():
     except Exception as e:
         frappe.log(f"Error in get_projects: {str(e)}")
         frappe.log_error(f"Error in get_projects: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist()
+def get_user_context():
+    """
+    Get comprehensive user context including:
+    - User details
+    - Department
+    - Role
+    - Project assignments
+    - Region assignments with hierarchy
+    - Access levels and permissions
+
+    Returns:
+        dict: Complete user context data
+    """
+    try:
+        user = frappe.session.user
+        frappe.log(f"Getting user context for: {user}")
+
+        if user == "Guest":
+            return {"status": "error", "message": _("Authentication required")}
+
+        # Get user document
+        user_doc = frappe.get_doc("User", user)
+
+        # Get user's project assignments
+        assignments = frappe.get_all(
+            "GRM User Project Assignment",
+            fields=[
+                "name",
+                "project",
+                "role",
+                "department",
+                "administrative_region",
+                "is_active",
+                "activation_status",
+            ],
+            filters={"user": user, "is_active": 1, "activation_status": "Activated"},
+        )
+
+        # Get user's regions with hierarchy
+        region_assignments = get_user_region_assignments(user)
+        accessible_regions = get_user_accessible_regions(region_assignments)
+
+        # Get user's roles and permissions
+        roles = frappe.get_roles(user)
+
+        # Build comprehensive user context
+        user_context = {
+            "status": "success",
+            "data": {
+                "user": {
+                    "id": user_doc.name,
+                    "email": user_doc.email,
+                    "full_name": user_doc.full_name,
+                    "roles": roles,
+                },
+                "assignments": [
+                    {
+                        "id": assignment.name,
+                        "project": {
+                            "id": assignment.project,
+                            "name": frappe.get_value(
+                                "GRM Project", assignment.project, "title"
+                            ),
+                        },
+                        "role": assignment.role,
+                        "department": {
+                            "id": assignment.department,
+                            "name": frappe.get_value(
+                                "GRM Issue Department",
+                                assignment.department,
+                                "department_name",
+                            ),
+                        },
+                        "region": {
+                            "id": assignment.administrative_region,
+                            "name": frappe.get_value(
+                                "GRM Administrative Region",
+                                assignment.administrative_region,
+                                "region_name",
+                            ),
+                        },
+                    }
+                    for assignment in assignments
+                ],
+                "accessible_regions": accessible_regions,
+                "permissions": {
+                    role: {
+                        "create_issue": frappe.has_permission(
+                            "GRM Issue", "create", user=user
+                        ),
+                        "update_issue": frappe.has_permission(
+                            "GRM Issue", "write", user=user
+                        ),
+                        "delete_issue": frappe.has_permission(
+                            "GRM Issue", "delete", user=user
+                        ),
+                        "assign_issue": frappe.has_permission(
+                            "GRM Issue", "assign", user=user
+                        ),
+                    }
+                    for role in roles
+                },
+            },
+        }
+
+        frappe.log(f"User context built successfully for {user}")
+        return user_context
+
+    except Exception as e:
+        frappe.log(f"Error getting user context: {str(e)}")
+        frappe.log_error(f"Error getting user context: {str(e)}")
         return {"status": "error", "message": str(e)}
