@@ -6,7 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "issue_details_section",
+  "main_tab",
   "project",
   "issue_date",
   "intake_date",
@@ -14,15 +14,10 @@
   "issue_type",
   "status",
   "tracking_code",
-  "column_break_1",
   "description",
   "section_break_xotr",
   "issue_location",
-  "section_break_2",
-  "reporter",
-  "assignee",
-  "column_break_2",
-  "administrative_region",
+  "citizen_tab",
   "citizen_information_section",
   "citizen_type",
   "citizen",
@@ -36,8 +31,22 @@
   "citizen_age_group",
   "citizen_group_1",
   "citizen_group_2",
+  "attachments_tab",
   "attachments_section",
   "grm_issue_attachment",
+  "comments_section",
+  "grm_issue_comment",
+  "escalation_section",
+  "grm_issue_escalation_reason",
+  "amended_from",
+  "assignment_tab",
+  "assignment_section",
+  "reporter",
+  "assignee",
+  "administrative_region",
+  "activity_log_tab",
+  "grm_issue_log",
+  "resolution_tab",
   "resolution_information_section",
   "resolution_days",
   "resolution_date",
@@ -45,14 +54,39 @@
   "resolution_accepted",
   "rating",
   "escalate_flag",
-  "confirmed",
-  "comments_section",
-  "grm_issue_comment",
-  "escalation_section",
-  "grm_issue_escalation_reason",
-  "amended_from"
+  "confirmed"
  ],
  "fields": [
+  {
+   "fieldname": "main_tab",
+   "fieldtype": "Tab Break",
+   "label": "Issue Details"
+  },
+  {
+   "fieldname": "citizen_tab",
+   "fieldtype": "Tab Break",
+   "label": "Citizen Information"
+  },
+  {
+   "fieldname": "assignment_tab",
+   "fieldtype": "Tab Break",
+   "label": "Assignment"
+  },
+  {
+   "fieldname": "resolution_tab",
+   "fieldtype": "Tab Break",
+   "label": "Resolution"
+  },
+  {
+   "fieldname": "attachments_tab",
+   "fieldtype": "Tab Break",
+   "label": "Attachments & Comments"
+  },
+  {
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment Details"
+  },
   {
    "fieldname": "tracking_code",
    "fieldtype": "Data",
@@ -78,6 +112,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "assignee",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -178,12 +213,14 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "resolution_days",
    "fieldtype": "Int",
    "label": "Resolution Days",
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "resolution_date",
    "fieldtype": "Datetime",
    "label": "Resolution Date",
@@ -222,7 +259,7 @@
    "read_only": 1
   },
   {
-   "default": "Pending",
+   "allow_on_submit": 1,
    "fieldname": "resolution_accepted",
    "fieldtype": "Select",
    "label": "Resolution Accepted",
@@ -230,12 +267,14 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "rating",
    "fieldtype": "Int",
    "label": "Rating",
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "default": "0",
    "fieldname": "escalate_flag",
    "fieldtype": "Check",
@@ -279,24 +318,6 @@
    "search_index": 1
   },
   {
-   "fieldname": "issue_details_section",
-   "fieldtype": "Section Break",
-   "label": "Issue Details"
-  },
-  {
-   "fieldname": "column_break_1",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_2",
-   "fieldtype": "Section Break",
-   "label": "Assignment Information"
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "citizen_information_section",
    "fieldtype": "Section Break",
    "label": "Citizen Information"
@@ -332,12 +353,24 @@
   {
    "fieldname": "section_break_xotr",
    "fieldtype": "Section Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "grm_issue_log",
+   "fieldtype": "Table",
+   "label": "Issue Log",
+   "options": "GRM Issue Log"
+  },
+  {
+   "fieldname": "activity_log_tab",
+   "fieldtype": "Tab Break",
+   "label": "Activity Log"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-16 21:25:55.374749",
+ "modified": "2025-06-21 13:12:54.508195",
  "modified_by": "Administrator",
  "module": "egrm",
  "name": "GRM Issue",
@@ -426,5 +459,14 @@
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Blue",
+   "title": "Initial"
+  },
+  {
+   "color": "Blue",
+   "title": "Open"
+  }
+ ]
 }

@@ -147,9 +147,6 @@ class GRMIssue(Document):
 
     def on_submit(self):
         try:
-            # Set confirmed flag
-            self.db_set("confirmed", 1)
-
             # Add log entry for submission
             self.add_log(_("Issue submitted"), frappe.session.user)
 
@@ -187,7 +184,6 @@ class GRMIssue(Document):
     def validate_project_entities(self):
         try:
             # Check that status belongs to the project
-            frappe.log(f"************** self.status:{self.status} {self.project}")
             status_belongs_to_project = frappe.db.exists(
                 "GRM Project Link", {"parent": self.status, "project": self.project}
             )
@@ -277,9 +273,6 @@ class GRMIssue(Document):
                             self.citizen_group_2, self.project
                         )
                     )
-            frappe.log(
-                f"************** status_belongs_to_project:{status_belongs_to_project}"
-            )
 
             # Check assignee
             if self.assignee:
@@ -295,7 +288,6 @@ class GRMIssue(Document):
                         )
                     )
 
-            frappe.log(f"************** All validated")
         except Exception as e:
             frappe.log(f"Error validating project entities: {str(e)}")
             raise

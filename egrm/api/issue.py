@@ -11,6 +11,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, get_datetime, now_datetime
 
+from egrm.api.sync import create_issue_from_sync  # Import the sync creation function
+
 # Configure logging
 log = logging.getLogger(__name__)
 
@@ -238,7 +240,7 @@ def get(issue_id):
 @frappe.whitelist()
 def create(issue_data):
     """
-    Create a new issue
+    Create a new issue using the sync creation logic for consistency
 
     Args:
         issue_data (dict): Issue data
@@ -254,74 +256,20 @@ def create(issue_data):
         if isinstance(issue_data, str):
             issue_data = json.loads(issue_data)
 
-        # Create new issue document
-        issue = frappe.new_doc("GRM Issue")
-        issue.description = issue_data.get("description")
-        issue.citizen_name = issue_data.get("citizen")
-        issue.citizen_type = issue_data.get("citizen_type", 0)
-        issue.gender = issue_data.get("gender")
-        issue.contact_medium = issue_data.get("contact_medium")
-        issue.ongoing_issue = issue_data.get("ongoing_issue", False)
-        issue.confirmed = issue_data.get("confirmed", False)
-        issue.intake_date = issue_data.get("intake_date") or now_datetime()
-        issue.issue_date = issue_data.get("issue_date") or now_datetime()
-        issue.reporter = user
+        # Use the sync creation function to ensure consistency
+        result = create_issue_from_sync(issue_data, user)
 
-        # Set geolocation coordinates if provided
-        if issue_data.get("coordinates"):
-            frappe.log(f"sdfsadfasdfad: {issue_data.get("coordinates")}")
-            issue.issue_location = issue_data.get("coordinates")
+        if result.get("status") == "success":
+            issue_name = result["data"]["name"]
 
-        # Set related fields
-        if issue_data.get("category"):
-            issue.category = issue_data["category"]
-        if issue_data.get("issue_type"):
-            issue.issue_type = issue_data["issue_type"]
-        if issue_data.get("administrative_region"):
-            issue.administrative_region = issue_data["administrative_region"]
-        if issue_data.get("project"):
-            issue.project = issue_data["project"]
+            # Get the created issue
+            issue = frappe.get_doc("GRM Issue", issue_name)
 
-        # Set contact information
-        if issue_data.get("contact_information"):
-            contact_info = issue_data["contact_information"]
-            issue.contact_type = contact_info.get("type")
-            issue.contact_value = contact_info.get("contact")
-
-        # Set citizen groups
-        if issue_data.get("citizen_age_group"):
-            issue.citizen_age_group = issue_data["citizen_age_group"]
-        if issue_data.get("citizen_group_1"):
-            issue.citizen_group_1 = issue_data["citizen_group_1"]
-        if issue_data.get("citizen_group_2"):
-            issue.citizen_group_2 = issue_data["citizen_group_2"]
-
-        # Set initial status
-        initial_status = frappe.get_all(
-            "GRM Issue Status", filters={"initial_status": 1}, fields=["name"], limit=1
-        )
-        if initial_status:
-            issue.status = initial_status[0].name
-
-        # Save issue
-        issue.insert()
-
-        # Add creation log
-        issue.append(
-            "grm_issue_log",
-            {
-                "log_type": "Created",
-                "log_by": user,
-                "log_date": now_datetime(),
-                "description": "Issue created",
-            },
-        )
-
-        # Save again to include log
-        issue.save()
-
-        log.info(f"Created issue {issue.name}")
-        return {"status": "success", "data": issue.as_dict()}
+            log.info(f"Issue {issue.name} already submitted")
+            return {"status": "success", "data": issue.as_dict()}
+        else:
+            log.error(f"Error in create_issue_from_sync: {result.get('message')}")
+            return result  # Return the error from create_issue_from_sync
 
     except Exception as e:
         log.error(f"Error in create_issue: {str(e)}")

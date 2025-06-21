@@ -10,7 +10,14 @@ import traceback
 
 import frappe
 from frappe import _
-from frappe.utils import add_to_date, cint, get_datetime, get_datetime_str, now_datetime
+from frappe.utils import (
+    add_to_date,
+    cint,
+    cstr,
+    get_datetime,
+    get_datetime_str,
+    now_datetime,
+)
 from werkzeug.wrappers import Response
 
 # Configure logging
@@ -518,71 +525,116 @@ def enhance_issue_data(issue):
     issue.comments = comments
 
 
+def validate_issue_data(issue_data):
+    """Centralized validation for issue data"""
+    required_fields = {
+        "description": "Description",
+        "category": "Category",
+        "issue_type": "Issue Type",
+        "administrative_region": "Administrative Region",
+    }
+
+    validation_errors = []
+
+    # Check required fields
+    for field, label in required_fields.items():
+        if not issue_data.get(field):
+            validation_errors.append(f"{label} is required")
+
+    # Validate coordinates format if provided
+    if issue_data.get("coordinates"):
+        try:
+            if isinstance(issue_data["coordinates"], str):
+                # Try to parse as JSON if it's a string
+                coordinates = json.loads(issue_data["coordinates"])
+                if not (
+                    coordinates.get("type") == "FeatureCollection"
+                    and coordinates.get("features")
+                    and coordinates["features"][0]
+                    .get("geometry", {})
+                    .get("coordinates")
+                ):
+                    validation_errors.append("Invalid GeoJSON format for coordinates")
+        except json.JSONDecodeError:
+            validation_errors.append("Invalid coordinates format")
+
+    # Validate dates if provided
+    for date_field in ["intake_date", "issue_date"]:
+        if issue_data.get(date_field):
+            try:
+                get_datetime(issue_data[date_field])
+            except:
+                validation_errors.append(f"Invalid {date_field} format")
+
+    # Validate references to other doctypes
+    if issue_data.get("category"):
+        if not frappe.db.exists("GRM Issue Category", issue_data["category"]):
+            validation_errors.append("Invalid category")
+
+    if issue_data.get("issue_type"):
+        if not frappe.db.exists("GRM Issue Type", issue_data["issue_type"]):
+            validation_errors.append("Invalid issue type")
+
+    if issue_data.get("administrative_region"):
+        if not frappe.db.exists(
+            "GRM Administrative Region", issue_data["administrative_region"]
+        ):
+            validation_errors.append("Invalid administrative region")
+
+    return validation_errors
+
+
 def create_issue_from_sync(issue_data, user):
     """Create issue from sync data"""
     try:
         # Log incoming data for debugging
         frappe.log(f"Issue data to be created: {issue_data}")
 
-        # First check if an issue with this tracking code already exists
-        tracking_code = issue_data.get("tracking_code")
-        if tracking_code:
-            # Get user's accessible projects
-            accessible_projects = get_user_accessible_projects(user)
-
-            # Check for existing issue with same tracking code in accessible projects
-            existing_issue = frappe.get_all(
-                "GRM Issue",
-                filters={
-                    "tracking_code": tracking_code,
-                    "project": ["in", accessible_projects],
-                },
-                fields=["*"],
-                limit=1,
-            )
-
-            if existing_issue:
-                frappe.log(f"Found existing issue with tracking code {tracking_code}")
-                # Return existing issue as if it was just created
-                return {"status": "success", "data": existing_issue[0]}
+        # First check for duplicate based on key fields
+        existing_issue = find_duplicate_issue(issue_data)
+        if existing_issue:
+            frappe.log(f"Found duplicate issue: {existing_issue.name}")
+            return {"status": "success", "data": existing_issue.as_dict()}
 
         # Create new issue document
         issue = frappe.new_doc("GRM Issue")
 
-        # Explicitly set each field with proper type handling
-        issue.description = issue_data.get("description")
-        issue.citizen = issue_data.get("citizen")
-        issue.gender = issue_data.get("gender")
-        issue.contact_medium = issue_data.get("contact_medium")
+        # Map fields from issue_data to issue document
+        field_mapping = {
+            "description": "description",
+            "citizen": "citizen",
+            "citizen_type": "citizen_type",
+            "gender": "gender",
+            "contact_medium": "contact_medium",
+            "contact_type": "contact_info_type",
+            "contact_value": "contact_information",
+            "category": "category",
+            "issue_type": "issue_type",
+            "administrative_region": "administrative_region",
+            "citizen_age_group": "citizen_age_group",
+            "citizen_group_1": "citizen_group_1",
+            "citizen_group_2": "citizen_group_2",
+            "project": "project",
+            "ongoing_issue": "ongoing_issue",
+            "confirmed": "confirmed",
+            "tracking_code": "tracking_code",
+        }
 
-        # Handle contact information
-        contact_info = issue_data.get("contact_information", {})
-        issue.contact_info_type = contact_info.get("type")
-        issue.contact_information = contact_info.get("contact")
+        # Set fields using mapping
+        for src_field, dest_field in field_mapping.items():
+            if issue_data.get(src_field) is not None:
+                issue.set(dest_field, issue_data[src_field])
 
         # Handle dates with proper formatting
-        if issue_data.get("intake_date"):
-            issue.intake_date = get_datetime_str(
-                get_datetime(issue_data.get("intake_date"))
-            )
-        if issue_data.get("issue_date"):
-            issue.issue_date = get_datetime_str(
-                get_datetime(issue_data.get("issue_date"))
-            )
-
-        # Set other fields
-        issue.category = issue_data.get("category")
-        issue.issue_type = issue_data.get("issue_type")
-        issue.administrative_region = issue_data.get("administrative_region")
-        issue.citizen_age_group = issue_data.get("citizen_age_group")
-        issue.ongoing_issue = issue_data.get("ongoing_issue", 0)
-        issue.confirmed = issue_data.get("confirmed", 0)
-        issue.tracking_code = tracking_code
+        for date_field in ["intake_date", "issue_date"]:
+            if issue_data.get(date_field):
+                issue.set(
+                    date_field, get_datetime_str(get_datetime(issue_data[date_field]))
+                )
 
         # Set geolocation coordinates if provided
         if issue_data.get("coordinates"):
-            frappe.log(f"sdfsadfasdfad: {issue_data.get("coordinates")}")
-            issue.issue_location = issue_data.get("coordinates")
+            issue.issue_location = cstr(issue_data["coordinates"])
 
         # Set reporter
         issue.reporter = user
@@ -590,12 +642,66 @@ def create_issue_from_sync(issue_data, user):
         # Save issue
         issue.insert()
 
+        # Submit the issue
+        if issue.docstatus == 0:
+            issue.submit()
+
         return {"status": "success", "data": issue.as_dict()}
 
     except Exception as e:
         traceback.print_exc()
         frappe.log(f"******** ERROR INSERT ******** {str(e)}")
         return {"status": "error", "message": str(e)}
+
+
+def find_duplicate_issue(issue_data):
+    """Find a duplicate issue based on key fields"""
+    # Define fields to check for duplication
+    key_fields = [
+        "description",
+        "category",
+        "issue_type",
+        "administrative_region",
+        "coordinates",
+        "intake_date",
+        "issue_date",
+    ]
+
+    # Build filters
+    filters = {}
+    for field in key_fields:
+        if issue_data.get(field):
+            if field == "coordinates":
+                # For coordinates, we need exact match
+                filters["issue_location"] = issue_data[field]
+            elif field in ["intake_date", "issue_date"]:
+                # For dates, match within a small time window (e.g., 1 minute)
+                try:
+                    date_value = get_datetime(issue_data[field])
+                    filters[field] = [
+                        "between",
+                        [
+                            add_to_date(date_value, minutes=-1),
+                            add_to_date(date_value, minutes=1),
+                        ],
+                    ]
+                except:
+                    continue
+            else:
+                filters[field] = issue_data[field]
+
+    # Add creation time filter to only check recent issues (e.g., last hour)
+    filters["creation"] = [">", add_to_date(now_datetime(), hours=-1)]
+
+    # Search for matching issues
+    matching_issues = frappe.get_all(
+        "GRM Issue", filters=filters, fields=["name"], limit=1
+    )
+
+    if matching_issues:
+        return frappe.get_doc("GRM Issue", matching_issues[0].name)
+
+    return None
 
 
 def update_issue_from_sync(issue_id, issue_data, user):

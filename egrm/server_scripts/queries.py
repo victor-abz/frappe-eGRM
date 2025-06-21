@@ -206,7 +206,7 @@ def get_citizen_group_by_project(doctype, txt, searchfield, start, page_len, fil
         log.error(f"Error getting citizen groups by project: {str(e)}")
         return []
 
-
+@frappe.whitelist()
 def get_project_users(doctype, txt, searchfield, start, page_len, filters):
     """
     Get users assigned to a specific project
@@ -412,7 +412,7 @@ def get_open_statuses(project):
         log.error(f"Error getting open statuses: {str(e)}")
         return []
 
-
+@frappe.whitelist()
 def get_allowed_statuses(issue):
     """
     Get allowed next statuses for an issue based on workflow
