@@ -5,6 +5,7 @@ This module contains API endpoints for retrieving lookup data.
 """
 
 import logging
+import traceback
 
 import frappe
 from frappe import _
@@ -58,33 +59,39 @@ def categories(project_id=None):
         )
 
         # Enhance category data
+        enhanced_categories = []
         for category in categories:
             # Get department name if assigned_department exists
-            if category.assigned_department:
+            if category.get("assigned_department"):
                 try:
                     department_doc = frappe.get_doc(
-                        "GRM Issue Department", category.assigned_department
+                        "GRM Issue Department", category["assigned_department"]
                     )
-                    category.department_name = department_doc.department_name
-                except:
-                    category.department_name = category.assigned_department
+                    category["department_name"] = department_doc.department_name
+                except Exception as dept_error:
+                    frappe.log(f"Error getting department name: {str(dept_error)}")
+                    category["department_name"] = category["assigned_department"]
             else:
-                category.department_name = None
+                category["department_name"] = None
 
             # Set default values for missing fields
-            category.description = category.label or category.category_name
-            category.department = category.assigned_department
-            category.auto_assign = 0  # Default value
-            category.active = 1  # Default value
+            category["description"] = category.get("label") or category.get(
+                "category_name"
+            )
+            category["department"] = category.get("assigned_department")
+            category["auto_assign"] = 0  # Default value
+            category["active"] = 1  # Default value
 
             # Log category data for debugging
-            frappe.log(f"Category data: {category.as_dict()}")
+            frappe.log(f"Category data: {category}")
+            enhanced_categories.append(category)
 
-        frappe.log(f"Returning {len(categories)} categories")
-        return {"status": "success", "data": categories}
+        frappe.log(f"Returning {len(enhanced_categories)} categories")
+        return {"status": "success", "data": enhanced_categories}
 
     except Exception as e:
         frappe.log(f"Error in get_categories: {str(e)}")
+        print(frappe.get_traceback())
         frappe.log_error(f"Error in get_categories: {str(e)}")
         return {"status": "error", "message": str(e)}
 
@@ -123,15 +130,20 @@ def types(project_id=None):
         types = frappe.get_all("GRM Issue Type", fields=["name", "type_name"])
 
         # Set default values for missing fields
+        enhanced_types = []
         for type_item in types:
-            type_item.description = type_item.type_name  # Use type_name as description
-            type_item.active = 1  # Default value
+            type_item["description"] = type_item.get(
+                "type_name"
+            )  # Use type_name as description
+            type_item["active"] = 1  # Default value
+            enhanced_types.append(type_item)
 
-        frappe.log(f"Returning {len(types)} issue types")
-        return {"status": "success", "data": types}
+        frappe.log(f"Returning {len(enhanced_types)} issue types")
+        return {"status": "success", "data": enhanced_types}
 
     except Exception as e:
         frappe.log(f"Error in get_types: {str(e)}")
+        print(frappe.get_traceback())
         frappe.log_error(f"Error in get_types: {str(e)}")
         return {"status": "error", "message": str(e)}
 
@@ -179,19 +191,22 @@ def statuses(project_id=None):
             ],
         )
 
-        print(statuses)
-
         # Set default values for missing fields
+        enhanced_statuses = []
         for status in statuses:
-            status.description = status.status_name  # Use status_name as description
-            status.appealed_status = 0  # Default value
-            status.color = "#007bff"  # Default blue color
+            status["description"] = status.get(
+                "status_name"
+            )  # Use status_name as description
+            status["appealed_status"] = 0  # Default value
+            status["color"] = "#007bff"  # Default blue color
+            enhanced_statuses.append(status)
 
-        frappe.log(f"Returning {len(statuses)} statuses")
-        return {"status": "success", "data": statuses}
+        frappe.log(f"Returning {len(enhanced_statuses)} statuses")
+        return {"status": "success", "data": enhanced_statuses}
 
     except Exception as e:
         frappe.log(f"Error in get_statuses: {str(e)}")
+        print(frappe.get_traceback())
         frappe.log_error(f"Error in get_statuses: {str(e)}")
         return {"status": "error", "message": str(e)}
 
@@ -233,14 +248,17 @@ def age_groups(project_id=None):
         )
 
         # Set default description
+        enhanced_age_groups = []
         for age_group in age_groups:
-            age_group.description = age_group.age_group_name
+            age_group["description"] = age_group.get("age_group_name")
+            enhanced_age_groups.append(age_group)
 
-        frappe.log(f"Returning {len(age_groups)} age groups")
-        return {"status": "success", "data": age_groups}
+        frappe.log(f"Returning {len(enhanced_age_groups)} age groups")
+        return {"status": "success", "data": enhanced_age_groups}
 
     except Exception as e:
         frappe.log(f"Error in get_age_groups: {str(e)}")
+        print(frappe.get_traceback())
         frappe.log_error(f"Error in get_age_groups: {str(e)}")
         return {"status": "error", "message": str(e)}
 
@@ -303,9 +321,13 @@ def citizen_groups(project_id=None):
         }
 
     except Exception as e:
-        frappe.log(f"Error in get_citizen_groups: {str(e)}")
-        frappe.log_error(f"Error in get_citizen_groups: {str(e)}")
-        return {"status": "error", "message": str(e)}
+        error_trace = traceback.format_exc()
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in get_citizen_groups: {str(e)}\n{error_trace}")
+        return {
+            "status": "error",
+            "message": _("Error retrieving citizen groups. Please try again later."),
+        }
 
 
 @frappe.whitelist()
@@ -351,9 +373,13 @@ def departments(project_id=None):
         return {"status": "success", "data": departments}
 
     except Exception as e:
-        frappe.log(f"Error in get_departments: {str(e)}")
-        frappe.log_error(f"Error in get_departments: {str(e)}")
-        return {"status": "error", "message": str(e)}
+        error_trace = traceback.format_exc()
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in get_departments: {str(e)}\n{error_trace}")
+        return {
+            "status": "error",
+            "message": _("Error retrieving departments. Please try again later."),
+        }
 
 
 @frappe.whitelist()
@@ -404,6 +430,7 @@ def regions(parent_id=None):
         return {"status": "success", "data": accessible_regions}
 
     except Exception as e:
+        print(frappe.get_traceback())
         frappe.log_error(f"Error in get_regions: {str(e)}")
         frappe.log(f"Error in get_regions: {str(e)}")
         return {"status": "error", "message": str(e)}
@@ -445,9 +472,7 @@ def get_user_region_assignments(user):
         # Filter out assignments without regions
         region_assignments = [a for a in assignments if a.administrative_region]
 
-        frappe.log(
-            f"Found {len(region_assignments)} region assignments for user {user}"
-        )
+        frappe.log(f"Found {len(region_assignments)} region assignments for user {user}")
 
         # Log the projects and regions for debugging
         projects = list(set([a.project for a in region_assignments]))
@@ -458,6 +483,7 @@ def get_user_region_assignments(user):
         return region_assignments
 
     except Exception as e:
+        print(frappe.get_traceback())
         frappe.log_error(f"Error getting user region assignments: {str(e)}")
         return []
 
@@ -512,6 +538,7 @@ def get_user_accessible_regions(user_assignments):
         return accessible_regions
 
     except Exception as e:
+        print(frappe.get_traceback())
         frappe.log_error(f"Error getting accessible regions: {str(e)}")
         return []
 
@@ -565,9 +592,8 @@ def get_region_hierarchy(parent_region_id, project_id, visited=None):
         return regions
 
     except Exception as e:
-        frappe.log_error(
-            f"Error getting region hierarchy for {parent_region_id}: {str(e)}"
-        )
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error getting region hierarchy for {parent_region_id}: {str(e)}")
         return []
 
 
@@ -626,12 +652,11 @@ def get_region_children(parent_id, user_assignments):
             enhanced_child = enhance_region_data(child, relevant_assignment)
             enhanced_children.append(enhanced_child)
 
-        frappe.log(
-            f"Returning {len(enhanced_children)} children for region {parent_id}"
-        )
+        frappe.log(f"Returning {len(enhanced_children)} children for region {parent_id}")
         return {"status": "success", "data": enhanced_children}
 
     except Exception as e:
+        print(frappe.get_traceback())
         frappe.log_error(f"Error getting region children: {str(e)}")
         return {"status": "error", "message": str(e)}
 
@@ -717,6 +742,7 @@ def enhance_region_data(region, user_assignment):
         return enhanced_region
 
     except Exception as e:
+        print(frappe.get_traceback())
         frappe.log_error(f"Error enhancing region data: {str(e)}")
         # Return basic region data if enhancement fails
         return {
@@ -767,7 +793,9 @@ def projects():
         return {"status": "success", "data": accessible_projects}
 
     except Exception as e:
-        frappe.log(f"Error in get_projects: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in get_projects: {str(e)}")
+        print(frappe.get_traceback())
         frappe.log_error(f"Error in get_projects: {str(e)}")
         return {"status": "error", "message": str(e)}
 
@@ -882,6 +910,8 @@ def get_user_context():
         return user_context
 
     except Exception as e:
-        frappe.log(f"Error getting user context: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error getting user context: {str(e)}")
+        print(frappe.get_traceback())
         frappe.log_error(f"Error getting user context: {str(e)}")
         return {"status": "error", "message": str(e)}
