@@ -25,11 +25,6 @@
    "in_list_view": 1,
    "label": "Comment",
    "reqd": 1
-  },
-  {
-   "fieldname": "due_at",
-   "fieldtype": "Datetime",
-   "label": "Due At"
   }
  ],
  "index_web_pages_for_search": 0,

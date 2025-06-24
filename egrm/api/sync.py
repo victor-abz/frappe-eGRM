@@ -90,6 +90,7 @@ def get_changes(last_sync_timestamp=None, project_id=None):
         }
 
     except Exception as e:
+        print(frappe.get_traceback())
         frappe.log(f"Error in get_changes: {str(e)}")
         frappe.log_error(f"Error in get_changes: {str(e)}")
         return {"status": "error", "message": str(e)}
@@ -143,6 +144,7 @@ def push_changes(changes_data):
         return response
 
     except Exception as e:
+        print(frappe.get_traceback())
         frappe.log(f"Error in push_changes: {str(e)}")
         frappe.log_error(f"Error in push_changes: {str(e)}")
         return {"status": "error", "message": str(e)}
@@ -194,6 +196,7 @@ def get_user_data(project_id=None):
         return {"status": "success", "data": data}
 
     except Exception as e:
+        print(frappe.get_traceback())
         frappe.log(f"Error in get_user_data: {str(e)}")
         frappe.log_error(f"Error in get_user_data: {str(e)}")
         return {"status": "error", "message": str(e)}
@@ -446,6 +449,7 @@ def process_issue_changes(issue_changes, user):
                     )
 
         except Exception as e:
+            print(frappe.get_traceback())
             results["errors"].append(
                 {
                     "local_id": change.get("local_id") or change.get("id"),
@@ -485,6 +489,7 @@ def process_attachment_changes(attachment_changes, user):
                     )
 
         except Exception as e:
+            print(frappe.get_traceback())
             results["errors"].append(
                 {
                     "local_id": change.get("local_id"),
@@ -502,7 +507,7 @@ def enhance_issue_data(issue):
     attachments = frappe.get_all(
         "GRM Issue Attachment",
         filters={"parent": issue.name},
-        fields=["name", "file", "description", "uploaded_by", "upload_date"],
+        fields=["*"],
     )
     issue.attachments = attachments
 
@@ -510,8 +515,8 @@ def enhance_issue_data(issue):
     logs = frappe.get_all(
         "GRM Issue Log",
         filters={"parent": issue.name},
-        fields=["log_type", "log_by", "log_date", "description"],
-        order_by="log_date desc",
+        fields=["*"],
+        order_by="creation desc",
     )
     issue.logs = logs
 
@@ -519,8 +524,8 @@ def enhance_issue_data(issue):
     comments = frappe.get_all(
         "GRM Issue Comment",
         filters={"parent": issue.name},
-        fields=["comment_by", "comment_text", "comment_date"],
-        order_by="comment_date desc",
+        fields=["user", "comment"],
+        order_by="creation desc",
     )
     issue.comments = comments
 
@@ -638,6 +643,7 @@ def create_issue_from_sync(issue_data, user):
                 issue.set(dest_field, issue_data[src_field])
 
         # Handle dates with proper formatting
+        print("******", issue_data)
         for date_field in ["intake_date", "issue_date"]:
             if issue_data.get(date_field):
                 issue.set(
@@ -661,6 +667,7 @@ def create_issue_from_sync(issue_data, user):
         return {"status": "success", "data": issue.as_dict()}
 
     except Exception as e:
+        print(frappe.get_traceback())
         traceback.print_exc()
         frappe.log(f"******** ERROR INSERT ******** {str(e)}")
         return {"status": "error", "message": str(e)}
@@ -740,6 +747,7 @@ def update_issue_from_sync(issue_id, issue_data, user):
         return {"status": "success", "data": issue.as_dict()}
 
     except Exception as e:
+        print(frappe.get_traceback())
         return {"status": "error", "message": str(e)}
 
 
@@ -751,6 +759,7 @@ def upload_attachment_from_sync(attachment_data, user):
         return {"status": "success", "data": {"name": "temp_attachment_id"}}
 
     except Exception as e:
+        print(frappe.get_traceback())
         return {"status": "error", "message": str(e)}
 
 

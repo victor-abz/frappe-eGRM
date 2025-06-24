@@ -1,50 +1,72 @@
 {
- "actions": [],
- "autoname": "hash",
- "creation": "2025-05-17 00:00:00.000000",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "text",
-  "user",
-  "timestamp"
- ],
- "fields": [
-  {
-   "fieldname": "text",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Log Entry",
-   "reqd": 1
-  },
-  {
-   "fieldname": "user",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "User",
-   "options": "User",
-   "reqd": 1
-  },
-  {
-   "fieldname": "timestamp",
-   "fieldtype": "Datetime",
-   "in_list_view": 1,
-   "label": "Timestamp",
-   "reqd": 1
-  }
- ],
- "index_web_pages_for_search": 0,
- "istable": 1,
- "links": [],
- "modified": "2025-05-17 00:00:00.000000",
- "modified_by": "Administrator",
- "module": "EGRM",
- "name": "GRM Issue Log",
- "naming_rule": "Random",
- "owner": "Administrator",
- "permissions": [],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+  "actions": [],
+  "autoname": "hash",
+  "creation": "2025-05-17 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "text",
+    "user",
+    "timestamp",
+    "action_taken",
+    "action_taken_date",
+    "action_taken_by"
+  ],
+  "fields": [
+    {
+      "fieldname": "text",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Log Entry",
+      "reqd": 1
+    },
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "User",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "timestamp",
+      "fieldtype": "Datetime",
+      "in_list_view": 1,
+      "label": "Timestamp",
+      "reqd": 1
+    },
+    {
+      "fieldname": "action_taken",
+      "fieldtype": "Text",
+      "label": "Action Taken",
+      "read_only": 1
+    },
+    {
+      "fieldname": "action_taken_date",
+      "fieldtype": "Datetime",
+      "label": "Action Taken Date",
+      "read_only": 1
+    },
+    {
+      "fieldname": "action_taken_by",
+      "fieldtype": "Link",
+      "label": "Action Taken By",
+      "options": "User",
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 1,
+  "links": [],
+  "modified": "2025-05-17 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "EGRM",
+  "name": "GRM Issue Log",
+  "naming_rule": "Random",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
 }

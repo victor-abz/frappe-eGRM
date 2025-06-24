@@ -37,7 +37,7 @@ def list(
     """
     try:
         user = frappe.session.user
-        log.info(f"Listing issues for user: {user}")
+        frappe.log(f"Listing issues for user: {user}")
 
         # Build filters
         filters = {}
@@ -166,11 +166,12 @@ def list(
             )
             issue.comments = comments
 
-        log.info(f"Returning {len(issues)} issues")
+        frappe.log(f"Returning {len(issues)} issues")
         return {"status": "success", "data": issues}
 
     except Exception as e:
-        log.error(f"Error in list_issues: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in list_issues: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -187,7 +188,7 @@ def get(issue_id):
     """
     try:
         user = frappe.session.user
-        log.info(f"Getting issue {issue_id} for user: {user}")
+        frappe.log(f"Getting issue {issue_id} for user: {user}")
 
         # Check if issue exists
         if not frappe.db.exists("GRM Issue", issue_id):
@@ -229,11 +230,12 @@ def get(issue_id):
             )
             issue_dict["region_details"] = region_doc.as_dict()
 
-        log.info(f"Returning issue {issue_id}")
+        frappe.log(f"Returning issue {issue_id}")
         return {"status": "success", "data": issue_dict}
 
     except Exception as e:
-        log.error(f"Error in get_issue: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in get_issue: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -250,7 +252,7 @@ def create(issue_data):
     """
     try:
         user = frappe.session.user
-        log.info(f"Creating issue for user: {user}")
+        frappe.log(f"Creating issue for user: {user}")
 
         # Parse issue data if it's a string
         if isinstance(issue_data, str):
@@ -265,14 +267,17 @@ def create(issue_data):
             # Get the created issue
             issue = frappe.get_doc("GRM Issue", issue_name)
 
-            log.info(f"Issue {issue.name} already submitted")
+            frappe.log(f"Issue {issue.name} already submitted")
             return {"status": "success", "data": issue.as_dict()}
         else:
-            log.error(f"Error in create_issue_from_sync: {result.get('message')}")
+            frappe.log_error(
+                f"Error in create_issue_from_sync: {result.get('message')}"
+            )
             return result  # Return the error from create_issue_from_sync
 
     except Exception as e:
-        log.error(f"Error in create_issue: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in create_issue: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -290,7 +295,7 @@ def update(issue_id, issue_data):
     """
     try:
         user = frappe.session.user
-        log.info(f"Updating issue {issue_id} for user: {user}")
+        frappe.log(f"Updating issue {issue_id} for user: {user}")
 
         # Check if issue exists
         if not frappe.db.exists("GRM Issue", issue_id):
@@ -361,11 +366,12 @@ def update(issue_id, issue_data):
             )
             issue.save()
 
-        log.info(f"Updated issue {issue_id}")
+        frappe.log(f"Updated issue {issue_id}")
         return {"status": "success", "data": issue.as_dict()}
 
     except Exception as e:
-        log.error(f"Error in update_issue: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in update_issue: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -383,7 +389,7 @@ def assign(issue_id, assignee_id):
     """
     try:
         user = frappe.session.user
-        log.info(f"Assigning issue {issue_id} to {assignee_id} by user: {user}")
+        frappe.log(f"Assigning issue {issue_id} to {assignee_id} by user: {user}")
 
         # Check if issue exists
         if not frappe.db.exists("GRM Issue", issue_id):
@@ -442,11 +448,12 @@ def assign(issue_id, assignee_id):
         )
         issue.save()
 
-        log.info(f"Assigned issue {issue_id} to {assignee_id}")
+        frappe.log(f"Assigned issue {issue_id} to {assignee_id}")
         return {"status": "success", "data": issue.as_dict()}
 
     except Exception as e:
-        log.error(f"Error in assign_issue: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in assign_issue: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -464,7 +471,7 @@ def resolve(issue_id, resolution_text=None):
     """
     try:
         user = frappe.session.user
-        log.info(f"Resolving issue {issue_id} by user: {user}")
+        frappe.log(f"Resolving issue {issue_id} by user: {user}")
 
         # Check if issue exists
         if not frappe.db.exists("GRM Issue", issue_id):
@@ -514,11 +521,12 @@ def resolve(issue_id, resolution_text=None):
         )
         issue.save()
 
-        log.info(f"Resolved issue {issue_id}")
+        frappe.log(f"Resolved issue {issue_id}")
         return {"status": "success", "data": issue.as_dict()}
 
     except Exception as e:
-        log.error(f"Error in resolve_issue: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in resolve_issue: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -536,7 +544,7 @@ def reopen(issue_id, reason=None):
     """
     try:
         user = frappe.session.user
-        log.info(f"Reopening issue {issue_id} by user: {user}")
+        frappe.log(f"Reopening issue {issue_id} by user: {user}")
 
         # Check if issue exists
         if not frappe.db.exists("GRM Issue", issue_id):
@@ -581,11 +589,12 @@ def reopen(issue_id, reason=None):
         )
         issue.save()
 
-        log.info(f"Reopened issue {issue_id}")
+        frappe.log(f"Reopened issue {issue_id}")
         return {"status": "success", "data": issue.as_dict()}
 
     except Exception as e:
-        log.error(f"Error in reopen_issue: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in reopen_issue: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -603,7 +612,7 @@ def escalate(issue_id, reason=None):
     """
     try:
         user = frappe.session.user
-        log.info(f"Escalating issue {issue_id} by user: {user}")
+        frappe.log(f"Escalating issue {issue_id} by user: {user}")
 
         # Check if issue exists
         if not frappe.db.exists("GRM Issue", issue_id):
@@ -654,11 +663,135 @@ def escalate(issue_id, reason=None):
         )
         issue.save()
 
-        log.info(f"Escalated issue {issue_id}")
+        frappe.log(f"Escalated issue {issue_id}")
         return {"status": "success", "data": issue.as_dict()}
 
     except Exception as e:
-        log.error(f"Error in escalate_issue: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in escalate_issue: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist()
+def get_latest_issues(last_sync_timestamp=None, limit=50, offset=0):
+    """
+    Get issues created after the last sync timestamp.
+    This is a lightweight endpoint that only returns essential issue data.
+
+    Args:
+        last_sync_timestamp (str, optional): Last sync timestamp in ISO format
+        limit (int): Maximum number of issues to return
+        offset (int): Offset for pagination
+
+    Returns:
+        dict: {
+            "data": List of issues created after the timestamp,
+            "total_count": Total number of issues matching the criteria,
+            "has_more": Boolean indicating if there are more issues to load
+        }
+    """
+    try:
+        user = frappe.session.user
+        frappe.log(
+            f"Getting latest issues for user: {user}, last_sync: {last_sync_timestamp}"
+        )
+
+        # Parse timestamp
+        if last_sync_timestamp:
+            try:
+                last_sync = get_datetime(last_sync_timestamp)
+            except:
+                last_sync = None
+        else:
+            last_sync = None
+
+        # Get user's accessible projects
+        accessible_projects = get_user_accessible_projects(user)
+        if not accessible_projects:
+            return {
+                "status": "success",
+                "data": {"issues": [], "total_count": 0, "has_more": False},
+            }
+
+        # Build filters
+        filters = {"project": ["in", accessible_projects]}
+        if last_sync:
+            filters["creation"] = [">", last_sync]
+
+        # Get total count first
+        total_count = frappe.db.count("GRM Issue", filters=filters)
+
+        # Get paginated issues with minimal fields for efficiency
+        issues = frappe.get_all(
+            "GRM Issue",
+            filters=filters,
+            fields=[
+                "name",
+                "title",
+                "description",
+                "status",
+                "assignee",
+                "reporter",
+                "category",
+                "issue_type",
+                "created_date",
+                "creation",
+                "modified",
+                "administrative_region",
+                "project",
+                "confirmed",
+                "resolution_accepted",
+                "escalate_flag",
+            ],
+            limit=cint(limit),
+            start=cint(offset),
+            order_by="creation desc",
+        )
+
+        # Enhance with minimal required related data
+        for issue in issues:
+            # Get status details
+            if issue.status:
+                status_doc = frappe.get_doc("GRM Issue Status", issue.status)
+                issue.status_details = {
+                    "id": status_doc.name,
+                    "name": status_doc.status_name,
+                    "final_status": status_doc.final_status,
+                }
+
+            # Get category details
+            if issue.category:
+                category_doc = frappe.get_doc("GRM Issue Category", issue.category)
+                issue.category_details = {
+                    "id": category_doc.name,
+                    "name": category_doc.category_name,
+                }
+
+            # Get administrative region details
+            if issue.administrative_region:
+                region_doc = frappe.get_doc(
+                    "GRM Administrative Region", issue.administrative_region
+                )
+                issue.region_details = {
+                    "administrative_id": region_doc.name,
+                    "name": region_doc.region_name,
+                }
+
+        has_more = total_count > (cint(offset) + len(issues))
+
+        frappe.log(f"Returning {len(issues)} latest issues")
+        return {
+            "status": "success",
+            "data": {
+                "issues": issues,
+                "total_count": total_count,
+                "has_more": has_more,
+            },
+        }
+
+    except Exception as e:
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error in get_latest_issues: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -797,6 +930,9 @@ def create_log_entry(issue_id, log_type, user, description):
         # Save issue
         issue.save()
 
-        log.info(f"Created log entry for issue {issue_id}: {log_type} - {description}")
+        frappe.log(
+            f"Created log entry for issue {issue_id}: {log_type} - {description}"
+        )
     except Exception as e:
-        log.error(f"Error creating log entry for issue {issue_id}: {str(e)}")
+        print(frappe.get_traceback())
+        frappe.log_error(f"Error creating log entry for issue {issue_id}: {str(e)}")
