@@ -4,8 +4,9 @@ EGRM Field Permission Hooks
 This module contains hooks for field-level permissions.
 """
 
-import frappe
 import logging
+
+import frappe
 from frappe import _
 
 # Configure logging
@@ -16,87 +17,185 @@ ROLE_FIELD_PERMISSIONS = {
     "GRM Field Officer": {
         "GRM Issue": {
             "read": [
-                "name", "title",  "tracking_code", "status",
-                "project", "category", "issue_type", "description",
-                "assignee", "administrative_region", "intake_date",
-                "issue_date", "created_date", "citizen", "citizen_type",
-                "gender", "contact_medium", "citizen_age_group",
-                "citizen_group_1", "citizen_group_2",
-                "resolution_days", "resolution_date", "resolution_accepted",
-                "rating", "escalate_flag", "confirmed"
+                "name",
+                "title",
+                "tracking_code",
+                "status",
+                "project",
+                "category",
+                "issue_type",
+                "description",
+                "assignee",
+                "administrative_region",
+                "intake_date",
+                "issue_date",
+                "created_date",
+                "citizen",
+                "citizen_type",
+                "gender",
+                "contact_medium",
+                "citizen_age_group",
+                "citizen_group_1",
+                "citizen_group_2",
+                "resolution_days",
+                "resolution_date",
+                "resolution_accepted",
+                "rating",
+                "escalate_flag",
+                "confirmed",
             ],
             "write": [
-                "title", "description", "category", "issue_type",
-                "citizen", "citizen_type", "gender", "contact_medium",
-                "citizen_age_group", "citizen_group_1", "citizen_group_2"
+                "title",
+                "description",
+                "category",
+                "issue_type",
+                "citizen",
+                "citizen_type",
+                "gender",
+                "contact_medium",
+                "citizen_age_group",
+                "citizen_group_1",
+                "citizen_group_2",
             ],
-            "hide": [
-                "contact_information"  # Sensitive data
-            ]
+            "hide": ["contact_information"],  # Sensitive data
         }
     },
     "GRM Department Head": {
         "GRM Issue": {
             "read": [
-                "name", "title", "tracking_code", "status",
-                "project", "category", "issue_type", "description",
-                "assignee", "administrative_region", "intake_date",
-                "issue_date", "created_date", "citizen", "citizen_type",
-                "gender", "contact_medium", "citizen_age_group",
-                "citizen_group_1", "citizen_group_2", "contact_information",
-                "resolution_days", "resolution_date", "resolution_accepted",
-                "rating", "escalate_flag", "confirmed"
+                "name",
+                "title",
+                "tracking_code",
+                "status",
+                "project",
+                "category",
+                "issue_type",
+                "description",
+                "assignee",
+                "administrative_region",
+                "intake_date",
+                "issue_date",
+                "created_date",
+                "citizen",
+                "citizen_type",
+                "gender",
+                "contact_medium",
+                "citizen_age_group",
+                "citizen_group_1",
+                "citizen_group_2",
+                "contact_information",
+                "resolution_days",
+                "resolution_date",
+                "resolution_accepted",
+                "rating",
+                "escalate_flag",
+                "confirmed",
             ],
             "write": [
-                "title", "description", "category", "issue_type",
-                "assignee", "citizen", "citizen_type", "gender",
-                "contact_medium", "citizen_age_group", "citizen_group_1",
-                "citizen_group_2", "status", "escalate_flag"
+                "title",
+                "description",
+                "category",
+                "issue_type",
+                "assignee",
+                "citizen",
+                "citizen_type",
+                "gender",
+                "contact_medium",
+                "citizen_age_group",
+                "citizen_group_1",
+                "citizen_group_2",
+                "status",
+                "escalate_flag",
             ],
-            "hide": []
+            "hide": [],
         }
     },
     "GRM Project Manager": {
         "GRM Issue": {
             "read": [
-                "name", "title", "tracking_code", "status",
-                "project", "category", "issue_type", "description",
-                "assignee", "administrative_region", "intake_date",
-                "issue_date", "created_date", "citizen", "citizen_type",
-                "gender", "contact_medium", "citizen_age_group",
-                "citizen_group_1", "citizen_group_2", "contact_information",
-                "resolution_days", "resolution_date", "resolution_accepted",
-                "rating", "escalate_flag", "confirmed"
+                "name",
+                "title",
+                "tracking_code",
+                "status",
+                "project",
+                "category",
+                "issue_type",
+                "description",
+                "assignee",
+                "administrative_region",
+                "intake_date",
+                "issue_date",
+                "created_date",
+                "citizen",
+                "citizen_type",
+                "gender",
+                "contact_medium",
+                "citizen_age_group",
+                "citizen_group_1",
+                "citizen_group_2",
+                "contact_information",
+                "resolution_days",
+                "resolution_date",
+                "resolution_accepted",
+                "rating",
+                "escalate_flag",
+                "confirmed",
             ],
             "write": [
-                "title", "description", "category", "issue_type",
-                "assignee", "administrative_region", "citizen", "citizen_type",
-                "gender", "contact_medium", "citizen_age_group",
-                "citizen_group_1", "citizen_group_2", "status",
-                "escalate_flag", "confirmed"
+                "title",
+                "description",
+                "category",
+                "issue_type",
+                "assignee",
+                "administrative_region",
+                "citizen",
+                "citizen_type",
+                "gender",
+                "contact_medium",
+                "citizen_age_group",
+                "citizen_group_1",
+                "citizen_group_2",
+                "status",
+                "escalate_flag",
+                "confirmed",
             ],
-            "hide": []
+            "hide": [],
         }
     },
     "GRM Analyst": {
         "GRM Issue": {
             "read": [
-                "name", "title", "tracking_code", "status",
-                "project", "category", "issue_type", "description",
-                "assignee", "administrative_region", "intake_date",
-                "issue_date", "created_date", "citizen_type",
-                "gender", "citizen_age_group",
-                "citizen_group_1", "citizen_group_2",
-                "resolution_days", "resolution_date", "resolution_accepted",
-                "rating", "escalate_flag", "confirmed"
+                "name",
+                "title",
+                "tracking_code",
+                "status",
+                "project",
+                "category",
+                "issue_type",
+                "description",
+                "assignee",
+                "administrative_region",
+                "intake_date",
+                "issue_date",
+                "created_date",
+                "citizen_type",
+                "gender",
+                "citizen_age_group",
+                "citizen_group_1",
+                "citizen_group_2",
+                "resolution_days",
+                "resolution_date",
+                "resolution_accepted",
+                "rating",
+                "escalate_flag",
+                "confirmed",
             ],
             "write": [],
-            "hide": [
-                "citizen", "contact_information"  # Sensitive data
-            ]
+            "hide": ["citizen", "contact_information"],  # Sensitive data
         }
-    }
+    },
 }
+
 
 def get_doc_perms(doc):
     """
@@ -113,11 +212,7 @@ def get_doc_perms(doc):
 
         # System manager and administrator have full access
         if user == "Administrator" or "System Manager" in frappe.get_roles(user):
-            return {
-                "read": None,  # All fields
-                "write": None,  # All fields
-                "hide": []
-            }
+            return {"read": None, "write": None, "hide": []}  # All fields  # All fields
 
         # Initialize permissions
         read_fields = []
@@ -155,16 +250,13 @@ def get_doc_perms(doc):
         return {
             "read": read_fields if read_fields else None,
             "write": write_fields if write_fields else None,
-            "hide": hide_fields
+            "hide": hide_fields,
         }
 
     except Exception as e:
-        log.error(f"Error in get_doc_perms: {str(e)}")
-        return {
-            "read": None,
-            "write": None,
-            "hide": []
-        }
+        frappe.log_error(f"Error in get_doc_perms: {str(e)}")
+        return {"read": None, "write": None, "hide": []}
+
 
 def apply_field_permissions(doc, event=None):
     """
@@ -191,7 +283,8 @@ def apply_field_permissions(doc, event=None):
                 doc.set(field, None)
 
     except Exception as e:
-        log.error(f"Error in apply_field_permissions: {str(e)}")
+        frappe.log_error(f"Error in apply_field_permissions: {str(e)}")
+
 
 def validate_field_permissions(doc, event=None):
     """
@@ -228,13 +321,21 @@ def validate_field_permissions(doc, event=None):
                     continue
 
                 # Check if field was changed
-                if old_doc and hasattr(old_doc, field_name) and hasattr(doc, field_name):
+                if (
+                    old_doc
+                    and hasattr(old_doc, field_name)
+                    and hasattr(doc, field_name)
+                ):
                     old_value = old_doc.get(field_name)
                     new_value = doc.get(field_name)
 
                     if old_value != new_value and field_name not in perms["write"]:
-                        frappe.throw(_("You don't have permission to change {0}").format(field.label or field_name))
+                        frappe.throw(
+                            _("You don't have permission to change {0}").format(
+                                field.label or field_name
+                            )
+                        )
 
     except Exception as e:
-        log.error(f"Error in validate_field_permissions: {str(e)}")
+        frappe.log_error(f"Error in validate_field_permissions: {str(e)}")
         frappe.throw(_("Error validating field permissions: {0}").format(str(e)))

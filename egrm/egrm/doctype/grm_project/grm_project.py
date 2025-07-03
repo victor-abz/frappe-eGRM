@@ -12,9 +12,9 @@ class GRMProject(Document):
         try:
             self.validate_dates()
             # Ensure project code uniqueness - this is already handled by unique field in DocType
-            log.info(f"Validating GRM Project {self.name}")
+            frappe.log(f"Validating GRM Project {self.name}")
         except Exception as e:
-            log.error(f"Error validating GRM Project: {str(e)}")
+            frappe.log_error(f"Error validating GRM Project: {str(e)}")
             raise
 
     def validate_dates(self):
@@ -22,7 +22,7 @@ class GRMProject(Document):
             if self.start_date and self.end_date and self.start_date > self.end_date:
                 frappe.throw(_("End Date cannot be before Start Date"))
         except Exception as e:
-            log.error(f"Error validating dates for GRM Project: {str(e)}")
+            frappe.log_error(f"Error validating dates for GRM Project: {str(e)}")
             raise
 
     def after_insert(self):
@@ -31,9 +31,9 @@ class GRMProject(Document):
             self.create_default_statuses()
             self.create_default_issue_types()
             self.create_default_departments()
-            log.info(f"Created default configuration for project {self.name}")
+            frappe.log(f"Created default configuration for project {self.name}")
         except Exception as e:
-            log.error(
+            frappe.log_error(
                 f"Error creating default configurations for project {self.name}: {str(e)}"
             )
             frappe.throw(
@@ -59,11 +59,11 @@ class GRMProject(Document):
                     doc.update(status)
                     doc.append("grm_project_link", {"project": self.name})
                     doc.insert()
-                    log.info(
+                    frappe.log(
                         f"Created default status {status['status_name']} for project {self.name}"
                     )
         except Exception as e:
-            log.error(f"Error creating default statuses: {str(e)}")
+            frappe.log_error(f"Error creating default statuses: {str(e)}")
             raise
 
     def create_default_issue_types(self):
@@ -83,11 +83,11 @@ class GRMProject(Document):
                     doc.update(issue_type)
                     doc.append("grm_project_link", {"project": self.name})
                     doc.insert()
-                    log.info(
+                    frappe.log(
                         f"Created default issue type {issue_type['type_name']} for project {self.name}"
                     )
         except Exception as e:
-            log.error(f"Error creating default issue types: {str(e)}")
+            frappe.log_error(f"Error creating default issue types: {str(e)}")
             raise
 
     def create_default_departments(self):
@@ -100,7 +100,7 @@ class GRMProject(Document):
                 doc.department_name = "General"
                 doc.append("grm_project_link", {"project": self.name})
                 doc.insert()
-                log.info(f"Created default department for project {self.name}")
+                frappe.log(f"Created default department for project {self.name}")
         except Exception as e:
-            log.error(f"Error creating default department: {str(e)}")
+            frappe.log_error(f"Error creating default department: {str(e)}")
             raise

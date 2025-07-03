@@ -40,8 +40,8 @@ def import_admin_regions(
     """
     logging.basicConfig(level=logging.INFO)
     log = logging.getLogger("admin_regions")
-    log.info(f"Starting import for project {project_code} from file {csv_file_path}")
-    log.info(f"Highest level: {highest_level}")
+    frappe.log(f"Starting import for project {project_code} from file {csv_file_path}")
+    frappe.log(f"Highest level: {highest_level}")
 
     try:
         site = get_site(context)
@@ -89,7 +89,7 @@ def import_admin_regions(
         click.echo(f"\nError during import: {str(e)}")
         click.echo(traceback.format_exc())
         frappe.db.rollback()
-        log.error(f"Import failed: {str(e)}")
+        frappe.log_error(f"Import failed: {str(e)}")
     finally:
         frappe.destroy()
 
@@ -131,11 +131,11 @@ class HierarchicalAdminProcessor:
             if not self._create_hierarchical_regions():
                 return False
 
-            self.log.info("Successfully completed hierarchical processing")
+            self.frappe.log("Successfully completed hierarchical processing")
             return True
 
         except Exception as e:
-            self.log.error(f"Error in process_csv: {str(e)}")
+            self.frappe.log_error(f"Error in process_csv: {str(e)}")
             return False
 
     def _parse_csv_file(self, csv_file_path):
@@ -143,7 +143,7 @@ class HierarchicalAdminProcessor:
         Parse CSV file and build internal hierarchy tree structure.
         """
         try:
-            self.log.info("Parsing CSV file...")
+            self.frappe.log("Parsing CSV file...")
 
             with open(csv_file_path, "r", encoding="utf-8") as csvfile:
                 reader = csv.reader(csvfile)
@@ -152,17 +152,17 @@ class HierarchicalAdminProcessor:
                 try:
                     headers = next(reader)
                 except StopIteration:
-                    self.log.error("CSV file is empty or has no headers")
+                    self.frappe.log_error("CSV file is empty or has no headers")
                     return False
 
                 # Validate headers
                 if not headers or len(headers) < 1:
-                    self.log.error("CSV file must have at least one column")
+                    self.frappe.log_error("CSV file must have at least one column")
                     return False
 
                 # Store level names (columns represent hierarchy levels)
                 self.level_names = [header.strip() for header in headers]
-                self.log.info(f"Detected hierarchy levels: {self.level_names}")
+                self.frappe.log(f"Detected hierarchy levels: {self.level_names}")
 
                 # Build hierarchy tree
                 row_count = 0
@@ -185,15 +185,15 @@ class HierarchicalAdminProcessor:
                     self._add_to_hierarchy_tree(clean_row)
                     row_count += 1
 
-                self.log.info(f"Processed {row_count} rows from CSV")
-                self.log.info(
+                self.frappe.log(f"Processed {row_count} rows from CSV")
+                self.frappe.log(
                     f"Built hierarchy tree with {len(self.hierarchy_tree)} root nodes"
                 )
 
                 return row_count > 0
 
         except Exception as e:
-            self.log.error(f"Error parsing CSV file: {str(e)}")
+            self.frappe.log_error(f"Error parsing CSV file: {str(e)}")
             return False
 
     def _validate_row_data(self, row, row_num):
@@ -244,7 +244,7 @@ class HierarchicalAdminProcessor:
         Create administrative level types for the project.
         """
         try:
-            self.log.info("Creating administrative levels...")
+            self.frappe.log("Creating administrative levels...")
 
             # Create the highest level first (manually specified)
             highest_level_name = self.highest_level.strip()
@@ -261,11 +261,11 @@ class HierarchicalAdminProcessor:
                 highest_doc.level_order = 0  # Highest level has order 0
                 highest_doc.project = self.project_code
                 highest_doc.insert()
-                self.log.info(
+                self.frappe.log(
                     f"Created highest administrative level: {highest_level_name}"
                 )
             else:
-                self.log.info(
+                self.frappe.log(
                     f"Highest administrative level already exists: {highest_level_name}"
                 )
 
@@ -286,18 +286,20 @@ class HierarchicalAdminProcessor:
                     level_doc.level_order = level_order
                     level_doc.project = self.project_code
                     level_doc.insert()
-                    self.log.info(
+                    self.frappe.log(
                         f"Created administrative level: {level_name} (order: {level_order})"
                     )
                 else:
-                    self.log.info(f"Administrative level already exists: {level_name}")
+                    self.frappe.log(
+                        f"Administrative level already exists: {level_name}"
+                    )
 
                 self.created_levels[level_name] = level_order
 
             return True
 
         except Exception as e:
-            self.log.error(f"Error creating administrative levels: {str(e)}")
+            self.frappe.log_error(f"Error creating administrative levels: {str(e)}")
             return False
 
     def _create_highest_level_region(self):
@@ -305,7 +307,7 @@ class HierarchicalAdminProcessor:
         Create the highest level region (manually specified by user).
         """
         try:
-            self.log.info(f"Creating highest level region: {self.highest_level}")
+            self.frappe.log(f"Creating highest level region: {self.highest_level}")
 
             # Check if highest level region already exists
             existing = frappe.db.exists(
@@ -318,7 +320,7 @@ class HierarchicalAdminProcessor:
             )
 
             if existing:
-                self.log.info(
+                self.frappe.log(
                     f"Highest level region already exists: {self.highest_level}"
                 )
                 self.created_regions[self.highest_level] = existing
@@ -339,13 +341,13 @@ class HierarchicalAdminProcessor:
             self.path_to_region[self.highest_level] = region_doc.name
             self.total_created += 1
 
-            self.log.info(
+            self.frappe.log(
                 f"Created highest level region: {self.highest_level} -> {region_doc.name}"
             )
             return True
 
         except Exception as e:
-            self.log.error(f"Error creating highest level region: {str(e)}")
+            self.frappe.log_error(f"Error creating highest level region: {str(e)}")
             return False
 
     def _create_hierarchical_regions(self):
@@ -353,12 +355,12 @@ class HierarchicalAdminProcessor:
         Create all regions using hierarchical processing (breadth-first approach).
         """
         try:
-            self.log.info("Creating hierarchical regions...")
+            self.frappe.log("Creating hierarchical regions...")
 
             # Process each level from top to bottom
             for level_index in range(len(self.level_names)):
                 level_name = self.level_names[level_index]
-                self.log.info(f"Processing level {level_index + 1}: {level_name}")
+                self.frappe.log(f"Processing level {level_index + 1}: {level_name}")
 
                 if not self._process_level(level_index):
                     return False
@@ -366,7 +368,7 @@ class HierarchicalAdminProcessor:
             return True
 
         except Exception as e:
-            self.log.error(f"Error creating hierarchical regions: {str(e)}")
+            self.frappe.log_error(f"Error creating hierarchical regions: {str(e)}")
             return False
 
     def _process_level(self, level_index):
@@ -377,7 +379,7 @@ class HierarchicalAdminProcessor:
             level_name = self.level_names[level_index]
             regions_at_level = self._get_regions_at_level(level_index)
 
-            self.log.info(
+            self.frappe.log(
                 f"Found {len(regions_at_level)} unique regions at level {level_name}"
             )
 
@@ -388,7 +390,7 @@ class HierarchicalAdminProcessor:
             return True
 
         except Exception as e:
-            self.log.error(f"Error processing level {level_index}: {str(e)}")
+            self.frappe.log_error(f"Error processing level {level_index}: {str(e)}")
             return False
 
     def _get_regions_at_level(self, level_index):
@@ -457,7 +459,9 @@ class HierarchicalAdminProcessor:
             if parent_path in self.path_to_region:
                 parent_region_id = self.path_to_region[parent_path]
             else:
-                self.log.error(f"Parent region not found for path: {parent_path}")
+                self.frappe.log_error(
+                    f"Parent region not found for path: {parent_path}"
+                )
                 return False
 
             # Check for existing region with same name under same parent
@@ -471,7 +475,7 @@ class HierarchicalAdminProcessor:
             )
 
             if existing:
-                self.log.info(
+                self.frappe.log(
                     f"Region already exists: {region_name} under {parent_path}"
                 )
                 self.path_to_region[region_path] = existing
@@ -490,15 +494,14 @@ class HierarchicalAdminProcessor:
             self.path_to_region[region_path] = region_doc.name
             self.total_created += 1
 
-            self.log.info(
+            self.frappe.log(
                 f"Created region: {region_name} at level {level_name} -> {region_doc.name}"
             )
             return True
 
         except Exception as e:
-            self.log.error(f"Error creating region {region_info}: {str(e)}")
+            self.frappe.log_error(f"Error creating region {region_info}: {str(e)}")
             return False
-
 
 
 def create_sample_project(project_code):

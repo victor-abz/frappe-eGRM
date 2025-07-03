@@ -111,7 +111,7 @@ def export_regions_template(
         frappe.init(site=site)
         frappe.connect()
 
-        log.info(f"Exporting regions template for project {project_code}")
+        frappe.log(f"Exporting regions template for project {project_code}")
 
         # Build QB query for better performance
         regions_query = (
@@ -314,7 +314,7 @@ def export_regions_template(
 
     except Exception as e:
         click.echo(f"❌ Error: {str(e)}")
-        log.error(f"Export template command failed: {str(e)}")
+        frappe.log_error(f"Export template command failed: {str(e)}")
     finally:
         frappe.destroy()
 
@@ -410,16 +410,16 @@ class OptimizedBulkWorkerCreator:
             if not grm_roles:
                 raise ValueError("No GRM roles found in the system")
 
-            self.log.info("Input validation passed")
+            self.frappe.log("Input validation passed")
 
         except Exception as e:
-            self.log.error(f"Input validation failed: {str(e)}")
+            self.frappe.log_error(f"Input validation failed: {str(e)}")
             raise
 
     def create_from_csv(self, csv_file_path):
         """Create workers from CSV file using bulk operations"""
         try:
-            self.log.info(f"Creating workers from CSV file: {csv_file_path}")
+            self.frappe.log(f"Creating workers from CSV file: {csv_file_path}")
 
             # Parse CSV and prepare data
             worker_data_list = self._parse_csv_file(csv_file_path)
@@ -428,7 +428,7 @@ class OptimizedBulkWorkerCreator:
                 self.log.warning("No valid worker data found in CSV")
                 return True
 
-            self.log.info(f"Parsed {len(worker_data_list)} workers from CSV")
+            self.frappe.log(f"Parsed {len(worker_data_list)} workers from CSV")
 
             if self.dry_run:
                 self._simulate_creation(worker_data_list)
@@ -438,7 +438,7 @@ class OptimizedBulkWorkerCreator:
             validated_data = self._bulk_validate_and_prepare(worker_data_list)
 
             if not validated_data:
-                self.log.error("No valid data after validation")
+                self.frappe.log_error("No valid data after validation")
                 return False
 
             # Bulk create users and assignments
@@ -447,14 +447,14 @@ class OptimizedBulkWorkerCreator:
             return success
 
         except Exception as e:
-            self.log.error(f"Error creating workers from CSV: {str(e)}")
+            self.frappe.log_error(f"Error creating workers from CSV: {str(e)}")
             self.errors.append(str(e))
             return False
 
     def generate_for_regions(self, level_filter=None):
         """Generate workers for all regions using bulk operations"""
         try:
-            self.log.info(
+            self.frappe.log(
                 f"Generating workers for regions in project {self.project_code}"
             )
 
@@ -477,7 +477,7 @@ class OptimizedBulkWorkerCreator:
             if not regions:
                 raise ValueError(f"No regions found for project {self.project_code}")
 
-            self.log.info(f"Found {len(regions)} regions to process")
+            self.frappe.log(f"Found {len(regions)} regions to process")
 
             # Get complete hierarchy for all regions using recursive queries
             parent_region_ids = [
@@ -533,29 +533,29 @@ class OptimizedBulkWorkerCreator:
                 worker_data = self._generate_worker_data_for_region(region)
                 worker_data_list.append(worker_data)
 
-            self.log.info(f"Generated {len(worker_data_list)} worker data entries")
+            self.frappe.log(f"Generated {len(worker_data_list)} worker data entries")
 
             if self.dry_run:
                 self._simulate_creation(worker_data_list)
                 return True
 
             # Bulk validate and create
-            self.log.info("Starting bulk validation and preparation...")
+            self.frappe.log("Starting bulk validation and preparation...")
             validated_data = self._bulk_validate_and_prepare(worker_data_list)
 
             if not validated_data:
-                self.log.error(
+                self.frappe.log_error(
                     "No validated data returned from _bulk_validate_and_prepare"
                 )
                 return False
 
-            self.log.info("Validation completed. Starting bulk creation...")
+            self.frappe.log("Validation completed. Starting bulk creation...")
             success = self._bulk_create_workers(validated_data)
 
             return success
 
         except Exception as e:
-            self.log.error(f"Error generating workers for regions: {str(e)}")
+            self.frappe.log_error(f"Error generating workers for regions: {str(e)}")
             self.errors.append(str(e))
             return False
 
@@ -593,11 +593,11 @@ class OptimizedBulkWorkerCreator:
                     except Exception as row_error:
                         error_msg = f"Row {row_num}: {str(row_error)}"
                         self.errors.append(error_msg)
-                        self.log.error(error_msg)
+                        self.frappe.log_error(error_msg)
                         continue
 
         except Exception as e:
-            self.log.error(f"Error parsing CSV file: {str(e)}")
+            self.frappe.log_error(f"Error parsing CSV file: {str(e)}")
             raise
 
         return worker_data_list
@@ -651,7 +651,7 @@ class OptimizedBulkWorkerCreator:
                 "region_name": row["region_name"].strip(),
             }
         except Exception as e:
-            self.log.error(f"Error parsing CSV row {row_num}: {str(e)}")
+            self.frappe.log_error(f"Error parsing CSV row {row_num}: {str(e)}")
             raise
 
     def _build_complete_hierarchy(self, region, region_hierarchy):
@@ -774,7 +774,7 @@ class OptimizedBulkWorkerCreator:
     def _bulk_validate_and_prepare(self, worker_data_list):
         """Bulk validate regions, roles, and prepare data for insertion"""
         try:
-            self.log.info(f"Bulk validating {len(worker_data_list)} workers")
+            self.frappe.log(f"Bulk validating {len(worker_data_list)} workers")
 
             # Extract unique region IDs and roles for validation
             region_ids = list(set(w["region_id"] for w in worker_data_list))
@@ -815,7 +815,7 @@ class OptimizedBulkWorkerCreator:
             existing_users_by_email = {}
 
             if usernames:
-                self.log.info(
+                self.frappe.log(
                     f"Checking for existing users by username: {len(usernames)} usernames"
                 )
                 existing_by_username = (
@@ -833,7 +833,7 @@ class OptimizedBulkWorkerCreator:
                         existing_users_by_email[u["email"]] = u["name"]
 
             if emails:
-                self.log.info(
+                self.frappe.log(
                     f"Checking for existing users by email: {len(emails)} emails"
                 )
                 existing_by_email = (
@@ -849,10 +849,10 @@ class OptimizedBulkWorkerCreator:
                     if u["username"]:
                         existing_users_by_username[u["username"]] = u["name"]
 
-            self.log.info(
+            self.frappe.log(
                 f"Found {len(existing_users_by_username)} existing users by username"
             )
-            self.log.info(
+            self.frappe.log(
                 f"Found {len(existing_users_by_email)} existing users by email"
             )
 
@@ -870,7 +870,7 @@ class OptimizedBulkWorkerCreator:
                 for a in existing_assignments
             }
 
-            self.log.info(
+            self.frappe.log(
                 f"Found {len(existing_assignment_keys)} existing assignments for project {self.project_code}"
             )
 
@@ -936,7 +936,7 @@ class OptimizedBulkWorkerCreator:
                         f"Assignment already exists: {user_name} -> {worker_data['region_id']}"
                     )
 
-            self.log.info(
+            self.frappe.log(
                 f"Validation complete: "
                 f"{len(validated_data['new_users'])} new users, "
                 f"{len(validated_data['new_assignments'])} new assignments, "
@@ -947,7 +947,7 @@ class OptimizedBulkWorkerCreator:
             return validated_data
 
         except Exception as e:
-            self.log.error(f"Bulk validation failed: {str(e)}")
+            self.frappe.log_error(f"Bulk validation failed: {str(e)}")
             raise
 
     def _prepare_user_data(self, worker_data):
@@ -1025,35 +1025,35 @@ class OptimizedBulkWorkerCreator:
     def _bulk_create_workers(self, validated_data):
         """Bulk create users and assignments using direct SQL"""
         try:
-            self.log.info("Starting bulk creation process")
+            self.frappe.log("Starting bulk creation process")
 
             new_users_count = len(validated_data.get("new_users", []))
             new_assignments_count = len(validated_data.get("new_assignments", []))
             skipped_users = validated_data.get("skipped_users", 0)
             skipped_assignments = validated_data.get("skipped_assignments", 0)
 
-            self.log.info(
+            self.frappe.log(
                 f"Data to process: {new_users_count} new users, {new_assignments_count} new assignments"
             )
-            self.log.info(
+            self.frappe.log(
                 f"Skipped: {skipped_users} existing users, {skipped_assignments} existing assignments"
             )
 
             # Bulk insert users only if there are new users to create
             if new_users_count > 0:
-                self.log.info("Starting user bulk insertion...")
+                self.frappe.log("Starting user bulk insertion...")
                 self._bulk_insert_users_sql(validated_data["new_users"])
-                self.log.info("User bulk insertion completed")
+                self.frappe.log("User bulk insertion completed")
             else:
-                self.log.info("No new users to create - all users already exist")
+                self.frappe.log("No new users to create - all users already exist")
 
             # Bulk insert assignments only if there are new assignments to create
             if new_assignments_count > 0:
-                self.log.info("Starting assignment bulk insertion...")
+                self.frappe.log("Starting assignment bulk insertion...")
                 self._bulk_insert_assignments_sql(validated_data["new_assignments"])
-                self.log.info("Assignment bulk insertion completed")
+                self.frappe.log("Assignment bulk insertion completed")
             else:
-                self.log.info(
+                self.frappe.log(
                     "No new assignments to create - all assignments already exist"
                 )
 
@@ -1063,7 +1063,7 @@ class OptimizedBulkWorkerCreator:
             self.skipped_users = skipped_users
             self.skipped_assignments = skipped_assignments
 
-            self.log.info(
+            self.frappe.log(
                 f"Bulk creation completed: {self.total_users} users created, {self.total_created} assignments created"
             )
 
@@ -1071,16 +1071,16 @@ class OptimizedBulkWorkerCreator:
             return True
 
         except Exception as e:
-            self.log.error(f"Bulk creation failed: {str(e)}")
+            self.frappe.log_error(f"Bulk creation failed: {str(e)}")
             import traceback
 
-            self.log.error(f"Full traceback: {traceback.format_exc()}")
+            self.frappe.log_error(f"Full traceback: {traceback.format_exc()}")
             raise
 
     def _bulk_insert_users_sql(self, user_data_list):
         """Ultra-high performance bulk insert using raw SQL for thousands of records"""
         try:
-            self.log.info(f"SQL bulk inserting {len(user_data_list)} users")
+            self.frappe.log(f"SQL bulk inserting {len(user_data_list)} users")
 
             # Process in batches to avoid memory issues
             for i in range(0, len(user_data_list), self.batch_size):
@@ -1130,7 +1130,7 @@ class OptimizedBulkWorkerCreator:
                         key in user_data
                         for key in ["name", "username", "email", "first_name"]
                     ):
-                        self.log.error(
+                        self.frappe.log_error(
                             f"Missing required fields in user data: {user_data}"
                         )
                         continue
@@ -1201,7 +1201,7 @@ class OptimizedBulkWorkerCreator:
 
                     # Execute bulk insert
                     frappe.db.sql(sql, flattened_values)
-                    self.log.info(
+                    self.frappe.log(
                         f"Successfully SQL bulk inserted {len(valid_users)} users"
                     )
 
@@ -1245,11 +1245,11 @@ class OptimizedBulkWorkerCreator:
 
                     # Execute bulk insert
                     frappe.db.sql(sql, flattened_values)
-                    self.log.info(
+                    self.frappe.log(
                         f"Successfully SQL bulk inserted {len(user_role_records)} user roles"
                     )
 
-                self.log.info(
+                self.frappe.log(
                     f"Completed SQL batch {i//self.batch_size + 1}: {len(valid_users)} users processed"
                 )
 
@@ -1257,16 +1257,18 @@ class OptimizedBulkWorkerCreator:
             self._bulk_set_passwords(user_data_list)
 
         except Exception as e:
-            self.log.error(f"SQL bulk user insertion failed: {str(e)}")
+            self.frappe.log_error(f"SQL bulk user insertion failed: {str(e)}")
             import traceback
 
-            self.log.error(f"Full traceback: {traceback.format_exc()}")
+            self.frappe.log_error(f"Full traceback: {traceback.format_exc()}")
             raise
 
     def _bulk_insert_assignments_sql(self, assignment_data_list):
         """Ultra-high performance bulk insert using raw SQL for thousands of assignments"""
         try:
-            self.log.info(f"SQL bulk inserting {len(assignment_data_list)} assignments")
+            self.frappe.log(
+                f"SQL bulk inserting {len(assignment_data_list)} assignments"
+            )
 
             # Process in batches
             for i in range(0, len(assignment_data_list), self.batch_size):
@@ -1312,7 +1314,7 @@ class OptimizedBulkWorkerCreator:
                         "administrative_region",
                     ]
                     if not all(key in assignment for key in required_fields):
-                        self.log.error(
+                        self.frappe.log_error(
                             f"Missing required fields in assignment: {assignment}"
                         )
                         continue
@@ -1366,19 +1368,19 @@ class OptimizedBulkWorkerCreator:
 
                     # Execute bulk insert
                     frappe.db.sql(sql, flattened_values)
-                    self.log.info(
+                    self.frappe.log(
                         f"Successfully SQL bulk inserted {len(valid_assignments)} assignments"
                     )
 
-                self.log.info(
+                self.frappe.log(
                     f"Completed SQL batch {i//self.batch_size + 1}: {len(valid_assignments)} assignments processed"
                 )
 
         except Exception as e:
-            self.log.error(f"SQL bulk assignment insertion failed: {str(e)}")
+            self.frappe.log_error(f"SQL bulk assignment insertion failed: {str(e)}")
             import traceback
 
-            self.log.error(f"Full traceback: {traceback.format_exc()}")
+            self.frappe.log_error(f"Full traceback: {traceback.format_exc()}")
             raise
 
     def _bulk_set_passwords(self, user_data_list):
@@ -1398,15 +1400,15 @@ class OptimizedBulkWorkerCreator:
                     )
 
         except Exception as e:
-            self.log.error(f"Bulk password setting failed: {str(e)}")
+            self.frappe.log_error(f"Bulk password setting failed: {str(e)}")
             # Don't raise - passwords can be set later
 
     def _simulate_creation(self, worker_data_list):
         """Simulate creation for dry run"""
-        self.log.info(f"DRY RUN: Would create {len(worker_data_list)} workers")
+        self.frappe.log(f"DRY RUN: Would create {len(worker_data_list)} workers")
 
         for worker_data in worker_data_list:
-            self.log.info(
+            self.frappe.log(
                 f"Would create: {worker_data['worker_name']} ({worker_data['username']}) "
                 f"- {worker_data['role']} for {worker_data['region_name']}"
             )
@@ -1502,7 +1504,7 @@ def create_government_workers(
         frappe.init(site=site)
         frappe.connect()
 
-        log.info(
+        frappe.log(
             f"Starting optimized government worker creation for project {project_code}"
         )
 
@@ -1559,7 +1561,7 @@ def create_government_workers(
         if not dry_run:
             frappe.db.rollback()
         click.echo(f"❌ Error: {str(e)}")
-        log.error(f"Command failed: {str(e)}")
+        frappe.log_error(f"Command failed: {str(e)}")
     finally:
         frappe.destroy()
 
@@ -1625,7 +1627,7 @@ def auto_generate_regional_workers(
         frappe.init(site=site)
         frappe.connect()
 
-        log.info(f"Auto-generating regional workers for project {project_code}")
+        frappe.log(f"Auto-generating regional workers for project {project_code}")
 
         if dry_run:
             click.echo("🔍 DRY RUN MODE - No actual changes will be made")
@@ -1682,7 +1684,7 @@ def auto_generate_regional_workers(
         if not dry_run:
             frappe.db.rollback()
         click.echo(f"❌ Error: {str(e)}")
-        log.error(f"Auto-generation command failed: {str(e)}")
+        frappe.log_error(f"Auto-generation command failed: {str(e)}")
     finally:
         frappe.destroy()
 
@@ -1714,7 +1716,7 @@ def export_activation_codes(
         frappe.init(site=site)
         frappe.connect()
 
-        log.info(f"Exporting activation codes for project {project_code}")
+        frappe.log(f"Exporting activation codes for project {project_code}")
 
         # Build QB query for better performance
         assignment_table = frappe.qb.DocType("GRM User Project Assignment")
@@ -1798,7 +1800,7 @@ def export_activation_codes(
 
     except Exception as e:
         click.echo(f"❌ Error: {str(e)}")
-        log.error(f"Export command failed: {str(e)}")
+        frappe.log_error(f"Export command failed: {str(e)}")
     finally:
         frappe.destroy()
 

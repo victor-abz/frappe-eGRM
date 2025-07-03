@@ -43,7 +43,7 @@ def get_departments_by_projects(doctype, txt, searchfield, start, page_len, filt
 
         return departments
     except Exception as e:
-        log.error(f"Error getting departments by projects: {str(e)}")
+        frappe.log_error(f"Error getting departments by projects: {str(e)}")
         return []
 
 
@@ -74,7 +74,7 @@ def get_status_by_project(doctype, txt, searchfield, start, page_len, filters):
 
         return statuses
     except Exception as e:
-        log.error(f"Error getting statuses by project: {str(e)}")
+        frappe.log_error(f"Error getting statuses by project: {str(e)}")
         return []
 
 
@@ -105,7 +105,7 @@ def get_category_by_project(doctype, txt, searchfield, start, page_len, filters)
 
         return categories
     except Exception as e:
-        log.error(f"Error getting categories by project: {str(e)}")
+        frappe.log_error(f"Error getting categories by project: {str(e)}")
         return []
 
 
@@ -136,7 +136,7 @@ def get_issue_type_by_project(doctype, txt, searchfield, start, page_len, filter
 
         return issue_types
     except Exception as e:
-        log.error(f"Error getting issue types by project: {str(e)}")
+        frappe.log_error(f"Error getting issue types by project: {str(e)}")
         return []
 
 
@@ -167,7 +167,7 @@ def get_age_group_by_project(doctype, txt, searchfield, start, page_len, filters
 
         return age_groups
     except Exception as e:
-        log.error(f"Error getting age groups by project: {str(e)}")
+        frappe.log_error(f"Error getting age groups by project: {str(e)}")
         return []
 
 
@@ -203,8 +203,9 @@ def get_citizen_group_by_project(doctype, txt, searchfield, start, page_len, fil
 
         return citizen_groups
     except Exception as e:
-        log.error(f"Error getting citizen groups by project: {str(e)}")
+        frappe.log_error(f"Error getting citizen groups by project: {str(e)}")
         return []
+
 
 @frappe.whitelist()
 def get_project_users(doctype, txt, searchfield, start, page_len, filters):
@@ -236,7 +237,7 @@ def get_project_users(doctype, txt, searchfield, start, page_len, filters):
 
         return users
     except Exception as e:
-        log.error(f"Error getting project users: {str(e)}")
+        frappe.log_error(f"Error getting project users: {str(e)}")
         return []
 
 
@@ -267,7 +268,7 @@ def get_department_head_suggestions(
 
         return users
     except Exception as e:
-        log.error(f"Error getting department head suggestions: {str(e)}")
+        frappe.log_error(f"Error getting department head suggestions: {str(e)}")
         return []
 
 
@@ -298,7 +299,7 @@ def get_initial_status(project):
 
         return None
     except Exception as e:
-        log.error(f"Error getting initial status: {str(e)}")
+        frappe.log_error(f"Error getting initial status: {str(e)}")
         return None
 
 
@@ -326,7 +327,7 @@ def get_department_for_category(category):
 
         return None
     except Exception as e:
-        log.error(f"Error getting department for category: {str(e)}")
+        frappe.log_error(f"Error getting department for category: {str(e)}")
         return None
 
 
@@ -383,7 +384,7 @@ def get_least_loaded_user(department, project):
 
         return min_load_user
     except Exception as e:
-        log.error(f"Error getting least loaded user: {str(e)}")
+        frappe.log_error(f"Error getting least loaded user: {str(e)}")
         return None
 
 
@@ -409,8 +410,9 @@ def get_open_statuses(project):
 
         return [s.name for s in open_statuses] if open_statuses else []
     except Exception as e:
-        log.error(f"Error getting open statuses: {str(e)}")
+        frappe.log_error(f"Error getting open statuses: {str(e)}")
         return []
+
 
 @frappe.whitelist()
 def get_allowed_statuses(issue):
@@ -445,8 +447,9 @@ def get_allowed_statuses(issue):
 
         return [s.name for s in statuses] if statuses else []
     except Exception as e:
-        log.error(f"Error getting allowed statuses: {str(e)}")
+        frappe.log_error(f"Error getting allowed statuses: {str(e)}")
         return []
+
 
 @frappe.whitelist()
 def get_category_stats(category):
@@ -509,5 +512,5 @@ def get_category_stats(category):
             "avg_resolution_days": avg_resolution_days,
         }
     except Exception as e:
-        log.error(f"Error getting category stats: {str(e)}")
+        frappe.log_error(f"Error getting category stats: {str(e)}")
         return {"total": 0, "open": 0, "avg_resolution_days": None}

@@ -19,9 +19,9 @@ class GRMUserProjectAssignment(Document):
             self.validate_department_and_region()
             self.validate_unique_assignment()
             self.validate_activation_status()
-            log.info(f"Validating GRM User Project Assignment {self.name}")
+            frappe.log(f"Validating GRM User Project Assignment {self.name}")
         except Exception as e:
-            log.error(f"Error validating GRM User Project Assignment: {str(e)}")
+            frappe.log_error(f"Error validating GRM User Project Assignment: {str(e)}")
             raise
 
     def validate_user(self):
@@ -34,7 +34,7 @@ class GRMUserProjectAssignment(Document):
             if frappe.db.get_value("User", self.user, "enabled") != 1:
                 frappe.throw(_("User {0} is not enabled").format(self.user))
         except Exception as e:
-            log.error(f"Error validating user: {str(e)}")
+            frappe.log_error(f"Error validating user: {str(e)}")
             raise
 
     def validate_role(self):
@@ -77,7 +77,7 @@ class GRMUserProjectAssignment(Document):
             # If somehow the permission was added between our check and add
             frappe.log(f"User {self.user} already has role permission for {self.role}")
         except Exception as e:
-            log.error(f"Error validating role: {str(e)}")
+            frappe.log_error(f"Error validating role: {str(e)}")
             raise
 
     def validate_department_and_region(self):
@@ -124,7 +124,7 @@ class GRMUserProjectAssignment(Document):
                         ).format(self.administrative_region, self.project)
                     )
         except Exception as e:
-            log.error(f"Error validating department and region: {str(e)}")
+            frappe.log_error(f"Error validating department and region: {str(e)}")
             raise
 
     def validate_unique_assignment(self):
@@ -147,7 +147,7 @@ class GRMUserProjectAssignment(Document):
                     ).format(self.user, self.project, self.role)
                 )
         except Exception as e:
-            log.error(f"Error validating unique assignment: {str(e)}")
+            frappe.log_error(f"Error validating unique assignment: {str(e)}")
             raise
 
     def after_insert(self):
@@ -213,11 +213,11 @@ class GRMUserProjectAssignment(Document):
                         f"User {self.user} already has region permission for {self.administrative_region}"
                     )
 
-            log.info(
+            frappe.log(
                 f"Permissions setup completed for user {self.user} for project {self.project}"
             )
         except Exception as e:
-            log.error(f"Error setting up permissions: {str(e)}")
+            frappe.log_error(f"Error setting up permissions: {str(e)}")
             frappe.throw(_("Error setting up permissions. Please check the logs."))
 
     def on_trash(self):
@@ -239,11 +239,11 @@ class GRMUserProjectAssignment(Document):
                     "GRM Administrative Region", self.administrative_region, self.user
                 )
 
-            log.info(
+            frappe.log(
                 f"Removed permissions for user {self.user} for project {self.project}"
             )
         except Exception as e:
-            log.error(f"Error removing permissions: {str(e)}")
+            frappe.log_error(f"Error removing permissions: {str(e)}")
             frappe.throw(_("Error removing permissions. Please check the logs."))
 
     def before_insert(self):
@@ -256,7 +256,7 @@ class GRMUserProjectAssignment(Document):
                     self.generate_activation_code()
                     # Set status to Pending Activation immediately when code is generated
                     self.activation_status = "Pending Activation"
-                    log.info(
+                    frappe.log(
                         f"Generated activation code for government worker {self.user}"
                     )
                 elif not self.activation_status:
@@ -266,10 +266,10 @@ class GRMUserProjectAssignment(Document):
                 # For non-government workers, set as activated
                 self.activation_status = "Activated"
                 self.activated_on = now()
-                log.info(f"Non-government worker {self.user} automatically activated")
+                frappe.log(f"Non-government worker {self.user} automatically activated")
 
         except Exception as e:
-            log.error(f"Error in before_insert: {str(e)}")
+            frappe.log_error(f"Error in before_insert: {str(e)}")
             raise
 
     def is_government_worker_role(self):
@@ -278,7 +278,7 @@ class GRMUserProjectAssignment(Document):
             government_worker_roles = ["GRM Field Officer", "GRM Department Head"]
             return self.role in government_worker_roles
         except Exception as e:
-            log.error(f"Error checking government worker role: {str(e)}")
+            frappe.log_error(f"Error checking government worker role: {str(e)}")
             return False
 
     def generate_activation_code(self):
@@ -299,10 +299,10 @@ class GRMUserProjectAssignment(Document):
             # Set expiration (48 hours from now)
             self.activation_expires_on = add_to_date(now(), hours=48)
 
-            log.info(f"Generated activation code for {user_email}")
+            frappe.log(f"Generated activation code for {user_email}")
 
         except Exception as e:
-            log.error(f"Error generating activation code: {str(e)}")
+            frappe.log_error(f"Error generating activation code: {str(e)}")
             raise
 
     def send_activation_email(self):
@@ -379,11 +379,11 @@ class GRMUserProjectAssignment(Document):
             if not self.activation_status or self.activation_status == "Draft":
                 self.activation_status = "Pending Activation"
 
-            log.info(f"Activation email sent to {user_email}")
+            frappe.log(f"Activation email sent to {user_email}")
             return True
 
         except Exception as e:
-            log.error(f"Error sending activation email: {str(e)}")
+            frappe.log_error(f"Error sending activation email: {str(e)}")
             frappe.throw(_(f"Error sending activation email: {str(e)}"))
 
     def activate_worker(self, activation_code, new_password=None):
@@ -441,11 +441,11 @@ class GRMUserProjectAssignment(Document):
 
             self.save()
 
-            log.info(f"Government worker {self.user} activated successfully")
+            frappe.log(f"Government worker {self.user} activated successfully")
             return True
 
         except Exception as e:
-            log.error(f"Error activating worker: {str(e)}")
+            frappe.log_error(f"Error activating worker: {str(e)}")
             raise
 
     def resend_activation_code(self):
@@ -468,11 +468,11 @@ class GRMUserProjectAssignment(Document):
 
             self.save()
 
-            log.info(f"Activation code resent for {self.user}")
+            frappe.log(f"Activation code resent for {self.user}")
             return True
 
         except Exception as e:
-            log.error(f"Error resending activation code: {str(e)}")
+            frappe.log_error(f"Error resending activation code: {str(e)}")
             raise
 
     def expire_activation_code(self):
@@ -481,11 +481,11 @@ class GRMUserProjectAssignment(Document):
             self.activation_status = "Expired"
             self.save()
 
-            log.info(f"Activation code expired for {self.user}")
+            frappe.log(f"Activation code expired for {self.user}")
             return True
 
         except Exception as e:
-            log.error(f"Error expiring activation code: {str(e)}")
+            frappe.log_error(f"Error expiring activation code: {str(e)}")
             raise
 
     def validate_activation_status(self):
@@ -498,7 +498,7 @@ class GRMUserProjectAssignment(Document):
                 and get_datetime(self.activation_expires_on) < now_datetime()
             ):
                 self.activation_status = "Expired"
-                log.info(f"Auto-expired activation code for {self.user}")
+                frappe.log(f"Auto-expired activation code for {self.user}")
 
             # Check attempt limits
             if self.activation_attempts >= 5 and self.activation_status not in [
@@ -506,12 +506,12 @@ class GRMUserProjectAssignment(Document):
                 "Suspended",
             ]:
                 self.activation_status = "Suspended"
-                log.info(
+                frappe.log(
                     f"Auto-suspended account for {self.user} due to too many failed attempts"
                 )
 
         except Exception as e:
-            log.error(f"Error validating activation status: {str(e)}")
+            frappe.log_error(f"Error validating activation status: {str(e)}")
             raise
 
     @frappe.whitelist()
@@ -592,11 +592,11 @@ class GRMUserProjectAssignment(Document):
             csv_content = output.getvalue()
             output.close()
 
-            log.info(f"Exported activation codes for project {self.project}")
+            frappe.log(f"Exported activation codes for project {self.project}")
             return csv_content
 
         except Exception as e:
-            log.error(f"Error exporting activation codes: {str(e)}")
+            frappe.log_error(f"Error exporting activation codes: {str(e)}")
             frappe.throw(_(f"Error exporting activation codes: {str(e)}"))
 
 
@@ -698,10 +698,10 @@ def export_project_activation_codes(project_code):
         frappe.response.filecontent = content
         frappe.response.type = "download"
 
-        log.info(f"Exported activation codes for project {project_code}")
+        frappe.log(f"Exported activation codes for project {project_code}")
 
     except Exception as e:
-        log.error(f"Error exporting project activation codes: {str(e)}")
+        frappe.log_error(f"Error exporting project activation codes: {str(e)}")
         frappe.throw(_(f"Error exporting activation codes: {str(e)}"))
 
 

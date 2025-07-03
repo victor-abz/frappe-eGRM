@@ -4,11 +4,12 @@ EGRM Caching Utilities
 This module contains utilities for caching frequently accessed data.
 """
 
-import frappe
 import json
 import logging
-from frappe.utils.redis_wrapper import RedisWrapper
+
+import frappe
 from frappe.utils import cstr
+from frappe.utils.redis_wrapper import RedisWrapper
 
 # Configure logging
 log = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ STATUS_TIMEOUT = 3600 * 12  # 12 hours
 CATEGORY_TIMEOUT = 3600 * 12  # 12 hours
 PROJECT_TIMEOUT = 3600 * 24  # 24 hours
 
+
 def get_cached_region_hierarchy(region_id):
     """
     Get cached region hierarchy or fetch from database
@@ -48,7 +50,7 @@ def get_cached_region_hierarchy(region_id):
         try:
             return json.loads(cached_data)
         except Exception as e:
-            log.error(f"Error parsing cached region hierarchy: {str(e)}")
+            frappe.log_error(f"Error parsing cached region hierarchy: {str(e)}")
 
     # Get region
     region = frappe.get_doc("GRM Administrative Region", region_id)
@@ -60,32 +62,36 @@ def get_cached_region_hierarchy(region_id):
     # Get parents
     current_region = region
     while current_region.parent_region:
-        parent = frappe.get_doc("GRM Administrative Region", current_region.parent_region)
-        parents.insert(0, {
-            "id": parent.name,
-            "name": parent.region_name,
-            "level": parent.administrative_level,
-            "project": parent.project
-        })
+        parent = frappe.get_doc(
+            "GRM Administrative Region", current_region.parent_region
+        )
+        parents.insert(
+            0,
+            {
+                "id": parent.name,
+                "name": parent.region_name,
+                "level": parent.administrative_level,
+                "project": parent.project,
+            },
+        )
         current_region = parent
 
     # Get children
     child_regions = frappe.get_all(
         "GRM Administrative Region",
         filters={"parent_region": region_id},
-        fields=[
-            "name", "region_name" "administrative_level",
-             "project"
-        ]
+        fields=["name", "region_name" "administrative_level", "project"],
     )
 
     for child in child_regions:
-        children.append({
-            "id": child.name,
-            "name": child.region_name,
-            "level": child.administrative_level,
-            "project": child.project
-        })
+        children.append(
+            {
+                "id": child.name,
+                "name": child.region_name,
+                "level": child.administrative_level,
+                "project": child.project,
+            }
+        )
 
     # Build result
     result = {
@@ -93,19 +99,20 @@ def get_cached_region_hierarchy(region_id):
             "id": region.name,
             "name": region.region_name,
             "level": region.administrative_level,
-            "project": region.project
+            "project": region.project,
         },
         "parents": parents,
-        "children": children
+        "children": children,
     }
 
     # Cache result
     try:
         redis.setex(cache_key, REGION_TIMEOUT, json.dumps(result))
     except Exception as e:
-        log.error(f"Error caching region hierarchy: {str(e)}")
+        frappe.log_error(f"Error caching region hierarchy: {str(e)}")
 
     return result
+
 
 def get_cached_region_children(region_id):
     """
@@ -125,35 +132,42 @@ def get_cached_region_children(region_id):
         try:
             return json.loads(cached_data)
         except Exception as e:
-            log.error(f"Error parsing cached region children: {str(e)}")
+            frappe.log_error(f"Error parsing cached region children: {str(e)}")
 
     # Get children
     children = frappe.get_all(
         "GRM Administrative Region",
         filters={"parent_region": region_id},
         fields=[
-            "name", "region_name", "administrative_level",
-            "latitude", "longitude", "project"
-        ]
+            "name",
+            "region_name",
+            "administrative_level",
+            "latitude",
+            "longitude",
+            "project",
+        ],
     )
 
     # Enhance data
     result = []
     for child in children:
-        result.append({
-            "id": child.name,
-            "name": child.region_name,
-            "level": child.administrative_level,
-            "project": child.project
-        })
+        result.append(
+            {
+                "id": child.name,
+                "name": child.region_name,
+                "level": child.administrative_level,
+                "project": child.project,
+            }
+        )
 
     # Cache result
     try:
         redis.setex(cache_key, REGION_TIMEOUT, json.dumps(result))
     except Exception as e:
-        log.error(f"Error caching region children: {str(e)}")
+        frappe.log_error(f"Error caching region children: {str(e)}")
 
     return result
+
 
 def get_cached_issue_statuses():
     """
@@ -170,25 +184,32 @@ def get_cached_issue_statuses():
         try:
             return json.loads(cached_data)
         except Exception as e:
-            log.error(f"Error parsing cached issue statuses: {str(e)}")
+            frappe.log_error(f"Error parsing cached issue statuses: {str(e)}")
 
     # Get statuses
     statuses = frappe.get_all(
         "GRM Issue Status",
         fields=[
-            "name", "status_name", "description",
-            "initial_status", "open_status", "rejected_status",
-            "final_status", "appealed_status", "color"
-        ]
+            "name",
+            "status_name",
+            "description",
+            "initial_status",
+            "open_status",
+            "rejected_status",
+            "final_status",
+            "appealed_status",
+            "color",
+        ],
     )
 
     # Cache result
     try:
         redis.setex(cache_key, STATUS_TIMEOUT, json.dumps(statuses))
     except Exception as e:
-        log.error(f"Error caching issue statuses: {str(e)}")
+        frappe.log_error(f"Error caching issue statuses: {str(e)}")
 
     return statuses
+
 
 def get_cached_categories(project_id=None):
     """
@@ -208,7 +229,7 @@ def get_cached_categories(project_id=None):
         try:
             return json.loads(cached_data)
         except Exception as e:
-            log.error(f"Error parsing cached categories: {str(e)}")
+            frappe.log_error(f"Error parsing cached categories: {str(e)}")
 
     # Get categories
     filters = {}
@@ -218,7 +239,14 @@ def get_cached_categories(project_id=None):
     categories = frappe.get_all(
         "GRM Issue Category",
         filters=filters,
-        fields=["name", "category_name", "description", "department", "auto_assign", "active"]
+        fields=[
+            "name",
+            "category_name",
+            "description",
+            "department",
+            "auto_assign",
+            "active",
+        ],
     )
 
     # Enhance data
@@ -231,9 +259,10 @@ def get_cached_categories(project_id=None):
     try:
         redis.setex(cache_key, CATEGORY_TIMEOUT, json.dumps(categories))
     except Exception as e:
-        log.error(f"Error caching categories: {str(e)}")
+        frappe.log_error(f"Error caching categories: {str(e)}")
 
     return categories
+
 
 def get_cached_project(project_id):
     """
@@ -253,7 +282,7 @@ def get_cached_project(project_id):
         try:
             return json.loads(cached_data)
         except Exception as e:
-            log.error(f"Error parsing cached project: {str(e)}")
+            frappe.log_error(f"Error parsing cached project: {str(e)}")
 
     # Get project
     project = frappe.get_doc("GRM Project", project_id)
@@ -264,16 +293,17 @@ def get_cached_project(project_id):
         "project_name": project.project_name,
         "description": project.description,
         "active": project.active,
-        "auto_submit_issues": project.auto_submit_issues
+        "auto_submit_issues": project.auto_submit_issues,
     }
 
     # Cache result
     try:
         redis.setex(cache_key, PROJECT_TIMEOUT, json.dumps(result))
     except Exception as e:
-        log.error(f"Error caching project: {str(e)}")
+        frappe.log_error(f"Error caching project: {str(e)}")
 
     return result
+
 
 def clear_region_cache(region_id=None):
     """
@@ -289,7 +319,7 @@ def clear_region_cache(region_id=None):
         # Clear specific region cache
         cache_keys = [
             f"{REGION_CACHE_PREFIX}hierarchy:{region_id}",
-            f"{REGION_CACHE_PREFIX}children:{region_id}"
+            f"{REGION_CACHE_PREFIX}children:{region_id}",
         ]
 
         # Also clear parent region's children cache
@@ -302,7 +332,7 @@ def clear_region_cache(region_id=None):
             try:
                 redis.delete(key)
             except Exception as e:
-                log.error(f"Error clearing region cache: {str(e)}")
+                frappe.log_error(f"Error clearing region cache: {str(e)}")
     else:
         # Clear all region caches
         try:
@@ -310,7 +340,8 @@ def clear_region_cache(region_id=None):
             if keys:
                 redis.delete(*keys)
         except Exception as e:
-            log.error(f"Error clearing all region caches: {str(e)}")
+            frappe.log_error(f"Error clearing all region caches: {str(e)}")
+
 
 def clear_status_cache():
     """
@@ -324,7 +355,8 @@ def clear_status_cache():
         if keys:
             redis.delete(*keys)
     except Exception as e:
-        log.error(f"Error clearing status cache: {str(e)}")
+        frappe.log_error(f"Error clearing status cache: {str(e)}")
+
 
 def clear_category_cache(project_id=None):
     """
@@ -341,7 +373,9 @@ def clear_category_cache(project_id=None):
         try:
             redis.delete(f"{CATEGORY_CACHE_PREFIX}{project_id}")
         except Exception as e:
-            log.error(f"Error clearing category cache for project {project_id}: {str(e)}")
+            frappe.log_error(
+                f"Error clearing category cache for project {project_id}: {str(e)}"
+            )
     else:
         # Clear all category caches
         try:
@@ -349,7 +383,8 @@ def clear_category_cache(project_id=None):
             if keys:
                 redis.delete(*keys)
         except Exception as e:
-            log.error(f"Error clearing all category caches: {str(e)}")
+            frappe.log_error(f"Error clearing all category caches: {str(e)}")
+
 
 def clear_project_cache(project_id=None):
     """
@@ -366,7 +401,7 @@ def clear_project_cache(project_id=None):
         try:
             redis.delete(f"{PROJECT_CACHE_PREFIX}{project_id}")
         except Exception as e:
-            log.error(f"Error clearing project cache for {project_id}: {str(e)}")
+            frappe.log_error(f"Error clearing project cache for {project_id}: {str(e)}")
     else:
         # Clear all project caches
         try:
@@ -374,4 +409,4 @@ def clear_project_cache(project_id=None):
             if keys:
                 redis.delete(*keys)
         except Exception as e:
-            log.error(f"Error clearing all project caches: {str(e)}")
+            frappe.log_error(f"Error clearing all project caches: {str(e)}")

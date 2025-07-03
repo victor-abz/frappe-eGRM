@@ -17,6 +17,18 @@ log = logging.getLogger(__name__)
 
 
 class GRMIssue(Document):
+    def autoname(self):
+        """Use WatermelonDB ID if provided, otherwise use Frappe naming series"""
+        # Check if coming from sync with custom ID
+        if hasattr(self, '_watermelon_id') and self._watermelon_id:
+            # Use WatermelonDB-generated ID directly
+            self.name = self._watermelon_id
+        elif self.name:
+            # Already has a name from sync, keep it
+            pass
+        else:
+            pass
+
     def before_validate(self):
         try:
             # Set intake_date to today if not already set

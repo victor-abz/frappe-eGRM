@@ -29,7 +29,7 @@ def dashboard(project_id=None, date_range=None):
     """
     try:
         user = frappe.session.user
-        log.info(f"Getting dashboard stats for user: {user}")
+        frappe.log(f"Getting dashboard stats for user: {user}")
 
         # Get user's accessible projects
         accessible_projects = get_user_accessible_projects(user)
@@ -63,11 +63,11 @@ def dashboard(project_id=None, date_range=None):
             "recent_activities": get_recent_activities(accessible_projects, user, 10),
         }
 
-        log.info(f"Returning dashboard stats for user {user}")
+        frappe.log(f"Returning dashboard stats for user {user}")
         return {"status": "success", "data": stats}
 
     except Exception as e:
-        log.error(f"Error in dashboard: {str(e)}")
+        frappe.log_error(f"Error in dashboard: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -85,7 +85,7 @@ def user_stats(project_id=None, date_range=None):
     """
     try:
         user = frappe.session.user
-        log.info(f"Getting user stats for: {user}")
+        frappe.log(f"Getting user stats for: {user}")
 
         # Get user's accessible projects
         accessible_projects = get_user_accessible_projects(user)
@@ -126,11 +126,11 @@ def user_stats(project_id=None, date_range=None):
             ),
         }
 
-        log.info(f"Returning user stats for {user}")
+        frappe.log(f"Returning user stats for {user}")
         return {"status": "success", "data": stats}
 
     except Exception as e:
-        log.error(f"Error in user_stats: {str(e)}")
+        frappe.log_error(f"Error in user_stats: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -147,7 +147,7 @@ def project_summary(project_id):
     """
     try:
         user = frappe.session.user
-        log.info(f"Getting project summary for: {project_id}")
+        frappe.log(f"Getting project summary for: {project_id}")
 
         # Check if user has access to project
         accessible_projects = get_user_accessible_projects(user)
@@ -174,11 +174,11 @@ def project_summary(project_id):
             "performance_indicators": get_project_performance_indicators(project_id),
         }
 
-        log.info(f"Returning project summary for {project_id}")
+        frappe.log(f"Returning project summary for {project_id}")
         return {"status": "success", "data": stats}
 
     except Exception as e:
-        log.error(f"Error in project_summary: {str(e)}")
+        frappe.log_error(f"Error in project_summary: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 

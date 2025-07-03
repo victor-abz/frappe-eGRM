@@ -1,18 +1,20 @@
+import logging
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
-import logging
 
 log = logging.getLogger(__name__)
+
 
 class GRMAdministrativeRegion(Document):
     def validate(self):
         try:
             self.validate_parent_region()
             self.validate_coordinates()
-            log.info(f"Validating GRM Administrative Region {self.name}")
+            frappe.log(f"Validating GRM Administrative Region {self.name}")
         except Exception as e:
-            log.error(f"Error validating GRM Administrative Region: {str(e)}")
+            frappe.log_error(f"Error validating GRM Administrative Region: {str(e)}")
             raise
 
     def before_save(self):
@@ -20,11 +22,10 @@ class GRMAdministrativeRegion(Document):
             # Generate materialized path if not already set
             if not self.path:
                 self.path = self.generate_materialized_path()
-            log.info(f"Setting materialized path for {self.region_name}: {self.path}")
+            frappe.log(f"Setting materialized path for {self.region_name}: {self.path}")
         except Exception as e:
-            log.error(f"Error in before_save: {str(e)}")
+            frappe.log_error(f"Error in before_save: {str(e)}")
             raise
-
 
     def validate_parent_region(self):
         try:
@@ -37,16 +38,20 @@ class GRMAdministrativeRegion(Document):
 
             # Check that parent region belongs to the same project
             if self.parent_region:
-                parent_project = frappe.db.get_value("GRM Administrative Region", self.parent_region, "project")
+                parent_project = frappe.db.get_value(
+                    "GRM Administrative Region", self.parent_region, "project"
+                )
                 if parent_project != self.project:
                     frappe.throw(_("Parent region must belong to the same project"))
         except Exception as e:
-            log.error(f"Error validating parent region: {str(e)}")
+            frappe.log_error(f"Error validating parent region: {str(e)}")
             raise
 
     def check_circular_reference(self, region, visited):
         try:
-            parent = frappe.db.get_value("GRM Administrative Region", region, "parent_region")
+            parent = frappe.db.get_value(
+                "GRM Administrative Region", region, "parent_region"
+            )
 
             if not parent:
                 return
@@ -57,7 +62,7 @@ class GRMAdministrativeRegion(Document):
             visited.append(parent)
             self.check_circular_reference(parent, visited)
         except Exception as e:
-            log.error(f"Error checking for circular reference: {str(e)}")
+            frappe.log_error(f"Error checking for circular reference: {str(e)}")
             raise
 
     def validate_coordinates(self):
@@ -67,6 +72,7 @@ class GRMAdministrativeRegion(Document):
                 # Geolocation field should be in format: {"type": "FeatureCollection", "features": [...]}
                 # Basic validation - more specific validation can be added
                 import json
+
                 try:
                     if isinstance(self.location, str):
                         location_data = json.loads(self.location)
@@ -79,7 +85,7 @@ class GRMAdministrativeRegion(Document):
                 except (json.JSONDecodeError, TypeError):
                     frappe.throw(_("Invalid location data format"))
         except Exception as e:
-            log.error(f"Error validating coordinates: {str(e)}")
+            frappe.log_error(f"Error validating coordinates: {str(e)}")
             raise
 
     def generate_materialized_path(self):
@@ -93,21 +99,27 @@ class GRMAdministrativeRegion(Document):
                 return self.region_name
 
             # Get parent's path
-            parent_path = frappe.db.get_value("GRM Administrative Region", self.parent_region, "path")
+            parent_path = frappe.db.get_value(
+                "GRM Administrative Region", self.parent_region, "path"
+            )
 
             if not parent_path:
                 # Parent doesn't have a path yet, generate it
-                parent_doc = frappe.get_doc("GRM Administrative Region", self.parent_region)
+                parent_doc = frappe.get_doc(
+                    "GRM Administrative Region", self.parent_region
+                )
                 parent_path = parent_doc.generate_materialized_path()
 
                 # Update parent's path
-                frappe.db.set_value("GRM Administrative Region", self.parent_region, "path", parent_path)
+                frappe.db.set_value(
+                    "GRM Administrative Region", self.parent_region, "path", parent_path
+                )
 
             # Combine parent path with current region name
             return f"{parent_path}:{self.region_name}"
 
         except Exception as e:
-            log.error(f"Error generating materialized path: {str(e)}")
+            frappe.log_error(f"Error generating materialized path: {str(e)}")
             return self.region_name  # Fallback to just the region name
 
     def get_children(self):
@@ -117,14 +129,11 @@ class GRMAdministrativeRegion(Document):
         try:
             return frappe.get_all(
                 "GRM Administrative Region",
-                filters={
-                    "parent_region": self.name,
-                    "project": self.project
-                },
-                fields=["name", "region_name", "administrative_level", "path"]
+                filters={"parent_region": self.name, "project": self.project},
+                fields=["name", "region_name", "administrative_level", "path"],
             )
         except Exception as e:
-            log.error(f"Error getting children: {str(e)}")
+            frappe.log_error(f"Error getting children: {str(e)}")
             return []
 
     def get_all_descendants(self):
@@ -140,13 +149,13 @@ class GRMAdministrativeRegion(Document):
                 filters={
                     "path": ["like", f"{self.path}:%"],
                     "project": self.project,
-                    "name": ["!=", self.name]
+                    "name": ["!=", self.name],
                 },
                 fields=["name", "region_name", "administrative_level", "path"],
-                order_by="path"
+                order_by="path",
             )
         except Exception as e:
-            log.error(f"Error getting descendants: {str(e)}")
+            frappe.log_error(f"Error getting descendants: {str(e)}")
             return []
 
     def get_ancestors(self):
@@ -162,16 +171,13 @@ class GRMAdministrativeRegion(Document):
 
             # Build paths for each ancestor level
             for i in range(len(path_parts) - 1):
-                ancestor_path = ":".join(path_parts[:i + 1])
+                ancestor_path = ":".join(path_parts[: i + 1])
 
                 ancestor = frappe.get_all(
                     "GRM Administrative Region",
-                    filters={
-                        "path": ancestor_path,
-                        "project": self.project
-                    },
+                    filters={"path": ancestor_path, "project": self.project},
                     fields=["name", "region_name", "administrative_level", "path"],
-                    limit=1
+                    limit=1,
                 )
 
                 if ancestor:
@@ -180,7 +186,7 @@ class GRMAdministrativeRegion(Document):
             return ancestors
 
         except Exception as e:
-            log.error(f"Error getting ancestors: {str(e)}")
+            frappe.log_error(f"Error getting ancestors: {str(e)}")
             return []
 
     def get_hierarchy_level(self):
@@ -193,7 +199,7 @@ class GRMAdministrativeRegion(Document):
                 return 0
             return self.path.count(":")
         except Exception as e:
-            log.error(f"Error getting hierarchy level: {str(e)}")
+            frappe.log_error(f"Error getting hierarchy level: {str(e)}")
             return 0
 
     def is_ancestor_of(self, other_region_name):
@@ -201,7 +207,9 @@ class GRMAdministrativeRegion(Document):
         Check if this region is an ancestor of another region.
         """
         try:
-            other_path = frappe.db.get_value("GRM Administrative Region", other_region_name, "path")
+            other_path = frappe.db.get_value(
+                "GRM Administrative Region", other_region_name, "path"
+            )
 
             if not other_path or not self.path:
                 return False
@@ -209,7 +217,7 @@ class GRMAdministrativeRegion(Document):
             return other_path.startswith(f"{self.path}:")
 
         except Exception as e:
-            log.error(f"Error checking ancestor relationship: {str(e)}")
+            frappe.log_error(f"Error checking ancestor relationship: {str(e)}")
             return False
 
     def is_descendant_of(self, other_region_name):
@@ -217,7 +225,9 @@ class GRMAdministrativeRegion(Document):
         Check if this region is a descendant of another region.
         """
         try:
-            other_path = frappe.db.get_value("GRM Administrative Region", other_region_name, "path")
+            other_path = frappe.db.get_value(
+                "GRM Administrative Region", other_region_name, "path"
+            )
 
             if not other_path or not self.path:
                 return False
@@ -225,11 +235,12 @@ class GRMAdministrativeRegion(Document):
             return self.path.startswith(f"{other_path}:")
 
         except Exception as e:
-            log.error(f"Error checking descendant relationship: {str(e)}")
+            frappe.log_error(f"Error checking descendant relationship: {str(e)}")
             return False
 
 
 # Utility functions for working with administrative regions
+
 
 def get_regions_by_level(project, level_name):
     """
@@ -238,16 +249,14 @@ def get_regions_by_level(project, level_name):
     try:
         return frappe.get_all(
             "GRM Administrative Region",
-            filters={
-                "project": project,
-                "administrative_level": level_name
-            },
+            filters={"project": project, "administrative_level": level_name},
             fields=["name", "region_name", "path"],
-            order_by="path"
+            order_by="path",
         )
     except Exception as e:
-        log.error(f"Error getting regions by level: {str(e)}")
+        frappe.log_error(f"Error getting regions by level: {str(e)}")
         return []
+
 
 def get_region_hierarchy_tree(project, root_region=None):
     """
@@ -258,15 +267,23 @@ def get_region_hierarchy_tree(project, root_region=None):
         # Get all regions for the project
         filters = {"project": project}
         if root_region:
-            root_path = frappe.db.get_value("GRM Administrative Region", root_region, "path")
+            root_path = frappe.db.get_value(
+                "GRM Administrative Region", root_region, "path"
+            )
             if root_path:
                 filters["path"] = ["like", f"{root_path}%"]
 
         regions = frappe.get_all(
             "GRM Administrative Region",
             filters=filters,
-            fields=["name", "region_name", "path", "parent_region", "administrative_level"],
-            order_by="path"
+            fields=[
+                "name",
+                "region_name",
+                "path",
+                "parent_region",
+                "administrative_level",
+            ],
+            order_by="path",
         )
 
         # Build tree structure
@@ -294,8 +311,9 @@ def get_region_hierarchy_tree(project, root_region=None):
         return tree
 
     except Exception as e:
-        log.error(f"Error building hierarchy tree: {str(e)}")
+        frappe.log_error(f"Error building hierarchy tree: {str(e)}")
         return {}
+
 
 def find_regions_by_name(project, region_name, exact_match=True):
     """
@@ -303,26 +321,21 @@ def find_regions_by_name(project, region_name, exact_match=True):
     """
     try:
         if exact_match:
-            filters = {
-                "project": project,
-                "region_name": region_name
-            }
+            filters = {"project": project, "region_name": region_name}
         else:
-            filters = {
-                "project": project,
-                "region_name": ["like", f"%{region_name}%"]
-            }
+            filters = {"project": project, "region_name": ["like", f"%{region_name}%"]}
 
         return frappe.get_all(
             "GRM Administrative Region",
             filters=filters,
             fields=["name", "region_name", "path", "administrative_level"],
-            order_by="path"
+            order_by="path",
         )
 
     except Exception as e:
-        log.error(f"Error finding regions by name: {str(e)}")
+        frappe.log_error(f"Error finding regions by name: {str(e)}")
         return []
+
 
 def get_region_path_parts(region_name):
     """
@@ -334,8 +347,9 @@ def get_region_path_parts(region_name):
             return path.split(":")
         return []
     except Exception as e:
-        log.error(f"Error getting region path parts: {str(e)}")
+        frappe.log_error(f"Error getting region path parts: {str(e)}")
         return []
+
 
 def validate_region_hierarchy_integrity(project):
     """
@@ -349,36 +363,49 @@ def validate_region_hierarchy_integrity(project):
         regions = frappe.get_all(
             "GRM Administrative Region",
             filters={"project": project},
-            fields=["name", "region_name", "path", "parent_region"]
+            fields=["name", "region_name", "path", "parent_region"],
         )
 
         for region in regions:
             # Check if path matches parent-child relationship
             if region.parent_region:
-                parent_path = frappe.db.get_value("GRM Administrative Region", region.parent_region, "path")
-                expected_path = f"{parent_path}:{region.region_name}" if parent_path else region.region_name
+                parent_path = frappe.db.get_value(
+                    "GRM Administrative Region", region.parent_region, "path"
+                )
+                expected_path = (
+                    f"{parent_path}:{region.region_name}"
+                    if parent_path
+                    else region.region_name
+                )
 
                 if region.path != expected_path:
-                    issues.append({
-                        "region": region.name,
-                        "issue": "Path mismatch",
-                        "expected": expected_path,
-                        "actual": region.path
-                    })
+                    issues.append(
+                        {
+                            "region": region.name,
+                            "issue": "Path mismatch",
+                            "expected": expected_path,
+                            "actual": region.path,
+                        }
+                    )
 
             # Check for orphaned regions (parent doesn't exist)
-            if region.parent_region and not frappe.db.exists("GRM Administrative Region", region.parent_region):
-                issues.append({
-                    "region": region.name,
-                    "issue": "Orphaned region - parent doesn't exist",
-                    "parent": region.parent_region
-                })
+            if region.parent_region and not frappe.db.exists(
+                "GRM Administrative Region", region.parent_region
+            ):
+                issues.append(
+                    {
+                        "region": region.name,
+                        "issue": "Orphaned region - parent doesn't exist",
+                        "parent": region.parent_region,
+                    }
+                )
 
         return issues
 
     except Exception as e:
-        log.error(f"Error validating hierarchy integrity: {str(e)}")
+        frappe.log_error(f"Error validating hierarchy integrity: {str(e)}")
         return [{"error": str(e)}]
+
 
 def repair_region_paths(project):
     """
@@ -390,7 +417,7 @@ def repair_region_paths(project):
             "GRM Administrative Region",
             filters={"project": project},
             fields=["name", "region_name", "parent_region"],
-            order_by="ifnull(parent_region, '') asc"  # Root regions first
+            order_by="ifnull(parent_region, '') asc",  # Root regions first
         )
 
         repaired = 0
@@ -404,10 +431,12 @@ def repair_region_paths(project):
                 doc.path = new_path
                 doc.save()
                 repaired += 1
-                log.info(f"Repaired path for {region.region_name}: {old_path} -> {new_path}")
+                frappe.log(
+                    f"Repaired path for {region.region_name}: {old_path} -> {new_path}"
+                )
 
         return repaired
 
     except Exception as e:
-        log.error(f"Error repairing region paths: {str(e)}")
+        frappe.log_error(f"Error repairing region paths: {str(e)}")
         return 0

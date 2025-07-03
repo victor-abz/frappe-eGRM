@@ -1,9 +1,11 @@
-import frappe
-from frappe import _
-from frappe.utils import now_datetime, get_datetime
 import logging
 
+import frappe
+from frappe import _
+from frappe.utils import get_datetime, now_datetime
+
 log = logging.getLogger(__name__)
+
 
 @frappe.whitelist(allow_guest=True)
 def activate_government_worker(email, activation_code, new_password=None):
@@ -24,7 +26,7 @@ def activate_government_worker(email, activation_code, new_password=None):
             return {
                 "success": False,
                 "message": _("Email and activation code are required"),
-                "errors": ["Missing required parameters"]
+                "errors": ["Missing required parameters"],
             }
 
         # Find user by email
@@ -34,7 +36,7 @@ def activate_government_worker(email, activation_code, new_password=None):
             return {
                 "success": False,
                 "message": _("Invalid email address"),
-                "errors": ["User not found"]
+                "errors": ["User not found"],
             }
 
         # Find government worker assignment
@@ -43,10 +45,16 @@ def activate_government_worker(email, activation_code, new_password=None):
             {
                 "user": user_name,
                 "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
-                "activation_status": ["!=", "Activated"]
+                "activation_status": ["!=", "Activated"],
             },
-            ["name", "activation_status", "activation_code", "activation_expires_on", "activation_attempts"],
-            as_dict=True
+            [
+                "name",
+                "activation_status",
+                "activation_code",
+                "activation_expires_on",
+                "activation_attempts",
+            ],
+            as_dict=True,
         )
 
         if not assignment:
@@ -54,7 +62,7 @@ def activate_government_worker(email, activation_code, new_password=None):
             return {
                 "success": False,
                 "message": _("No pending activation found for this email"),
-                "errors": ["Assignment not found"]
+                "errors": ["Assignment not found"],
             }
 
         # Get the assignment document
@@ -65,31 +73,31 @@ def activate_government_worker(email, activation_code, new_password=None):
             result = assignment_doc.activate_worker(activation_code, new_password)
 
             if result:
-                log.info(f"Government worker activated successfully via API: {email}")
+                frappe.log(f"Government worker activated successfully via API: {email}")
                 return {
                     "success": True,
                     "message": _("Account activated successfully!"),
                     "data": {
                         "user_id": user_name,
                         "status": "Activated",
-                        "activated_on": assignment_doc.activated_on
+                        "activated_on": assignment_doc.activated_on,
                     },
-                    "errors": []
+                    "errors": [],
                 }
         except Exception as activation_error:
-            log.error(f"Activation failed for {email}: {str(activation_error)}")
+            frappe.log_error(f"Activation failed for {email}: {str(activation_error)}")
             return {
                 "success": False,
                 "message": str(activation_error),
-                "errors": [str(activation_error)]
+                "errors": [str(activation_error)],
             }
 
     except Exception as e:
-        log.error(f"API activation error for {email}: {str(e)}")
+        frappe.log_error(f"API activation error for {email}: {str(e)}")
         return {
             "success": False,
             "message": _("An error occurred during activation. Please try again."),
-            "errors": [str(e)]
+            "errors": [str(e)],
         }
 
 
@@ -110,7 +118,7 @@ def resend_activation_code(email):
             return {
                 "success": False,
                 "message": _("Email is required"),
-                "errors": ["Missing email parameter"]
+                "errors": ["Missing email parameter"],
             }
 
         # Find user by email
@@ -120,7 +128,7 @@ def resend_activation_code(email):
             return {
                 "success": False,
                 "message": _("Invalid email address"),
-                "errors": ["User not found"]
+                "errors": ["User not found"],
             }
 
         # Find government worker assignment
@@ -129,9 +137,9 @@ def resend_activation_code(email):
             {
                 "user": user_name,
                 "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
-                "activation_status": ["in", ["Draft", "Pending Activation", "Expired"]]
+                "activation_status": ["in", ["Draft", "Pending Activation", "Expired"]],
             },
-            "name"
+            "name",
         )
 
         if not assignment_name:
@@ -139,7 +147,7 @@ def resend_activation_code(email):
             return {
                 "success": False,
                 "message": _("No pending activation found for this email"),
-                "errors": ["Assignment not found"]
+                "errors": ["Assignment not found"],
             }
 
         # Get the assignment document and resend code
@@ -149,31 +157,33 @@ def resend_activation_code(email):
             result = assignment_doc.resend_activation_code()
 
             if result:
-                log.info(f"Activation code resent successfully via API: {email}")
+                frappe.log(f"Activation code resent successfully via API: {email}")
                 return {
                     "success": True,
                     "message": _("Activation code sent successfully!"),
                     "data": {
                         "user_id": user_name,
                         "status": assignment_doc.activation_status,
-                        "code_sent_on": assignment_doc.code_sent_on
+                        "code_sent_on": assignment_doc.code_sent_on,
                     },
-                    "errors": []
+                    "errors": [],
                 }
         except Exception as resend_error:
-            log.error(f"Resend failed for {email}: {str(resend_error)}")
+            frappe.log_error(f"Resend failed for {email}: {str(resend_error)}")
             return {
                 "success": False,
                 "message": str(resend_error),
-                "errors": [str(resend_error)]
+                "errors": [str(resend_error)],
             }
 
     except Exception as e:
-        log.error(f"API resend error for {email}: {str(e)}")
+        frappe.log_error(f"API resend error for {email}: {str(e)}")
         return {
             "success": False,
-            "message": _("An error occurred while sending activation code. Please try again."),
-            "errors": [str(e)]
+            "message": _(
+                "An error occurred while sending activation code. Please try again."
+            ),
+            "errors": [str(e)],
         }
 
 
@@ -194,7 +204,7 @@ def check_activation_status(email):
             return {
                 "success": False,
                 "message": _("Email is required"),
-                "errors": ["Missing email parameter"]
+                "errors": ["Missing email parameter"],
             }
 
         # Find user by email
@@ -203,7 +213,7 @@ def check_activation_status(email):
             return {
                 "success": False,
                 "message": _("Invalid email address"),
-                "errors": ["User not found"]
+                "errors": ["User not found"],
             }
 
         # Find government worker assignment
@@ -211,20 +221,24 @@ def check_activation_status(email):
             "GRM User Project Assignment",
             {
                 "user": user_name,
-                "role": ["in", ["GRM Field Officer", "GRM Department Head"]]
+                "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
             },
             [
-                "activation_status", "activation_expires_on", "activated_on",
-                "code_sent_on", "activation_attempts", "position_title"
+                "activation_status",
+                "activation_expires_on",
+                "activated_on",
+                "code_sent_on",
+                "activation_attempts",
+                "position_title",
             ],
-            as_dict=True
+            as_dict=True,
         )
 
         if not assignment_data:
             return {
                 "success": False,
                 "message": _("No government worker assignment found for this email"),
-                "errors": ["Assignment not found"]
+                "errors": ["Assignment not found"],
             }
 
         # Prepare response data
@@ -233,13 +247,15 @@ def check_activation_status(email):
             "status": assignment_data.activation_status or "Unknown",
             "position_title": assignment_data.position_title,
             "activation_attempts": assignment_data.activation_attempts or 0,
-            "max_attempts": 5
+            "max_attempts": 5,
         }
 
         # Add conditional fields
         if assignment_data.activation_expires_on:
             response_data["expires_on"] = assignment_data.activation_expires_on
-            response_data["is_expired"] = get_datetime(assignment_data.activation_expires_on) < now_datetime()
+            response_data["is_expired"] = (
+                get_datetime(assignment_data.activation_expires_on) < now_datetime()
+            )
 
         if assignment_data.activated_on:
             response_data["activated_on"] = assignment_data.activated_on
@@ -247,20 +263,22 @@ def check_activation_status(email):
         if assignment_data.code_sent_on:
             response_data["code_sent_on"] = assignment_data.code_sent_on
 
-        log.info(f"Status check successful for {email}: {assignment_data.activation_status}")
+        frappe.log(
+            f"Status check successful for {email}: {assignment_data.activation_status}"
+        )
         return {
             "success": True,
             "message": _("Status retrieved successfully"),
             "data": response_data,
-            "errors": []
+            "errors": [],
         }
 
     except Exception as e:
-        log.error(f"API status check error for {email}: {str(e)}")
+        frappe.log_error(f"API status check error for {email}: {str(e)}")
         return {
             "success": False,
             "message": _("An error occurred while checking status. Please try again."),
-            "errors": [str(e)]
+            "errors": [str(e)],
         }
 
 
@@ -302,14 +320,14 @@ def bulk_send_activation_codes(project_code, filters=None):
             return {
                 "success": False,
                 "message": _("No permission to send activation codes"),
-                "errors": ["Permission denied"]
+                "errors": ["Permission denied"],
             }
 
         # Build filters
         assignment_filters = {
             "project": project_code,
             "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
-            "activation_status": ["in", ["Draft", "Expired"]]
+            "activation_status": ["in", ["Draft", "Expired"]],
         }
 
         if filters:
@@ -319,14 +337,14 @@ def bulk_send_activation_codes(project_code, filters=None):
         assignments = frappe.get_all(
             "GRM User Project Assignment",
             filters=assignment_filters,
-            fields=["name", "user"]
+            fields=["name", "user"],
         )
 
         if not assignments:
             return {
                 "success": False,
                 "message": _("No eligible workers found"),
-                "errors": ["No workers found"]
+                "errors": ["No workers found"],
             }
 
         # Send codes in bulk
@@ -336,32 +354,36 @@ def bulk_send_activation_codes(project_code, filters=None):
 
         for assignment in assignments:
             try:
-                assignment_doc = frappe.get_doc("GRM User Project Assignment", assignment.name)
+                assignment_doc = frappe.get_doc(
+                    "GRM User Project Assignment", assignment.name
+                )
                 assignment_doc.send_activation_email()
                 success_count += 1
-                log.info(f"Bulk activation email sent to {assignment.user}")
+                frappe.log(f"Bulk activation email sent to {assignment.user}")
 
             except Exception as send_error:
                 failed_count += 1
                 error_msg = f"Failed to send to {assignment.user}: {str(send_error)}"
                 errors.append(error_msg)
-                log.error(error_msg)
+                frappe.log_error(error_msg)
 
         return {
             "success": True,
-            "message": _(f"Bulk operation completed: {success_count} sent, {failed_count} failed"),
+            "message": _(
+                f"Bulk operation completed: {success_count} sent, {failed_count} failed"
+            ),
             "data": {
                 "total_processed": len(assignments),
                 "success_count": success_count,
-                "failed_count": failed_count
+                "failed_count": failed_count,
             },
-            "errors": errors
+            "errors": errors,
         }
 
     except Exception as e:
-        log.error(f"Bulk send error: {str(e)}")
+        frappe.log_error(f"Bulk send error: {str(e)}")
         return {
             "success": False,
             "message": _("An error occurred during bulk operation"),
-            "errors": [str(e)]
+            "errors": [str(e)],
         }
