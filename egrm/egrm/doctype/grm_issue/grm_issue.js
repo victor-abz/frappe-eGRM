@@ -556,19 +556,6 @@ frappe.ui.form.on("GRM Issue", {
 			// Clear the non-confidential field
 			frm.set_value("citizen", "");
 			frm.set_value("contact_information", "");
-
-			// Show message about confidential data
-			frappe.show_alert(
-				{
-					message: __("Please enter confidential citizen information"),
-					indicator: "blue",
-				},
-				5
-			);
-		} else {
-			// Clear the confidential fields
-			frm.set_value("citizen_confidential", "");
-			frm.set_value("contact_info_confidential", "");
 		}
 
 		frm.refresh_fields();
@@ -581,67 +568,12 @@ frappe.ui.form.on("GRM Issue", {
 		// Require contact information for non-anonymous contacts
 		if (frm.doc.contact_medium === "contact") {
 			if (frm.doc.citizen_type === "1") {
-				frm.toggle_reqd("contact_info_confidential", true);
 				frm.toggle_reqd("contact_information", false);
 			} else {
 				frm.toggle_reqd("contact_information", true);
-				frm.toggle_reqd("contact_info_confidential", false);
 			}
 		} else {
 			frm.toggle_reqd("contact_information", false);
-			frm.toggle_reqd("contact_info_confidential", false);
-		}
-	},
-
-	validate: function (frm) {
-		// Validate contact information based on citizen type
-		if (frm.doc.contact_medium === "contact") {
-			if (frm.doc.citizen_type === "1") {
-				if (!frm.doc.contact_info_confidential) {
-					frappe.msgprint({
-						title: __("Validation Error"),
-						indicator: "red",
-						message: __(
-							'Confidential Contact Information is required when Contact Medium is "contact" and Citizen Type is "Confidential".'
-						),
-					});
-					validated = false;
-				}
-			} else {
-				if (!frm.doc.contact_information) {
-					frappe.msgprint({
-						title: __("Validation Error"),
-						indicator: "red",
-						message: __(
-							'Contact Information is required when Contact Medium is "contact".'
-						),
-					});
-					validated = false;
-				}
-			}
-		}
-
-		// Validate citizen information based on type
-		if (frm.doc.citizen_type === "1") {
-			if (!frm.doc.citizen_confidential) {
-				frappe.msgprint({
-					title: __("Validation Error"),
-					indicator: "red",
-					message: __(
-						'Confidential Citizen information is required when Citizen Type is "Confidential".'
-					),
-				});
-				validated = false;
-			}
-		} else {
-			if (!frm.doc.citizen) {
-				frappe.msgprint({
-					title: __("Validation Error"),
-					indicator: "red",
-					message: __("Citizen information is required."),
-				});
-				validated = false;
-			}
 		}
 	},
 

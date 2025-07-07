@@ -725,7 +725,7 @@ def validate_user_record_access(doctype, record_data, user):
 
     # Check if user is Administrator or has System Manager role (handled in get_user_accessible_projects)
     if user == "Administrator" or "System Manager" in frappe.get_roles(user):
-        log.debug(
+        frappe.log(
             f"🔓 [SYNC_BACKEND] User {user} has admin access - allowing record operation"
         )
         return True
@@ -823,7 +823,7 @@ def validate_user_record_access(doctype, record_data, user):
             )
             return False
 
-    log.debug(f"✅ [SYNC_BACKEND] User {user} has access to {doctype} record")
+    frappe.log(f"✅ [SYNC_BACKEND] User {user} has access to {doctype} record")
     return True
 
 
@@ -851,9 +851,10 @@ def process_table_changes(table_name, table_changes):
         for i, raw_record in enumerate(created_records):
             try:
                 record_start = time.time()
+                frappe.log(f"✏️ [SYNC_BACKEND] raw_record record {raw_record}")
                 create_record(doctype, raw_record)
                 record_duration = time.time() - record_start
-                log.debug(
+                frappe.log(
                     f"📝 [SYNC_BACKEND] Created record {i+1}/{len(created_records)} in {record_duration:.3f}s"
                 )
             except Exception as e:
@@ -880,7 +881,7 @@ def process_table_changes(table_name, table_changes):
                 record_start = time.time()
                 update_record(doctype, raw_record)
                 record_duration = time.time() - record_start
-                log.debug(
+                frappe.log(
                     f"✏️ [SYNC_BACKEND] Updated record {i+1}/{len(updated_records)} in {record_duration:.3f}s"
                 )
             except Exception as e:
@@ -905,7 +906,7 @@ def process_table_changes(table_name, table_changes):
                 record_start = time.time()
                 delete_record(doctype, record_id)
                 record_duration = time.time() - record_start
-                log.debug(
+                frappe.log(
                     f"🗑️ [SYNC_BACKEND] Deleted record {i+1}/{len(deleted_ids)} in {record_duration:.3f}s"
                 )
             except Exception as e:
@@ -931,7 +932,7 @@ def create_record(doctype, raw_record):
     create_start = time.time()
     record_id = raw_record.get("id")
     user = frappe.session.user
-    log.debug(
+    frappe.log(
         f"📝 [SYNC_BACKEND] Creating {doctype} record with ID: {record_id} by user: {user}"
     )
 
@@ -948,7 +949,7 @@ def create_record(doctype, raw_record):
         )
         raise frappe.PermissionError(f"Permission denied to create {doctype} record")
     validation_duration = time.time() - validation_start
-    log.debug(
+    frappe.log(
         f"🔒 [SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s"
     )
 
@@ -956,7 +957,7 @@ def create_record(doctype, raw_record):
     existence_check_start = time.time()
     record_exists = frappe.db.exists(doctype, record_id)
     existence_check_duration = time.time() - existence_check_start
-    log.debug(
+    frappe.log(
         f"🔍 [SYNC_BACKEND] Existence check took: {existence_check_duration:.4f}s"
     )
 
@@ -970,13 +971,16 @@ def create_record(doctype, raw_record):
     conversion_start = time.time()
     frappe_data = watermelon_to_frappe_data(raw_record)
     conversion_duration = time.time() - conversion_start
-    log.debug(f"🔄 [SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
+    frappe.log(f"🔄 [SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
 
     # Create new document
     doc_creation_start = time.time()
     doc = frappe.new_doc(doctype)
     doc_creation_duration = time.time() - doc_creation_start
-    log.debug(f"📄 [SYNC_BACKEND] Document creation took: {doc_creation_duration:.4f}s")
+    frappe.log(f"Final frappe_data {frappe_data}")
+    frappe.log(
+        f"📄 [SYNC_BACKEND] Document creation took: {doc_creation_duration:.4f}s"
+    )
 
     # Set the name to WatermelonDB ID for consistency
     doc.name = record_id
@@ -985,11 +989,13 @@ def create_record(doctype, raw_record):
     field_setting_start = time.time()
     field_count = 0
     for field, value in frappe_data.items():
-        if hasattr(doc, field) and field not in ["name", "creation", "modified"]:
+        print("Field validation", field, hasattr(doc, field))
+        if hasattr(doc, field) and field not in ["creation", "modified", "amended_from"]:
             setattr(doc, field, value)
             field_count += 1
     field_setting_duration = time.time() - field_setting_start
-    log.debug(
+    frappe.log(f"Final fields after conversion {doc.__dict__}")
+    frappe.log(
         f"🏗️ [SYNC_BACKEND] Field setting took: {field_setting_duration:.4f}s ({field_count} fields)"
     )
 
@@ -1000,19 +1006,19 @@ def create_record(doctype, raw_record):
     insert_start = time.time()
     doc.insert(ignore_permissions=False)  # Respect permissions
     insert_duration = time.time() - insert_start
-    log.debug(f"💾 [SYNC_BACKEND] Document insertion took: {insert_duration:.4f}s")
+    frappe.log(f"💾 [SYNC_BACKEND] Document insertion took: {insert_duration:.4f}s")
 
     create_duration = time.time() - create_start
-    log.debug(
+    frappe.log(
         f"✅ [SYNC_BACKEND] Created {doctype} record {record_id} in {create_duration:.4f}s"
     )
-    log.debug(f"📊 [SYNC_BACKEND] Create breakdown:")
-    log.debug(f"  - Permission validation: {validation_duration:.4f}s")
-    log.debug(f"  - Existence check: {existence_check_duration:.4f}s")
-    log.debug(f"  - Data conversion: {conversion_duration:.4f}s")
-    log.debug(f"  - Doc creation: {doc_creation_duration:.4f}s")
-    log.debug(f"  - Field setting: {field_setting_duration:.4f}s")
-    log.debug(f"  - Document insert: {insert_duration:.4f}s")
+    frappe.log(f"📊 [SYNC_BACKEND] Create breakdown:")
+    frappe.log(f"  - Permission validation: {validation_duration:.4f}s")
+    frappe.log(f"  - Existence check: {existence_check_duration:.4f}s")
+    frappe.log(f"  - Data conversion: {conversion_duration:.4f}s")
+    frappe.log(f"  - Doc creation: {doc_creation_duration:.4f}s")
+    frappe.log(f"  - Field setting: {field_setting_duration:.4f}s")
+    frappe.log(f"  - Document insert: {insert_duration:.4f}s")
 
 
 def update_record(doctype, raw_record):
@@ -1020,7 +1026,7 @@ def update_record(doctype, raw_record):
     update_start = time.time()
     record_id = raw_record.get("id")
     user = frappe.session.user
-    log.debug(
+    frappe.log(
         f"✏️ [SYNC_BACKEND] Updating {doctype} record with ID: {record_id} by user: {user}"
     )
 
@@ -1037,7 +1043,7 @@ def update_record(doctype, raw_record):
         )
         raise frappe.PermissionError(f"Permission denied to update {doctype} record")
     validation_duration = time.time() - validation_start
-    log.debug(
+    frappe.log(
         f"🔒 [SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s"
     )
 
@@ -1045,7 +1051,7 @@ def update_record(doctype, raw_record):
     existence_check_start = time.time()
     record_exists = frappe.db.exists(doctype, record_id)
     existence_check_duration = time.time() - existence_check_start
-    log.debug(
+    frappe.log(
         f"🔍 [SYNC_BACKEND] Existence check took: {existence_check_duration:.4f}s"
     )
 
@@ -1057,13 +1063,13 @@ def update_record(doctype, raw_record):
     conversion_start = time.time()
     frappe_data = watermelon_to_frappe_data(raw_record)
     conversion_duration = time.time() - conversion_start
-    log.debug(f"🔄 [SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
+    frappe.log(f"🔄 [SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
 
     # Get existing document
     doc_fetch_start = time.time()
     doc = frappe.get_doc(doctype, record_id)
     doc_fetch_duration = time.time() - doc_fetch_start
-    log.debug(f"📄 [SYNC_BACKEND] Document fetch took: {doc_fetch_duration:.4f}s")
+    frappe.log(f"📄 [SYNC_BACKEND] Document fetch took: {doc_fetch_duration:.4f}s")
 
     # Update fields
     field_setting_start = time.time()
@@ -1073,7 +1079,8 @@ def update_record(doctype, raw_record):
             setattr(doc, field, value)
             field_count += 1
     field_setting_duration = time.time() - field_setting_start
-    log.debug(
+    frappe.log(f"Final fields after conversion {doc}")
+    frappe.log(
         f"🏗️ [SYNC_BACKEND] Field setting took: {field_setting_duration:.4f}s ({field_count} fields)"
     )
 
@@ -1084,26 +1091,26 @@ def update_record(doctype, raw_record):
     save_start = time.time()
     doc.save(ignore_permissions=False)
     save_duration = time.time() - save_start
-    log.debug(f"💾 [SYNC_BACKEND] Document save took: {save_duration:.4f}s")
+    frappe.log(f"💾 [SYNC_BACKEND] Document save took: {save_duration:.4f}s")
 
     update_duration = time.time() - update_start
-    log.debug(
+    frappe.log(
         f"✅ [SYNC_BACKEND] Updated {doctype} record {record_id} in {update_duration:.4f}s"
     )
-    log.debug(f"📊 [SYNC_BACKEND] Update breakdown:")
-    log.debug(f"  - Permission validation: {validation_duration:.4f}s")
-    log.debug(f"  - Existence check: {existence_check_duration:.4f}s")
-    log.debug(f"  - Data conversion: {conversion_duration:.4f}s")
-    log.debug(f"  - Document fetch: {doc_fetch_duration:.4f}s")
-    log.debug(f"  - Field setting: {field_setting_duration:.4f}s")
-    log.debug(f"  - Document save: {save_duration:.4f}s")
+    frappe.log(f"📊 [SYNC_BACKEND] Update breakdown:")
+    frappe.log(f"  - Permission validation: {validation_duration:.4f}s")
+    frappe.log(f"  - Existence check: {existence_check_duration:.4f}s")
+    frappe.log(f"  - Data conversion: {conversion_duration:.4f}s")
+    frappe.log(f"  - Document fetch: {doc_fetch_duration:.4f}s")
+    frappe.log(f"  - Field setting: {field_setting_duration:.4f}s")
+    frappe.log(f"  - Document save: {save_duration:.4f}s")
 
 
 def delete_record(doctype, record_id):
     """Delete record (soft delete) with enhanced logging"""
     delete_start = time.time()
     user = frappe.session.user
-    log.debug(
+    frappe.log(
         f"🗑️ [SYNC_BACKEND] Deleting {doctype} record: {record_id} by user: {user}"
     )
 
@@ -1111,12 +1118,12 @@ def delete_record(doctype, record_id):
     existence_check_start = time.time()
     record_exists = frappe.db.exists(doctype, record_id)
     existence_check_duration = time.time() - existence_check_start
-    log.debug(
+    frappe.log(
         f"🔍 [SYNC_BACKEND] Existence check took: {existence_check_duration:.4f}s"
     )
 
     if not record_exists:
-        log.debug(
+        frappe.log(
             f"🗑️ [SYNC_BACKEND] Record {record_id} already deleted or doesn't exist"
         )
         return
@@ -1126,7 +1133,7 @@ def delete_record(doctype, record_id):
         doc_fetch_start = time.time()
         doc = frappe.get_doc(doctype, record_id)
         doc_fetch_duration = time.time() - doc_fetch_start
-        log.debug(f"📄 [SYNC_BACKEND] Document fetch took: {doc_fetch_duration:.4f}s")
+        frappe.log(f"📄 [SYNC_BACKEND] Document fetch took: {doc_fetch_duration:.4f}s")
 
         # Validate user has permission to delete this record
         validation_start = time.time()
@@ -1138,7 +1145,7 @@ def delete_record(doctype, record_id):
             )
             return  # Don't raise exception, just skip this delete
         validation_duration = time.time() - validation_start
-        log.debug(
+        frappe.log(
             f"🔒 [SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s"
         )
 
@@ -1148,19 +1155,19 @@ def delete_record(doctype, record_id):
         delete_operation_start = time.time()
         doc.delete()
         delete_operation_duration = time.time() - delete_operation_start
-        log.debug(
+        frappe.log(
             f"🗑️ [SYNC_BACKEND] Delete operation took: {delete_operation_duration:.4f}s"
         )
 
         delete_duration = time.time() - delete_start
-        log.debug(
+        frappe.log(
             f"✅ [SYNC_BACKEND] Deleted {doctype} record {record_id} in {delete_duration:.4f}s"
         )
-        log.debug(f"📊 [SYNC_BACKEND] Delete breakdown:")
-        log.debug(f"  - Existence check: {existence_check_duration:.4f}s")
-        log.debug(f"  - Document fetch: {doc_fetch_duration:.4f}s")
-        log.debug(f"  - Permission validation: {validation_duration:.4f}s")
-        log.debug(f"  - Delete operation: {delete_operation_duration:.4f}s")
+        frappe.log(f"📊 [SYNC_BACKEND] Delete breakdown:")
+        frappe.log(f"  - Existence check: {existence_check_duration:.4f}s")
+        frappe.log(f"  - Document fetch: {doc_fetch_duration:.4f}s")
+        frappe.log(f"  - Permission validation: {validation_duration:.4f}s")
+        frappe.log(f"  - Delete operation: {delete_operation_duration:.4f}s")
 
     except frappe.PermissionError:
         delete_duration = time.time() - delete_start
@@ -1194,7 +1201,7 @@ def frappe_to_watermelon_raw(frappe_doc):
         dict_start = time.time()
         doc_dict = frappe_doc.as_dict()
         dict_duration = time.time() - dict_start
-        log.debug(f"🔄 [SYNC_BACKEND] Document.as_dict() took: {dict_duration:.4f}s")
+        frappe.log(f"🔄 [SYNC_BACKEND] Document.as_dict() took: {dict_duration:.4f}s")
     else:
         doc_dict = frappe_doc
 
@@ -1236,7 +1243,7 @@ def frappe_to_watermelon_raw(frappe_doc):
             timestamp_conversions += 1
 
             raw_record[field_name] = timestamp_ms
-            log.debug(
+            frappe.log(
                 f"🕐 [SYNC_BACKEND] Converted {field_name} timestamp in {timestamp_duration:.4f}s: {value} -> {timestamp_ms}"
             )
         elif (
@@ -1260,7 +1267,7 @@ def frappe_to_watermelon_raw(frappe_doc):
             timestamp_conversions += 1
 
             raw_record[field_name] = timestamp_ms
-            log.debug(
+            frappe.log(
                 f"📅 [SYNC_BACKEND] Converted {field_name} date in {timestamp_duration:.4f}s: {value} -> {timestamp_ms}"
             )
         else:
@@ -1280,7 +1287,7 @@ def frappe_to_watermelon_raw(frappe_doc):
         # Don't duplicate creation field if already processed above
         if "creation" not in raw_record:
             raw_record["creation"] = created_at_ms
-        log.debug(f"🆕 [SYNC_BACKEND] Added created_at: {created_at_ms}")
+        frappe.log(f"🆕 [SYNC_BACKEND] Added created_at: {created_at_ms}")
 
     if modified_time:
         updated_at_ms = int(get_timestamp(modified_time) * 1000)
@@ -1288,7 +1295,7 @@ def frappe_to_watermelon_raw(frappe_doc):
         # Don't duplicate modified field if already processed above
         if "modified" not in raw_record:
             raw_record["modified"] = updated_at_ms
-        log.debug(f"✏️ [SYNC_BACKEND] Added updated_at: {updated_at_ms}")
+        frappe.log(f"✏️ [SYNC_BACKEND] Added updated_at: {updated_at_ms}")
 
     timestamps_duration = time.time() - timestamps_start
 
@@ -1310,18 +1317,18 @@ def frappe_to_watermelon_raw(frappe_doc):
     validation_duration = time.time() - validation_start
     conversion_duration = time.time() - conversion_start
 
-    log.debug(
+    frappe.log(
         f"✅ [SYNC_BACKEND] Record conversion completed in {conversion_duration:.4f}s"
     )
-    log.debug(f"🔍 [SYNC_BACKEND] Conversion breakdown:")
-    log.debug(
+    frappe.log(f"🔍 [SYNC_BACKEND] Conversion breakdown:")
+    frappe.log(
         f"  - Field processing: {field_processing_duration:.4f}s ({processed_fields} fields)"
     )
-    log.debug(f"  - Timestamp conversions: {timestamp_conversions} conversions")
-    log.debug(f"  - Standard timestamps: {timestamps_duration:.4f}s")
-    log.debug(f"  - Validation: {validation_duration:.4f}s")
+    frappe.log(f"  - Timestamp conversions: {timestamp_conversions} conversions")
+    frappe.log(f"  - Standard timestamps: {timestamps_duration:.4f}s")
+    frappe.log(f"  - Validation: {validation_duration:.4f}s")
     if removed_fields:
-        log.debug(f"  - Removed prohibited fields: {removed_fields}")
+        frappe.log(f"  - Removed prohibited fields: {removed_fields}")
 
     return raw_record
 
@@ -1329,7 +1336,7 @@ def frappe_to_watermelon_raw(frappe_doc):
 def watermelon_to_frappe_data(raw_record):
     """Convert WatermelonDB raw record to Frappe data - MINIMAL TRANSFORMATION"""
     conversion_start = time.time()
-    log.debug(f"🔄 [SYNC_BACKEND] Converting WatermelonDB raw record to Frappe data")
+    frappe.log(f"🔄 [SYNC_BACKEND] Converting WatermelonDB raw record to Frappe data")
 
     frappe_data = {}
     processed_fields = 0
@@ -1363,24 +1370,26 @@ def watermelon_to_frappe_data(raw_record):
                 frappe_data[key] = datetime.fromtimestamp(value / 1000)
                 timestamp_duration = time.time() - timestamp_start
                 timestamp_conversions += 1
-                log.debug(
+                frappe.log(
                     f"🕐 [SYNC_BACKEND] Converted {key} timestamp in {timestamp_duration:.4f}s: {value} -> {frappe_data[key]}"
                 )
         else:
             # Direct assignment - fields already aligned
             frappe_data[key] = value
 
+    frappe_data["name"] = raw_record['id']
+
     field_processing_duration = time.time() - field_processing_start
     conversion_duration = time.time() - conversion_start
 
-    log.debug(
+    frappe.log(
         f"✅ [SYNC_BACKEND] WatermelonDB-to-Frappe conversion completed in {conversion_duration:.4f}s"
     )
-    log.debug(f"🔍 [SYNC_BACKEND] Conversion breakdown:")
-    log.debug(
+    frappe.log(f"🔍 [SYNC_BACKEND] Conversion breakdown:")
+    frappe.log(
         f"  - Field processing: {field_processing_duration:.4f}s ({processed_fields} fields)"
     )
-    log.debug(f"  - Timestamp conversions: {timestamp_conversions} conversions")
+    frappe.log(f"  - Timestamp conversions: {timestamp_conversions} conversions")
 
     return frappe_data
 

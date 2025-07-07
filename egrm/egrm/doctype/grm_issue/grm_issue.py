@@ -1,9 +1,3 @@
-import json
-import logging
-import random
-import re
-import string
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -12,15 +6,15 @@ from frappe.utils import cint, getdate, now_datetime
 from egrm.egrm.doctype.grm_user_project_assignment.grm_user_project_assignment import (
     get_user_assignments,
 )
-
-log = logging.getLogger(__name__)
+from egrm.utils.tracking_code_generator import generate_tracking_code
 
 
 class GRMIssue(Document):
     def autoname(self):
         """Use WatermelonDB ID if provided, otherwise use Frappe naming series"""
         # Check if coming from sync with custom ID
-        if hasattr(self, '_watermelon_id') and self._watermelon_id:
+        print("AutoName", self.name)
+        if hasattr(self, "_watermelon_id") and self._watermelon_id:
             # Use WatermelonDB-generated ID directly
             self.name = self._watermelon_id
         elif self.name:
@@ -28,10 +22,12 @@ class GRMIssue(Document):
             pass
         else:
             pass
+        print("AutoName2", self.name)
 
     def before_validate(self):
         try:
             # Set intake_date to today if not already set
+            print("Name during validate", self.name)
             user = frappe.session.user
             frappe.log(f"Getting regions for user: {user}")
 
@@ -121,13 +117,25 @@ class GRMIssue(Document):
                         )
                         break
 
-            frappe.log(f"Before validate for GRM Issue {self.name}")
+            frappe.log(f"Completed Before validate for GRM Issue {self.name}")
         except Exception as e:
             frappe.log_error(f"Error in before_validate: {str(e)}")
             raise
 
     def validate(self):
         try:
+            # Generate tracking code if not provided (for cases where it wasn't generated in before_insert)
+            if not self.tracking_code and self.project:
+                frappe.log(
+                    f"No tracking code found, generating during validation for project: {self.project}"
+                )
+                self.tracking_code = generate_tracking_code(
+                    project_id=self.project, issue_date=self.issue_date
+                )
+                frappe.log(
+                    f"Generated tracking code during validation: {self.tracking_code}"
+                )
+
             # Validate project related fields
             self.validate_project_entities()
 
@@ -179,18 +187,16 @@ class GRMIssue(Document):
 
     def generate_codes(self):
         try:
-            # Generate tracking code with some randomness for security
+            # Generate tracking code using consistent format: {PROJECT_CODE}-{YYMMDD}-{NNNN}
             if not self.tracking_code:
-                project_code = (
-                    frappe.db.get_value("GRM Project", self.project, "project_code")
-                    or "PRJ"
+                frappe.log(f"Generating tracking code for project: {self.project}")
+                self.tracking_code = generate_tracking_code(
+                    project_id=self.project, issue_date=self.issue_date
                 )
-                random_suffix = "".join(
-                    random.choices(string.ascii_uppercase + string.digits, k=6)
-                )
-                self.tracking_code = f"{project_code}-{random_suffix}"
+                frappe.log(f"Generated tracking code: {self.tracking_code}")
         except Exception as e:
-            frappe.log(f"Error generating codes: {str(e)}")
+            frappe.log_error(f"Error generating codes: {str(e)}")
+            frappe.log_error(f"Error generating codes: {str(e)}")
             raise
 
     def validate_project_entities(self):
@@ -232,6 +238,7 @@ class GRMIssue(Document):
                 )
 
             # Check that administrative region belongs to the project
+            print("Validating regions", self.administrative_region, self.project)
             region_belongs_to_project = (
                 frappe.db.get_value(
                     "GRM Administrative Region", self.administrative_region, "project"
@@ -436,28 +443,11 @@ class GRMIssue(Document):
 
     def get_citizen_name(self):
         """Get citizen name based on type"""
-        if self.citizen_type == "1":
-            # Check if user has permission to view confidential data
-            if self.has_permission_to_view_sensitive_data():
-                return self.citizen_confidential
-            else:
-                return "[Confidential]"
-        else:
-            return self.citizen
+        return self.citizen
 
     def get_contact_info(self):
         """Get contact information based on type"""
-        if self.contact_medium != "contact":
-            return None
-
-        if self.citizen_type == "1":
-            # Check if user has permission to view confidential data
-            if self.has_permission_to_view_sensitive_data():
-                return self.contact_info_confidential
-            else:
-                return "[Confidential]"
-        else:
-            return self.contact_information
+        return self.contact_information
 
     def has_permission_to_view_sensitive_data(self):
         """Check if current user has permission to view sensitive data"""

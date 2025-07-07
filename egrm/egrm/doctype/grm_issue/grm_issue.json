@@ -1,614 +1,618 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "format:ISS-{MM}{YY}-{####}",
-  "creation": "2025-05-17 00:00:00",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "main_tab",
-    "project",
-    "issue_date",
-    "intake_date",
-    "category",
-    "issue_type",
-    "status",
-    "tracking_code",
-    "description",
-    "section_break_xotr",
-    "issue_location",
-    "citizen_tab",
-    "citizen_information_section",
-    "citizen_type",
-    "citizen",
-    "citizen_confidential",
-    "gender",
-    "contact_medium",
-    "contact_info_type",
-    "contact_information",
-    "contact_info_confidential",
-    "column_break_3",
-    "citizen_age_group",
-    "citizen_group_1",
-    "citizen_group_2",
-    "attachments_tab",
-    "attachments_section",
-    "grm_issue_attachment",
-    "comments_section",
-    "grm_issue_comment",
-    "escalation_section",
-    "grm_issue_escalation_reason",
-    "action_tracking_tab",
-    "accept_section",
-    "accepted_date",
-    "reject_section",
-    "reject_reason",
-    "rejected_date",
-    "rejected_by",
-    "escalation_tracking_section",
-    "escalated_date",
-    "escalated_by",
-    "escalation_reason",
-    "resolution_tracking_section",
-    "resolution_text",
-    "resolved_by",
-    "rating_section",
-    "rated_date",
-    "appeal_section",
-    "appeal_submitted",
-    "appeal_date",
-    "amended_from",
-    "assignment_tab",
-    "assignment_section",
-    "reporter",
-    "assignee",
-    "administrative_region",
-    "activity_log_tab",
-    "grm_issue_log",
-    "resolution_tab",
-    "resolution_information_section",
-    "resolution_days",
-    "resolution_date",
-    "column_break_4",
-    "resolution_accepted",
-    "rating",
-    "escalate_flag",
-    "confirmed"
-  ],
-  "fields": [
-    {
-      "fieldname": "main_tab",
-      "fieldtype": "Tab Break",
-      "label": "Issue Details"
-    },
-    {
-      "fieldname": "citizen_tab",
-      "fieldtype": "Tab Break",
-      "label": "Citizen Information"
-    },
-    {
-      "fieldname": "assignment_tab",
-      "fieldtype": "Tab Break",
-      "label": "Assignment"
-    },
-    {
-      "fieldname": "resolution_tab",
-      "fieldtype": "Tab Break",
-      "label": "Resolution"
-    },
-    {
-      "fieldname": "attachments_tab",
-      "fieldtype": "Tab Break",
-      "label": "Attachments & Comments"
-    },
-    {
-      "fieldname": "assignment_section",
-      "fieldtype": "Section Break",
-      "label": "Assignment Details"
-    },
-    {
-      "fieldname": "tracking_code",
-      "fieldtype": "Data",
-      "in_standard_filter": 1,
-      "label": "Tracking Code",
-      "read_only": 1,
-      "unique": 1
-    },
-    {
-      "fieldname": "description",
-      "fieldtype": "Text Editor",
-      "label": "Description",
-      "reqd": 1
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Link",
-      "in_list_view": 1,
-      "in_standard_filter": 1,
-      "label": "Status",
-      "options": "GRM Issue Status",
-      "read_only": 1,
-      "reqd": 1
-    },
-    {
-      "allow_on_submit": 1,
-      "fieldname": "assignee",
-      "fieldtype": "Link",
-      "in_standard_filter": 1,
-      "label": "Assignee",
-      "options": "User"
-    },
-    {
-      "fieldname": "reporter",
-      "fieldtype": "Link",
-      "label": "Reporter",
-      "options": "User",
-      "reqd": 1
-    },
-    {
-      "depends_on": "eval:doc.citizen_type !== 'Confidential'",
-      "fieldname": "citizen",
-      "fieldtype": "Data",
-      "label": "Citizen"
-    },
-    {
-      "depends_on": "eval:doc.citizen_type === 'Confidential'",
-      "fieldname": "citizen_confidential",
-      "fieldtype": "Password",
-      "label": "Citizen (Confidential)"
-    },
-    {
-      "default": "Visible",
-      "fieldname": "citizen_type",
-      "fieldtype": "Select",
-      "label": "Citizen Type",
-      "options": "Visible\nConfidential\nOn behalf of Individual\nOn behalf of Organization",
-      "reqd": 1
-    },
-    {
-      "fieldname": "citizen_age_group",
-      "fieldtype": "Link",
-      "label": "Citizen Age Group",
-      "options": "GRM Issue Age Group"
-    },
-    {
-      "fieldname": "citizen_group_1",
-      "fieldtype": "Link",
-      "label": "Citizen Group 1",
-      "options": "GRM Issue Citizen Group"
-    },
-    {
-      "fieldname": "citizen_group_2",
-      "fieldtype": "Link",
-      "label": "Citizen Group 2",
-      "options": "GRM Issue Citizen Group"
-    },
-    {
-      "fieldname": "gender",
-      "fieldtype": "Select",
-      "label": "Gender",
-      "options": "male\nfemale\nother"
-    },
-    {
-      "fieldname": "contact_medium",
-      "fieldtype": "Select",
-      "label": "Contact Medium",
-      "options": "anonymous\nfacilitator\ncontact",
-      "reqd": 1
-    },
-    {
-      "depends_on": "eval:doc.contact_medium === 'contact'",
-      "fieldname": "contact_info_type",
-      "fieldtype": "Select",
-      "label": "Contact Information Type",
-      "options": "email\nphone\nother"
-    },
-    {
-      "depends_on": "eval:doc.contact_medium === 'contact' && doc.citizen_type !== 'Confidential'",
-      "fieldname": "contact_information",
-      "fieldtype": "Small Text",
-      "label": "Contact Information"
-    },
-    {
-      "depends_on": "eval:doc.contact_medium === 'contact' && doc.citizen_type === 'Confidential'",
-      "fieldname": "contact_info_confidential",
-      "fieldtype": "Password",
-      "label": "Contact Information (Confidential)"
-    },
-    {
-      "fieldname": "category",
-      "fieldtype": "Link",
-      "in_standard_filter": 1,
-      "label": "Category",
-      "options": "GRM Issue Category",
-      "reqd": 1
-    },
-    {
-      "fieldname": "issue_type",
-      "fieldtype": "Link",
-      "in_standard_filter": 1,
-      "label": "Issue Type",
-      "options": "GRM Issue Type",
-      "reqd": 1
-    },
-    {
-      "allow_on_submit": 1,
-      "fieldname": "resolution_days",
-      "fieldtype": "Int",
-      "label": "Resolution Days",
-      "read_only": 1
-    },
-    {
-      "allow_on_submit": 1,
-      "fieldname": "resolution_date",
-      "fieldtype": "Datetime",
-      "label": "Resolution Date",
-      "read_only": 1
-    },
-    {
-      "fieldname": "intake_date",
-      "fieldtype": "Date",
-      "label": "Intake Date",
-      "reqd": 1
-    },
-    {
-      "fieldname": "issue_date",
-      "fieldtype": "Date",
-      "label": "Issue Date",
-      "reqd": 1
-    },
-    {
-      "fieldname": "administrative_region",
-      "fieldtype": "Link",
-      "in_standard_filter": 1,
-      "label": "Administrative Region",
-      "options": "GRM Administrative Region",
-      "reqd": 1
-    },
-    {
-      "fieldname": "issue_location",
-      "fieldtype": "Geolocation",
-      "label": "Issue Location"
-    },
-    {
-      "default": "0",
-      "fieldname": "confirmed",
-      "fieldtype": "Check",
-      "label": "Confirmed",
-      "read_only": 1
-    },
-    {
-      "allow_on_submit": 1,
-      "fieldname": "resolution_accepted",
-      "fieldtype": "Select",
-      "label": "Resolution Accepted",
-      "options": "Pending\nAccepted\nRejected",
-      "read_only": 1
-    },
-    {
-      "allow_on_submit": 1,
-      "fieldname": "rating",
-      "fieldtype": "Int",
-      "label": "Rating",
-      "read_only": 1
-    },
-    {
-      "allow_on_submit": 1,
-      "default": "0",
-      "fieldname": "escalate_flag",
-      "fieldtype": "Check",
-      "label": "Escalate Flag",
-      "read_only": 1
-    },
-    {
-      "fieldname": "project",
-      "fieldtype": "Link",
-      "in_standard_filter": 1,
-      "label": "Project",
-      "options": "GRM Project",
-      "reqd": 1
-    },
-    {
-      "fieldname": "grm_issue_attachment",
-      "fieldtype": "Table",
-      "label": "Issue Attachments",
-      "options": "GRM Issue Attachment"
-    },
-    {
-      "fieldname": "grm_issue_comment",
-      "fieldtype": "Table",
-      "label": "Issue Comments",
-      "options": "GRM Issue Comment"
-    },
-    {
-      "fieldname": "grm_issue_escalation_reason",
-      "fieldtype": "Table",
-      "label": "Escalation Reasons",
-      "options": "GRM Issue Escalation Reason"
-    },
-    {
-      "fieldname": "action_tracking_tab",
-      "fieldtype": "Tab Break",
-      "label": "Action Tracking"
-    },
-    {
-      "fieldname": "accept_section",
-      "fieldtype": "Section Break",
-      "label": "Accept Information"
-    },
-    {
-      "depends_on": "accepted_date",
-      "fieldname": "accepted_date",
-      "fieldtype": "Datetime",
-      "label": "Accepted Date",
-      "read_only": 1
-    },
-    {
-      "fieldname": "reject_section",
-      "fieldtype": "Section Break",
-      "label": "Reject Information"
-    },
-    {
-      "depends_on": "reject_reason",
-      "fieldname": "reject_reason",
-      "fieldtype": "Text",
-      "label": "Reject Reason",
-      "read_only": 1
-    },
-    {
-      "depends_on": "rejected_date",
-      "fieldname": "rejected_date",
-      "fieldtype": "Datetime",
-      "label": "Rejected Date",
-      "read_only": 1
-    },
-    {
-      "depends_on": "rejected_by",
-      "fieldname": "rejected_by",
-      "fieldtype": "Link",
-      "label": "Rejected By",
-      "options": "User",
-      "read_only": 1
-    },
-    {
-      "fieldname": "escalation_tracking_section",
-      "fieldtype": "Section Break",
-      "label": "Escalation Tracking"
-    },
-    {
-      "depends_on": "escalated_date",
-      "fieldname": "escalated_date",
-      "fieldtype": "Datetime",
-      "label": "Escalated Date",
-      "read_only": 1
-    },
-    {
-      "depends_on": "escalated_by",
-      "fieldname": "escalated_by",
-      "fieldtype": "Link",
-      "label": "Escalated By",
-      "options": "User",
-      "read_only": 1
-    },
-    {
-      "depends_on": "escalation_reason",
-      "fieldname": "escalation_reason",
-      "fieldtype": "Text",
-      "label": "Escalation Reason",
-      "read_only": 1
-    },
-    {
-      "fieldname": "resolution_tracking_section",
-      "fieldtype": "Section Break",
-      "label": "Resolution Tracking"
-    },
-    {
-      "depends_on": "resolution_text",
-      "fieldname": "resolution_text",
-      "fieldtype": "Text",
-      "label": "Resolution Text",
-      "read_only": 1
-    },
-    {
-      "depends_on": "resolved_by",
-      "fieldname": "resolved_by",
-      "fieldtype": "Link",
-      "label": "Resolved By",
-      "options": "User",
-      "read_only": 1
-    },
-    {
-      "fieldname": "rating_section",
-      "fieldtype": "Section Break",
-      "label": "Rating Information"
-    },
-    {
-      "depends_on": "rated_date",
-      "fieldname": "rated_date",
-      "fieldtype": "Datetime",
-      "label": "Rated Date",
-      "read_only": 1
-    },
-    {
-      "fieldname": "appeal_section",
-      "fieldtype": "Section Break",
-      "label": "Appeal Information"
-    },
-    {
-      "depends_on": "appeal_submitted",
-      "default": "0",
-      "fieldname": "appeal_submitted",
-      "fieldtype": "Check",
-      "label": "Appeal Submitted",
-      "read_only": 1
-    },
-    {
-      "depends_on": "appeal_date",
-      "fieldname": "appeal_date",
-      "fieldtype": "Datetime",
-      "label": "Appeal Date",
-      "read_only": 1
-    },
-    {
-      "fieldname": "amended_from",
-      "fieldtype": "Link",
-      "label": "Amended From",
-      "no_copy": 1,
-      "options": "GRM Issue",
-      "print_hide": 1,
-      "read_only": 1,
-      "search_index": 1
-    },
-    {
-      "fieldname": "citizen_information_section",
-      "fieldtype": "Section Break",
-      "label": "Citizen Information"
-    },
-    {
-      "fieldname": "column_break_3",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "resolution_information_section",
-      "fieldtype": "Section Break",
-      "label": "Resolution Information"
-    },
-    {
-      "fieldname": "column_break_4",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "attachments_section",
-      "fieldtype": "Section Break",
-      "label": "Attachments"
-    },
-    {
-      "fieldname": "comments_section",
-      "fieldtype": "Section Break",
-      "label": "Comments"
-    },
-    {
-      "fieldname": "escalation_section",
-      "fieldtype": "Section Break",
-      "label": "Escalation"
-    },
-    {
-      "fieldname": "section_break_xotr",
-      "fieldtype": "Section Break"
-    },
-    {
-      "allow_on_submit": 1,
-      "fieldname": "grm_issue_log",
-      "fieldtype": "Table",
-      "label": "Issue Log",
-      "options": "GRM Issue Log"
-    },
-    {
-      "fieldname": "activity_log_tab",
-      "fieldtype": "Tab Break",
-      "label": "Activity Log"
-    }
-  ],
-  "index_web_pages_for_search": 1,
-  "is_submittable": 1,
-  "links": [],
-  "modified": "2025-06-21 13:12:54.508195",
-  "modified_by": "Administrator",
-  "module": "egrm",
-  "name": "GRM Issue",
-  "naming_rule": "Expression",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "amend": 1,
-      "cancel": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "System Manager",
-      "share": 1,
-      "submit": 1,
-      "write": 1
-    },
-    {
-      "amend": 1,
-      "cancel": 1,
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "GRM Administrator",
-      "share": 1,
-      "submit": 1,
-      "write": 1
-    },
-    {
-      "amend": 1,
-      "cancel": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "GRM Project Manager",
-      "share": 1,
-      "submit": 1,
-      "write": 1
-    },
-    {
-      "amend": 1,
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "GRM Department Head",
-      "share": 1,
-      "submit": 1,
-      "write": 1
-    },
-    {
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "GRM Field Officer",
-      "share": 1,
-      "submit": 1,
-      "write": 1
-    },
-    {
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "GRM Analyst",
-      "share": 1
-    }
-  ],
-  "row_format": "Dynamic",
-  "sort_field": "modified",
-  "sort_order": "DESC",
-  "states": [
-    {
-      "color": "Blue",
-      "title": "Initial"
-    },
-    {
-      "color": "Blue",
-      "title": "Open"
-    }
-  ]
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:ISS-{MM}{YY}-{####}",
+ "creation": "2025-05-17 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "main_tab",
+  "issue_date",
+  "intake_date",
+  "description",
+  "column_break_zvuc",
+  "project",
+  "category",
+  "issue_type",
+  "tracking_code",
+  "status",
+  "section_break_xotr",
+  "issue_location",
+  "citizen_tab",
+  "citizen_information_section",
+  "citizen_type",
+  "citizen",
+  "citizen_confidential",
+  "gender",
+  "contact_medium",
+  "contact_info_type",
+  "contact_information",
+  "contact_info_confidential",
+  "column_break_3",
+  "citizen_age_group",
+  "citizen_group_1",
+  "citizen_group_2",
+  "attachments_tab",
+  "attachments_section",
+  "grm_issue_attachment",
+  "comments_section",
+  "grm_issue_comment",
+  "escalation_section",
+  "grm_issue_escalation_reason",
+  "action_tracking_tab",
+  "accept_section",
+  "accepted_date",
+  "reject_section",
+  "reject_reason",
+  "rejected_date",
+  "rejected_by",
+  "escalation_tracking_section",
+  "escalated_date",
+  "escalated_by",
+  "escalation_reason",
+  "resolution_tracking_section",
+  "resolution_text",
+  "resolved_by",
+  "rating_section",
+  "rated_date",
+  "appeal_section",
+  "appeal_submitted",
+  "appeal_date",
+  "amended_from",
+  "assignment_tab",
+  "assignment_section",
+  "reporter",
+  "assignee",
+  "administrative_region",
+  "activity_log_tab",
+  "grm_issue_log",
+  "resolution_tab",
+  "resolution_information_section",
+  "resolution_days",
+  "resolution_date",
+  "column_break_4",
+  "resolution_accepted",
+  "rating",
+  "escalate_flag",
+  "confirmed"
+ ],
+ "fields": [
+  {
+   "fieldname": "main_tab",
+   "fieldtype": "Tab Break",
+   "label": "Issue Details"
+  },
+  {
+   "fieldname": "citizen_tab",
+   "fieldtype": "Tab Break",
+   "label": "Citizen Information"
+  },
+  {
+   "fieldname": "assignment_tab",
+   "fieldtype": "Tab Break",
+   "label": "Assignment"
+  },
+  {
+   "fieldname": "resolution_tab",
+   "fieldtype": "Tab Break",
+   "label": "Resolution"
+  },
+  {
+   "fieldname": "attachments_tab",
+   "fieldtype": "Tab Break",
+   "label": "Attachments & Comments"
+  },
+  {
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment Details"
+  },
+  {
+   "fieldname": "tracking_code",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Tracking Code",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "GRM Issue Status",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "assignee",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Assignee",
+   "options": "User"
+  },
+  {
+   "fieldname": "reporter",
+   "fieldtype": "Link",
+   "label": "Reporter",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.citizen_type !== 'Confidential'",
+   "fieldname": "citizen",
+   "fieldtype": "Data",
+   "label": "Citizen"
+  },
+  {
+   "default": "Visible",
+   "fieldname": "citizen_type",
+   "fieldtype": "Select",
+   "label": "Citizen Type",
+   "options": "Visible\nConfidential\nOn behalf of Individual\nOn behalf of Organization"
+  },
+  {
+   "fieldname": "citizen_age_group",
+   "fieldtype": "Link",
+   "label": "Citizen Age Group",
+   "options": "GRM Issue Age Group"
+  },
+  {
+   "fieldname": "citizen_group_1",
+   "fieldtype": "Link",
+   "label": "Citizen Group 1",
+   "options": "GRM Issue Citizen Group"
+  },
+  {
+   "fieldname": "citizen_group_2",
+   "fieldtype": "Link",
+   "label": "Citizen Group 2",
+   "options": "GRM Issue Citizen Group"
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "male\nfemale\nother"
+  },
+  {
+   "fieldname": "contact_medium",
+   "fieldtype": "Select",
+   "label": "Contact Medium",
+   "options": "anonymous\nfacilitator\nchannel-alert",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.contact_medium === 'channel-alert'",
+   "fieldname": "contact_info_type",
+   "fieldtype": "Select",
+   "label": "Contact Information Type",
+   "options": "email\nphone_number\nwhatsapp"
+  },
+  {
+   "depends_on": "eval:doc.contact_medium === 'channel-alert' && doc.citizen_type !== 'Confidential'",
+   "fieldname": "contact_information",
+   "fieldtype": "Small Text",
+   "label": "Contact Information"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Category",
+   "options": "GRM Issue Category",
+   "reqd": 1
+  },
+  {
+   "fieldname": "issue_type",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Issue Type",
+   "options": "GRM Issue Type",
+   "reqd": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "resolution_days",
+   "fieldtype": "Int",
+   "label": "Resolution Days",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "resolution_date",
+   "fieldtype": "Datetime",
+   "label": "Resolution Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "intake_date",
+   "fieldtype": "Date",
+   "label": "Intake Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "issue_date",
+   "fieldtype": "Date",
+   "label": "Issue Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "administrative_region",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Administrative Region",
+   "options": "GRM Administrative Region",
+   "reqd": 1
+  },
+  {
+   "fieldname": "issue_location",
+   "fieldtype": "Geolocation",
+   "label": "Issue Location"
+  },
+  {
+   "default": "0",
+   "fieldname": "confirmed",
+   "fieldtype": "Check",
+   "label": "Confirmed",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "resolution_accepted",
+   "fieldtype": "Select",
+   "label": "Resolution Accepted",
+   "options": "Pending\nAccepted\nRejected",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "rating",
+   "fieldtype": "Int",
+   "label": "Rating",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "escalate_flag",
+   "fieldtype": "Check",
+   "label": "Escalate Flag",
+   "read_only": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Project",
+   "options": "GRM Project",
+   "reqd": 1
+  },
+  {
+   "fieldname": "grm_issue_attachment",
+   "fieldtype": "Table",
+   "label": "Issue Attachments",
+   "options": "GRM Issue Attachment"
+  },
+  {
+   "fieldname": "grm_issue_comment",
+   "fieldtype": "Table",
+   "label": "Issue Comments",
+   "options": "GRM Issue Comment"
+  },
+  {
+   "fieldname": "grm_issue_escalation_reason",
+   "fieldtype": "Table",
+   "label": "Escalation Reasons",
+   "options": "GRM Issue Escalation Reason"
+  },
+  {
+   "fieldname": "action_tracking_tab",
+   "fieldtype": "Tab Break",
+   "label": "Action Tracking"
+  },
+  {
+   "fieldname": "accept_section",
+   "fieldtype": "Section Break",
+   "label": "Accept Information"
+  },
+  {
+   "depends_on": "accepted_date",
+   "fieldname": "accepted_date",
+   "fieldtype": "Datetime",
+   "label": "Accepted Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reject_section",
+   "fieldtype": "Section Break",
+   "label": "Reject Information"
+  },
+  {
+   "depends_on": "reject_reason",
+   "fieldname": "reject_reason",
+   "fieldtype": "Text",
+   "label": "Reject Reason",
+   "read_only": 1
+  },
+  {
+   "depends_on": "rejected_date",
+   "fieldname": "rejected_date",
+   "fieldtype": "Datetime",
+   "label": "Rejected Date",
+   "read_only": 1
+  },
+  {
+   "depends_on": "rejected_by",
+   "fieldname": "rejected_by",
+   "fieldtype": "Link",
+   "label": "Rejected By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "escalation_tracking_section",
+   "fieldtype": "Section Break",
+   "label": "Escalation Tracking"
+  },
+  {
+   "depends_on": "escalated_date",
+   "fieldname": "escalated_date",
+   "fieldtype": "Datetime",
+   "label": "Escalated Date",
+   "read_only": 1
+  },
+  {
+   "depends_on": "escalated_by",
+   "fieldname": "escalated_by",
+   "fieldtype": "Link",
+   "label": "Escalated By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "depends_on": "escalation_reason",
+   "fieldname": "escalation_reason",
+   "fieldtype": "Text",
+   "label": "Escalation Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolution_tracking_section",
+   "fieldtype": "Section Break",
+   "label": "Resolution Tracking"
+  },
+  {
+   "depends_on": "resolution_text",
+   "fieldname": "resolution_text",
+   "fieldtype": "Text",
+   "label": "Resolution Text",
+   "read_only": 1
+  },
+  {
+   "depends_on": "resolved_by",
+   "fieldname": "resolved_by",
+   "fieldtype": "Link",
+   "label": "Resolved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rating_section",
+   "fieldtype": "Section Break",
+   "label": "Rating Information"
+  },
+  {
+   "depends_on": "rated_date",
+   "fieldname": "rated_date",
+   "fieldtype": "Datetime",
+   "label": "Rated Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "appeal_section",
+   "fieldtype": "Section Break",
+   "label": "Appeal Information"
+  },
+  {
+   "default": "0",
+   "depends_on": "appeal_submitted",
+   "fieldname": "appeal_submitted",
+   "fieldtype": "Check",
+   "label": "Appeal Submitted",
+   "read_only": 1
+  },
+  {
+   "depends_on": "appeal_date",
+   "fieldname": "appeal_date",
+   "fieldtype": "Datetime",
+   "label": "Appeal Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "GRM Issue",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "citizen_information_section",
+   "fieldtype": "Section Break",
+   "label": "Citizen Information"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "resolution_information_section",
+   "fieldtype": "Section Break",
+   "label": "Resolution Information"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attachments_section",
+   "fieldtype": "Section Break",
+   "label": "Attachments"
+  },
+  {
+   "fieldname": "comments_section",
+   "fieldtype": "Section Break",
+   "label": "Comments"
+  },
+  {
+   "fieldname": "escalation_section",
+   "fieldtype": "Section Break",
+   "label": "Escalation"
+  },
+  {
+   "fieldname": "section_break_xotr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "grm_issue_log",
+   "fieldtype": "Table",
+   "label": "Issue Log",
+   "options": "GRM Issue Log"
+  },
+  {
+   "fieldname": "activity_log_tab",
+   "fieldtype": "Tab Break",
+   "label": "Activity Log"
+  },
+  {
+   "depends_on": "eval:doc.citizen_type === 'Confidential'",
+   "fieldname": "citizen_confidential",
+   "fieldtype": "Password",
+   "label": "Citizen (Confidential)"
+  },
+  {
+   "depends_on": "eval:doc.contact_medium === 'channel-alert' && doc.citizen_type === 'Confidential'",
+   "fieldname": "contact_info_confidential",
+   "fieldtype": "Password",
+   "label": "Contact Information (Confidential)"
+  },
+  {
+   "fieldname": "column_break_zvuc",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-07-07 13:57:25.936952",
+ "modified_by": "Administrator",
+ "module": "egrm",
+ "name": "GRM Issue",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Administrator",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Project Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Department Head",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Field Officer",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Analyst",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Blue",
+   "title": "Initial"
+  },
+  {
+   "color": "Blue",
+   "title": "Open"
+  }
+ ]
 }
