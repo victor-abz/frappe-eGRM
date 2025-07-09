@@ -1,302 +1,786 @@
 frappe.ui.form.on("GRM Issue", {
-	issue_location: (frm) => {
-		const map_data = JSON.parse(cur_frm.doc.issue_location)?.features[0];
-		console.log(map_data);
-		if (mapdata && mapdata.geometry.type == "point") {
-			let lat = mapdata.geometry.coordinate[1];
-			let lon = mapdata.geometry.coordinate[0];
+	// Helper functions for button enablement logic
 
-			console.log(lat, lon);
+	/**
+	 * Check if current user is assigned to the issue
+	 */
+	_isIssueAssignedToMe: function (frm) {
+		if (!frm.doc.assignee) return false;
+		const currentUser = frappe.session.user;
+		return (
+			frm.doc.assignee === currentUser ||
+			(frm.doc.reporter === currentUser && frm.doc.assignee === currentUser)
+		);
+	},
+
+	/**
+	 * Check if Accept button should be enabled
+	 */
+	_isAcceptEnabled: function (frm) {
+		const currentUser = frappe.session.user;
+		const isAssigned = frm.events._isIssueAssignedToMe(frm);
+
+		// Check for unknown status (empty or null status)
+		const hasUnknownStatus = !frm.doc.status || frm.doc.status === "";
+		if (hasUnknownStatus && isAssigned) {
+			return { enabled: true, reason: "Issue has unknown status and user is assigned" };
+		}
+
+		// Check for initial status
+		if (frm.doc.status && frm.doc.__onload?.status_info?.initial_status && isAssigned) {
+			return { enabled: true, reason: "Issue has initial status and user is assigned" };
+		}
+
+		// Determine reason for being disabled
+		let reason = "";
+		if (!isAssigned) {
+			reason = "User is not assigned to this issue";
+		} else if (!hasUnknownStatus && !frm.doc.__onload?.status_info?.initial_status) {
+			reason = "Issue is not in initial status or unknown status";
+		}
+
+		return { enabled: false, reason: reason };
+	},
+
+	/**
+	 * Check if Record Resolution actions should be enabled
+	 */
+	_isRecordResolutionEnabled: function (frm) {
+		const isAssigned = frm.events._isIssueAssignedToMe(frm);
+		const isOpenStatus = frm.doc.__onload?.status_info?.open_status;
+		const isNotEscalated = !frm.doc.escalate_flag;
+
+		if (isOpenStatus && isAssigned && isNotEscalated) {
+			return {
+				enabled: true,
+				reason: "Issue has open status, user is assigned, and not escalated",
+			};
+		}
+
+		// Determine reason for being disabled
+		let reason = "";
+		if (!isAssigned) {
+			reason = "User is not assigned to this issue";
+		} else if (!isOpenStatus) {
+			reason = "Issue is not in open status";
+		} else if (frm.doc.escalate_flag) {
+			reason = "Issue has been escalated";
+		}
+
+		return { enabled: false, reason: reason };
+	},
+
+	/**
+	 * Check if Rate/Appeal button should be enabled
+	 */
+	_isRateAppealEnabled: function (frm) {
+		const isNotAssigned = !frm.events._isIssueAssignedToMe(frm);
+		const isFinalStatus = frm.doc.__onload?.status_info?.final_status;
+
+		if (isFinalStatus && isNotAssigned) {
+			return { enabled: true, reason: "Issue has final status and user is not assigned" };
+		}
+
+		// Determine reason for being disabled
+		let reason = "";
+		if (!isFinalStatus) {
+			reason = "Issue is not in final status";
+		} else if (!isNotAssigned) {
+			reason = "User is assigned to this issue (only non-assigned users can rate/appeal)";
+		}
+
+		return { enabled: false, reason: reason };
+	},
+
+	/**
+	 * Check if Escalate button should be enabled
+	 */
+	_isEscalateEnabled: function (frm) {
+		const recordResolutionResult = frm.events._isRecordResolutionEnabled(frm);
+		const isNotEscalated = !frm.doc.escalate_flag;
+
+		if (recordResolutionResult.enabled && isNotEscalated) {
+			return { enabled: true, reason: "Can record resolution and issue is not escalated" };
+		}
+
+		// Determine reason for being disabled
+		let reason = "";
+		if (!recordResolutionResult.enabled) {
+			reason = `Cannot record resolution: ${recordResolutionResult.reason}`;
+		} else if (frm.doc.escalate_flag) {
+			reason = "Issue has already been escalated";
+		}
+
+		return { enabled: false, reason: reason };
+	},
+
+	/**
+	 * Check if Reject button should be enabled
+	 */
+	_isRejectEnabled: function (frm) {
+		const acceptResult = frm.events._isAcceptEnabled(frm);
+		return {
+			enabled: acceptResult.enabled,
+			reason: acceptResult.reason + " (same conditions as Accept)",
+		};
+	},
+
+	/**
+	 * Check if Reassign button should be enabled
+	 */
+	_isReassignEnabled: function (frm) {
+		// Only allow reassignment if user has project access or is assigned
+		const isAssigned = frm.events._isIssueAssignedToMe(frm);
+		const hasProjectAccess = frm.doc.project; // Basic check - user can see the document
+
+		if (isAssigned || hasProjectAccess) {
+			const reason = isAssigned ? "User is assigned to issue" : "User has project access";
+			return { enabled: true, reason: reason };
+		}
+
+		return { enabled: false, reason: "User is not assigned and has no project access" };
+	},
+
+	/**
+	 * Check if Record Steps Taken button should be enabled
+	 */
+	_isAddCommentEnabled: function (frm) {
+		// Record steps should only be available when issue is in progress (same as Record Resolution)
+		const recordResolutionResult = frm.events._isRecordResolutionEnabled(frm);
+		return {
+			enabled: recordResolutionResult.enabled,
+			reason: recordResolutionResult.reason + " (same conditions as Record Resolution)",
+		};
+	},
+
+	/**
+	 * Add standardized comment and log entry
+	 */
+	_addCommentAndLog: function (frm, commentText, logText, actionType) {
+		// Add comment
+		const comment = frm.add_child("grm_issue_comment");
+		comment.user = frappe.session.user;
+		comment.comment = commentText;
+
+		// Add log entry
+		const log = frm.add_child("grm_issue_log");
+		log.user = frappe.session.user;
+		log.text = logText;
+		log.timestamp = frappe.datetime.now_datetime();
+
+		// Add action tracking fields if available
+		if (actionType) {
+			log.action_taken = actionType;
+			log.action_taken_by = frappe.session.user;
+			log.action_taken_date = frappe.datetime.now_datetime();
 		}
 	},
-	refresh: function (frm) {
-		const map_data = JSON.parse(cur_frm.doc.issue_location);
-		console.log(map_data);
-		// if (mapdata && mapdata.geometry.type == "point") {
-		// 	let lat = mapdata.geometry.coordinate[1];
-		// 	let lon = mapdata.geometry.coordinate[0];
 
-		// 	console.log(lat, lon);
-		// }
-		// Add custom buttons based on state
-		if (frm.doc.docstatus === 1) {
-			// Submitted
-			// Add resolution actions
-			let statuses = frm.doc.__onload?.allowed_statuses || [];
+	/**
+	 * Accept Issue Action
+	 */
+	_acceptIssue: function (frm) {
+		frappe.confirm(__("Are you sure you want to accept this issue?"), function () {
+			frappe.call({
+				method: "egrm.server_scripts.issue_actions.accept_issue",
+				args: {
+					issue: frm.doc.name,
+				},
+				callback: function (r) {
+					if (r.message) {
+						frm.reload_doc();
+						frappe.show_alert({
+							message: __("Issue accepted successfully"),
+							indicator: "green",
+						});
+					}
+				},
+			});
+		});
+	},
 
-			if (statuses.length > 0) {
-				frm.add_custom_button(
-					__("Change Status"),
-					function () {
-						frappe.prompt(
-							[
-								{
-									fieldname: "status",
-									label: __("New Status"),
-									fieldtype: "Select",
-									options: statuses.join("\n"),
-									reqd: 1,
-								},
-								{
-									fieldname: "comment",
-									label: __("Comment"),
-									fieldtype: "Small Text",
-									reqd: 1,
-								},
-							],
-							function (values) {
-								frappe.call({
-									method: "egrm.server_scripts.issue_actions.change_status",
-									args: {
-										issue: frm.doc.name,
-										status: values.status,
-										comment: values.comment,
-									},
-									callback: function (r) {
-										if (r.message) {
-											frm.reload_doc();
-											frappe.show_alert({
-												message: __("Status updated successfully"),
-												indicator: "green",
-											});
-										}
-									},
-								});
-							},
-							__("Change Issue Status"),
-							__("Update")
-						);
+	/**
+	 * Reject Issue Action
+	 */
+	_rejectIssue: function (frm) {
+		frappe.prompt(
+			{
+				fieldname: "reason",
+				label: __("Rejection Reason"),
+				fieldtype: "Text",
+				reqd: 1,
+			},
+			function (values) {
+				frappe.call({
+					method: "egrm.server_scripts.issue_actions.reject_issue",
+					args: {
+						issue: frm.doc.name,
+						reason: values.reason,
 					},
-					__("Actions")
-				);
-			}
-
-			// Add escalation button
-			if (!frm.doc.escalate_flag) {
-				frm.add_custom_button(
-					__("Escalate Issue"),
-					function () {
-						frappe.prompt(
-							[
-								{
-									fieldname: "comment",
-									label: __("Escalation Reason"),
-									fieldtype: "Small Text",
-									reqd: 1,
-								},
-								{
-									fieldname: "due_at",
-									label: __("Due Date"),
-									fieldtype: "Datetime",
-									reqd: 1,
-								},
-							],
-							function (values) {
-								frappe.call({
-									method: "egrm.server_scripts.issue_actions.escalate_issue",
-									args: {
-										issue: frm.doc.name,
-										reason: values.comment,
-										due_at: values.due_at,
-									},
-									callback: function (r) {
-										if (r.message) {
-											frm.reload_doc();
-											frappe.show_alert({
-												message: __("Issue escalated successfully"),
-												indicator: "green",
-											});
-										}
-									},
-								});
-							},
-							__("Escalate Issue"),
-							__("Escalate")
-						);
-					},
-					__("Actions")
-				);
-			}
-
-			// Add reassign button
-			frm.add_custom_button(
-				__("Reassign Issue"),
-				function () {
-					frappe.prompt(
-						[
-							{
-								fieldname: "assignee",
-								label: __("New Assignee"),
-								fieldtype: "Link",
-								options: "User",
-								reqd: 1,
-								get_query: function () {
-									return {
-										query: "egrm.server_scripts.queries.get_project_users",
-										filters: {
-											project: frm.doc.project,
-										},
-									};
-								},
-							},
-							{
-								fieldname: "comment",
-								label: __("Reason"),
-								fieldtype: "Small Text",
-								reqd: 1,
-							},
-						],
-						function (values) {
-							frappe.call({
-								method: "egrm.server_scripts.issue_actions.reassign_issue",
-								args: {
-									issue: frm.doc.name,
-									assignee: values.assignee,
-									comment: values.comment,
-								},
-								callback: function (r) {
-									if (r.message) {
-										frm.reload_doc();
-										frappe.show_alert({
-											message: __("Issue reassigned successfully"),
-											indicator: "green",
-										});
-									}
-								},
+					callback: function (r) {
+						if (r.message) {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Issue rejected successfully"),
+								indicator: "green",
 							});
-						},
-						__("Reassign Issue"),
-						__("Reassign")
-					);
+						}
+					},
+				});
+			},
+			__("Reject Issue"),
+			__("Reject")
+		);
+	},
+
+	/**
+	 * Record Steps Action
+	 */
+	_recordSteps: function (frm) {
+		frappe.prompt(
+			{
+				fieldname: "steps",
+				label: __("Steps Taken"),
+				fieldtype: "Text",
+				reqd: 1,
+			},
+			function (values) {
+				frappe.call({
+					method: "egrm.server_scripts.issue_actions.record_steps",
+					args: {
+						issue: frm.doc.name,
+						steps: values.steps,
+					},
+					callback: function (r) {
+						if (r.message) {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Steps recorded successfully"),
+								indicator: "green",
+							});
+						}
+					},
+				});
+			},
+			__("Record Steps"),
+			__("Record")
+		);
+	},
+
+	/**
+	 * Record Resolution Action
+	 */
+	_recordResolution: function (frm) {
+		frappe.prompt(
+			{
+				fieldname: "resolution",
+				label: __("Resolution Details"),
+				fieldtype: "Text",
+				reqd: 1,
+			},
+			function (values) {
+				frappe.call({
+					method: "egrm.server_scripts.issue_actions.record_resolution",
+					args: {
+						issue: frm.doc.name,
+						resolution: values.resolution,
+					},
+					callback: function (r) {
+						if (r.message) {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Resolution recorded successfully"),
+								indicator: "green",
+							});
+						}
+					},
+				});
+			},
+			__("Record Resolution"),
+			__("Resolve")
+		);
+	},
+
+	/**
+	 * Escalate Issue Action
+	 */
+	_escalateIssue: function (frm) {
+		frappe.prompt(
+			[
+				{
+					fieldname: "reason",
+					label: __("Escalation Reason"),
+					fieldtype: "Text",
+					reqd: 1,
+				},
+				{
+					fieldname: "due_at",
+					label: __("Due Date"),
+					fieldtype: "Datetime",
+					reqd: 1,
+				},
+			],
+			function (values) {
+				frappe.call({
+					method: "egrm.server_scripts.issue_actions.escalate_issue",
+					args: {
+						issue: frm.doc.name,
+						reason: values.reason,
+						due_at: values.due_at,
+					},
+					callback: function (r) {
+						if (r.message) {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Issue escalated successfully"),
+								indicator: "green",
+							});
+						}
+					},
+				});
+			},
+			__("Escalate Issue"),
+			__("Escalate")
+		);
+	},
+
+	/**
+	 * Rate/Appeal Issue Action
+	 */
+	_rateAppealIssue: function (frm) {
+		const hasRating = frm.doc.rating && frm.doc.rating > 0;
+		const hasAppeal = frm.doc.appeal_submitted;
+
+		let fields = [];
+
+		if (!hasRating) {
+			fields.push({
+				fieldname: "action_type",
+				label: __("Action"),
+				fieldtype: "Select",
+				options: "Rate Issue\nSubmit Appeal",
+				reqd: 1,
+			});
+		} else if (!hasAppeal) {
+			fields.push({
+				fieldname: "action_type",
+				label: __("Action"),
+				fieldtype: "Select",
+				options: "Submit Appeal",
+				reqd: 1,
+				default: "Submit Appeal",
+			});
+		}
+
+		if (fields.length === 0) {
+			frappe.msgprint(__("No actions available"));
+			return;
+		}
+
+		fields.push({
+			fieldname: "rating",
+			label: __("Rating (1-5)"),
+			fieldtype: "Select",
+			options: "1\n2\n3\n4\n5",
+			depends_on: "eval:doc.action_type === 'Rate Issue'",
+		});
+
+		fields.push({
+			fieldname: "comment",
+			label: __("Comment"),
+			fieldtype: "Text",
+			reqd: 1,
+		});
+
+		frappe.prompt(
+			fields,
+			function (values) {
+				const method =
+					values.action_type === "Rate Issue"
+						? "egrm.server_scripts.issue_actions.rate_issue"
+						: "egrm.server_scripts.issue_actions.appeal_issue";
+
+				frappe.call({
+					method: method,
+					args: {
+						issue: frm.doc.name,
+						rating: values.rating || null,
+						comment: values.comment,
+					},
+					callback: function (r) {
+						if (r.message) {
+							frm.reload_doc();
+							const message =
+								values.action_type === "Rate Issue"
+									? __("Rating submitted successfully")
+									: __("Appeal submitted successfully");
+							frappe.show_alert({
+								message: message,
+								indicator: "green",
+							});
+						}
+					},
+				});
+			},
+			__("Rate/Appeal Issue"),
+			__("Submit")
+		);
+	},
+
+	/**
+	 * Debug function to log button enablement status
+	 */
+	_debugButtonStatus: function (frm) {
+		if (frm.doc.docstatus !== 1) {
+			console.log("Debug: Document not submitted, no action buttons");
+			return;
+		}
+
+		console.log("=== Button Status Debug ===");
+		console.log("Current user:", frappe.session.user);
+		console.log("User roles:", frappe.user_roles);
+		console.log("Assignee:", frm.doc.assignee);
+		console.log("Status:", frm.doc.status);
+		console.log("Status info:", frm.doc.__onload?.status_info);
+		console.log("Escalate flag:", frm.doc.escalate_flag);
+		console.log("Project:", frm.doc.project);
+
+		console.log("Button enablement with reasons:");
+		const acceptResult = frm.events._isAcceptEnabled(frm);
+		console.log("- Accept enabled:", acceptResult.enabled, "- Reason:", acceptResult.reason);
+
+		const rejectResult = frm.events._isRejectEnabled(frm);
+		console.log("- Reject enabled:", rejectResult.enabled, "- Reason:", rejectResult.reason);
+
+		const recordResolutionResult = frm.events._isRecordResolutionEnabled(frm);
+		console.log(
+			"- Record Resolution enabled:",
+			recordResolutionResult.enabled,
+			"- Reason:",
+			recordResolutionResult.reason
+		);
+
+		const escalateResult = frm.events._isEscalateEnabled(frm);
+		console.log(
+			"- Escalate enabled:",
+			escalateResult.enabled,
+			"- Reason:",
+			escalateResult.reason
+		);
+
+		const rateAppealResult = frm.events._isRateAppealEnabled(frm);
+		console.log(
+			"- Rate/Appeal enabled:",
+			rateAppealResult.enabled,
+			"- Reason:",
+			rateAppealResult.reason
+		);
+
+		const reassignResult = frm.events._isReassignEnabled(frm);
+		console.log(
+			"- Reassign enabled:",
+			reassignResult.enabled,
+			"- Reason:",
+			reassignResult.reason
+		);
+
+		const recordStepsResult = frm.events._isAddCommentEnabled(frm);
+		console.log(
+			"- Record Steps Taken enabled:",
+			recordStepsResult.enabled,
+			"- Reason:",
+			recordStepsResult.reason
+		);
+
+		console.log("========================");
+	},
+
+	/**
+	 * Add all action buttons based on current state
+	 */
+	_addActionButtons: function (frm) {
+		// Clear existing custom buttons
+		frm.clear_custom_buttons();
+
+		if (frm.doc.docstatus !== 1) return; // Only for submitted documents
+
+		// Accept/Reject buttons
+		const acceptResult = frm.events._isAcceptEnabled(frm);
+		if (acceptResult.enabled) {
+			frm.add_custom_button(
+				__("Accept Issue"),
+				() => {
+					frm.events._acceptIssue(frm);
 				},
 				__("Actions")
 			);
 
-			// Add feedback collection button
-			if (!frm.doc.resolution_accepted) {
-				frm.add_custom_button(
-					__("Collect Feedback"),
-					function () {
-						frappe.prompt(
-							[
-								{
-									fieldname: "resolution_accepted",
-									label: __("Resolution Accepted"),
-									fieldtype: "Select",
-									options: "1=Accepted\n2=Rejected",
-									reqd: 1,
-								},
-								{
-									fieldname: "rating",
-									label: __("Rating (0-5)"),
-									fieldtype: "Int",
-									reqd: 1,
-								},
-								{
-									fieldname: "comment",
-									label: __("Feedback"),
-									fieldtype: "Small Text",
-									reqd: 1,
-								},
-							],
-							function (values) {
-								frappe.call({
-									method: "egrm.server_scripts.issue_actions.collect_feedback",
-									args: {
-										issue: frm.doc.name,
-										resolution_accepted: values.resolution_accepted,
-										rating: values.rating,
-										comment: values.comment,
-									},
-									callback: function (r) {
-										if (r.message) {
-											frm.reload_doc();
-											frappe.show_alert({
-												message: __("Feedback collected successfully"),
-												indicator: "green",
-											});
-										}
-									},
-								});
+			frm.add_custom_button(
+				__("Reject Issue"),
+				() => {
+					frm.events._rejectIssue(frm);
+				},
+				__("Actions")
+			);
+		}
+
+		// Record Resolution buttons
+		const recordResolutionResult = frm.events._isRecordResolutionEnabled(frm);
+		if (recordResolutionResult.enabled) {
+			frm.add_custom_button(
+				__("Record Steps"),
+				() => {
+					frm.events._recordSteps(frm);
+				},
+				__("Actions")
+			);
+
+			frm.add_custom_button(
+				__("Record Resolution"),
+				() => {
+					frm.events._recordResolution(frm);
+				},
+				__("Actions")
+			);
+		}
+
+		// Escalate button
+		const escalateResult = frm.events._isEscalateEnabled(frm);
+		if (escalateResult.enabled) {
+			frm.add_custom_button(
+				__("Escalate Issue"),
+				() => {
+					frm.events._escalateIssue(frm);
+				},
+				__("Actions")
+			);
+		}
+
+		// Rate/Appeal button
+		const rateAppealResult = frm.events._isRateAppealEnabled(frm);
+		if (rateAppealResult.enabled) {
+			frm.add_custom_button(
+				__("Rate/Appeal Issue"),
+				() => {
+					frm.events._rateAppealIssue(frm);
+				},
+				__("Actions")
+			);
+		}
+
+		// Record Steps Taken button (only for issues in progress - same as Record Resolution)
+		const recordStepsResult = frm.events._isAddCommentEnabled(frm);
+		if (recordStepsResult.enabled) {
+			frm.add_custom_button(
+				__("Record Steps Taken"),
+				() => {
+					frm.events._addComment(frm);
+				},
+				__("Actions")
+			);
+		}
+
+		// Reassign button as separate button (only if enabled)
+		const reassignResult = frm.events._isReassignEnabled(frm);
+		if (reassignResult.enabled) {
+			frm.add_custom_button(__("Reassign Issue"), () => {
+				frm.events._reassignIssue(frm);
+			});
+		}
+
+		// Debug button (only for Administrators)
+		if (frappe.user_roles.includes("Administrator")) {
+			frm.add_custom_button(
+				__("Debug Button Status"),
+				() => {
+					frm.events._debugButtonStatus(frm);
+				},
+				__("Debug")
+			);
+		}
+	},
+
+	/**
+	 * Reassign Issue Action
+	 */
+	_reassignIssue: function (frm) {
+		frappe.prompt(
+			[
+				{
+					fieldname: "assignee",
+					label: __("New Assignee"),
+					fieldtype: "Link",
+					options: "User",
+					reqd: 1,
+					get_query: function () {
+						return {
+							query: "egrm.server_scripts.queries.get_project_users",
+							filters: {
+								project: frm.doc.project,
 							},
-							__("Collect Citizen Feedback"),
-							__("Submit")
-						);
+						};
 					},
-					__("Actions")
-				);
-			}
-		} else if (frm.doc.docstatus === 0) {
-			// Draft
-			// Add track issue button for public access
-			if (frm.doc.tracking_code) {
-				frm.add_custom_button(__("Public Tracking URL"), function () {
-					let tracking_url =
-						window.location.origin + "/issue-tracker?code=" + frm.doc.tracking_code;
-					frappe.prompt({
-						fieldname: "url",
-						label: __("Tracking URL"),
-						fieldtype: "Small Text",
-						read_only: 1,
-						default: tracking_url,
-					});
+				},
+				{
+					fieldname: "comment",
+					label: __("Reason"),
+					fieldtype: "Text",
+					reqd: 1,
+				},
+			],
+			function (values) {
+				frappe.call({
+					method: "egrm.server_scripts.issue_actions.reassign_issue",
+					args: {
+						issue: frm.doc.name,
+						assignee: values.assignee,
+						comment: values.comment,
+					},
+					callback: function (r) {
+						if (r.message) {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Issue reassigned successfully"),
+								indicator: "green",
+							});
+						}
+					},
 				});
+			},
+			__("Reassign Issue"),
+			__("Reassign")
+		);
+	},
+
+	/**
+	 * Record Steps Taken Action
+	 */
+	_addComment: function (frm) {
+		frappe.prompt(
+			[
+				{
+					fieldname: "comment",
+					label: __("Steps Taken"),
+					fieldtype: "Text",
+					reqd: 1,
+				},
+				{
+					fieldname: "due_at",
+					label: __("Follow-up Date (Optional)"),
+					fieldtype: "Datetime",
+				},
+			],
+			function (values) {
+				const comment = frm.add_child("grm_issue_comment");
+				comment.user = frappe.session.user;
+				comment.comment = values.comment;
+				comment.due_at = values.due_at;
+
+				frm.save();
+				frappe.show_alert({
+					message: __("Steps recorded successfully"),
+					indicator: "green",
+				});
+			},
+			__("Record Steps Taken"),
+			__("Record")
+		);
+	},
+
+	/**
+	 * Load status information for button enablement
+	 */
+	_loadStatusInfo: function (frm) {
+		// First, clear any existing buttons
+		frm.clear_custom_buttons();
+
+		if (frm.doc.status) {
+			frappe.call({
+				method: "frappe.client.get_value",
+				args: {
+					doctype: "GRM Issue Status",
+					filters: { name: frm.doc.status },
+					fieldname: [
+						"initial_status",
+						"open_status",
+						"final_status",
+						"rejected_status",
+					],
+				},
+				callback: function (r) {
+					if (r.message) {
+						frm.doc.__onload = frm.doc.__onload || {};
+						frm.doc.__onload.status_info = r.message;
+						// Refresh buttons after loading status info
+						frm.events._addActionButtons(frm);
+					} else {
+						// Still add basic buttons for submitted documents
+						if (frm.doc.docstatus === 1) {
+							frm.events._addActionButtons(frm);
+						}
+					}
+				},
+				error: function (err) {
+					// Still add basic buttons for submitted documents
+					if (frm.doc.docstatus === 1) {
+						frm.events._addActionButtons(frm);
+					}
+				},
+			});
+		} else {
+			// No status set, but still add basic buttons for submitted documents
+			if (frm.doc.docstatus === 1) {
+				frm.events._addActionButtons(frm);
+			}
+		}
+	},
+
+	refresh: function (frm) {
+		// Handle location data
+		if (frm.doc.issue_location) {
+			try {
+				const mapData = JSON.parse(frm.doc.issue_location)?.features[0];
+				if (mapData && mapData.geometry.type.toLowerCase() === "point") {
+					const [longitude, latitude] = mapData.geometry.coordinates;
+					frm.doc.coordinates = `${latitude},${longitude}`;
+				}
+			} catch (error) {
+				console.error("Error processing location data:", error);
 			}
 		}
 
-		// Add comment button for all states
-		frm.add_custom_button(__("Add Comment"), function () {
-			frappe.prompt(
-				[
-					{
-						fieldname: "comment",
-						label: __("Comment"),
-						fieldtype: "Small Text",
-						reqd: 1,
-					},
-					{
-						fieldname: "due_at",
-						label: __("Follow-up Date (Optional)"),
-						fieldtype: "Datetime",
-					},
-				],
-				function (values) {
-					// Add a row to the comments table
-					let comment = frm.add_child("grm_issue_comment");
-					comment.user = frappe.session.user;
-					comment.comment = values.comment;
-					comment.due_at = values.due_at;
+		// Load status information and add action buttons (this now handles button loading)
+		frm.events._loadStatusInfo(frm);
 
-					frm.save();
-					frappe.show_alert({
-						message: __("Comment added successfully"),
-						indicator: "green",
-					});
-				},
-				__("Add Comment"),
-				__("Add")
-			);
-		});
+		// Add tracking URL button for draft issues
+		if (frm.doc.docstatus === 0 && frm.doc.tracking_code) {
+			frm.add_custom_button(__("Public Tracking URL"), function () {
+				const tracking_url =
+					window.location.origin + "/issue-tracker?code=" + frm.doc.tracking_code;
+				frappe.prompt({
+					fieldname: "url",
+					label: __("Tracking URL"),
+					fieldtype: "Small Text",
+					read_only: 1,
+					default: tracking_url,
+				});
+			});
+		}
 
-		// Add button to view confidential information
-		if (frm.doc.citizen_type === "1") {
-			// Confidential
+		// Show confidential information button
+		if (frm.doc.citizen_type === "Confidential") {
 			frm.add_custom_button(__("View Confidential Info"), function () {
-				// Call server methods to get confidential data
 				frappe.call({
 					method: "get_citizen_name",
 					doc: frm.doc,
 					callback: function (r) {
 						if (r.message) {
-							let citizen = r.message;
-
-							// Also get contact info if available
+							const citizen = r.message;
 							frappe.call({
 								method: "get_contact_info",
 								doc: frm.doc,
 								callback: function (r2) {
-									let contact = r2.message || "None";
-
+									const contact = r2.message || "None";
 									frappe.msgprint({
 										title: __("Confidential Information"),
 										indicator: "blue",
@@ -325,29 +809,10 @@ frappe.ui.form.on("GRM Issue", {
 			frm.get_field("escalate_flag").$input.css("background-color", "#ffccc7");
 			frm.set_intro(__("This issue has been escalated and requires attention."), "red");
 		}
-
-		// Load allowed statuses for this issue
-		if (frm.doc.docstatus === 1) {
-			// Submitted
-			frappe.call({
-				method: "egrm.server_scripts.queries.get_allowed_statuses",
-				args: {
-					issue: frm.doc.name,
-				},
-				callback: function (r) {
-					if (r.message) {
-						frm.doc.__onload = frm.doc.__onload || {};
-						frm.doc.__onload.allowed_statuses = r.message;
-					}
-				},
-			});
-		}
 	},
 
 	setup: function (frm) {
 		// Set up field filters
-
-		// Filter status based on project
 		frm.set_query("status", function () {
 			return {
 				query: "egrm.server_scripts.queries.get_status_by_project",
@@ -357,7 +822,6 @@ frappe.ui.form.on("GRM Issue", {
 			};
 		});
 
-		// Filter category based on project
 		frm.set_query("category", function () {
 			return {
 				query: "egrm.server_scripts.queries.get_category_by_project",
@@ -367,7 +831,6 @@ frappe.ui.form.on("GRM Issue", {
 			};
 		});
 
-		// Filter issue type based on project
 		frm.set_query("issue_type", function () {
 			return {
 				query: "egrm.server_scripts.queries.get_issue_type_by_project",
@@ -377,7 +840,6 @@ frappe.ui.form.on("GRM Issue", {
 			};
 		});
 
-		// Filter administrative region based on project
 		frm.set_query("administrative_region", function () {
 			return {
 				filters: {
@@ -386,7 +848,6 @@ frappe.ui.form.on("GRM Issue", {
 			};
 		});
 
-		// Filter citizen groups based on project
 		frm.set_query("citizen_age_group", function () {
 			return {
 				query: "egrm.server_scripts.queries.get_age_group_by_project",
@@ -416,7 +877,6 @@ frappe.ui.form.on("GRM Issue", {
 			};
 		});
 
-		// Filter assignee based on project
 		frm.set_query("assignee", function () {
 			return {
 				query: "egrm.server_scripts.queries.get_project_users",
@@ -426,29 +886,28 @@ frappe.ui.form.on("GRM Issue", {
 			};
 		});
 
-		// Set default center to Kigali
-		if (!frm.doc.issue_location) {
-			const kigaliLocation = {
-				type: "FeatureCollection",
-				features: [
-					{
-						type: "Feature",
-						properties: {},
-						geometry: {
-							type: "Point",
-							coordinates: [30.0619, -1.9441], // Kigali coordinates [longitude, latitude]
-						},
-					},
-				],
-			};
-			frm.set_value("issue_location", JSON.stringify(kigaliLocation));
-		}
+		// // Set default location to Kigali
+		// if (!frm.doc.issue_location) {
+		// 	const kigaliLocation = {
+		// 		type: "FeatureCollection",
+		// 		features: [
+		// 			{
+		// 				type: "Feature",
+		// 				properties: {},
+		// 				geometry: {
+		// 					type: "Point",
+		// 					coordinates: [30.0619, -1.9441],
+		// 				},
+		// 			},
+		// 		],
+		// 	};
+		// 	frm.set_value("issue_location", JSON.stringify(kigaliLocation));
+		// }
 	},
 
 	onload: function (frm) {
 		// Set default status for new issues
 		if (frm.is_new()) {
-			// Find initial status for the selected project
 			if (frm.doc.project) {
 				frappe.call({
 					method: "egrm.server_scripts.queries.get_initial_status",
@@ -471,7 +930,7 @@ frappe.ui.form.on("GRM Issue", {
 	},
 
 	project: function (frm) {
-		// When project changes, clear dependent fields
+		// Clear dependent fields when project changes
 		frm.set_value("status", "");
 		frm.set_value("category", "");
 		frm.set_value("issue_type", "");
@@ -481,7 +940,7 @@ frappe.ui.form.on("GRM Issue", {
 		frm.set_value("citizen_group_2", "");
 		frm.set_value("assignee", "");
 
-		// Find initial status for the selected project
+		// Set initial status for new project
 		if (frm.doc.project) {
 			frappe.call({
 				method: "egrm.server_scripts.queries.get_initial_status",
@@ -498,7 +957,7 @@ frappe.ui.form.on("GRM Issue", {
 	},
 
 	category: function (frm) {
-		// When category changes, suggest assignee based on department
+		// Auto-assign based on category department
 		if (frm.doc.category && frm.doc.project) {
 			frappe.call({
 				method: "egrm.server_scripts.queries.get_department_for_category",
@@ -507,8 +966,8 @@ frappe.ui.form.on("GRM Issue", {
 				},
 				callback: function (r) {
 					if (r.message) {
-						let department = r.message.department;
-						let redirection = r.message.redirection;
+						const department = r.message.department;
+						const redirection = r.message.redirection;
 
 						if (department) {
 							if (redirection === "0") {
@@ -517,9 +976,7 @@ frappe.ui.form.on("GRM Issue", {
 									method: "frappe.client.get_value",
 									args: {
 										doctype: "GRM Issue Department",
-										filters: {
-											name: department,
-										},
+										filters: { name: department },
 										fieldname: "head",
 									},
 									callback: function (r2) {
@@ -551,23 +1008,20 @@ frappe.ui.form.on("GRM Issue", {
 	},
 
 	citizen_type: function (frm) {
-		// When citizen type changes
-		if (frm.doc.citizen_type === "1") {
-			// Clear the non-confidential field
+		// Clear non-confidential fields when switching to confidential
+		if (frm.doc.citizen_type === "Confidential") {
 			frm.set_value("citizen", "");
 			frm.set_value("contact_information", "");
 		}
-
 		frm.refresh_fields();
 	},
 
 	contact_medium: function (frm) {
-		// When contact medium changes
 		frm.refresh_fields();
 
 		// Require contact information for non-anonymous contacts
-		if (frm.doc.contact_medium === "contact") {
-			if (frm.doc.citizen_type === "1") {
+		if (frm.doc.contact_medium === "channel-alert") {
+			if (frm.doc.citizen_type === "Confidential") {
 				frm.toggle_reqd("contact_information", false);
 			} else {
 				frm.toggle_reqd("contact_information", true);
@@ -599,9 +1053,6 @@ frappe.ui.form.on("GRM Issue", {
 
 			// Extract coordinates
 			const [longitude, latitude] = mapData.geometry.coordinates;
-			console.log(`Location selected: [${latitude}, ${longitude}]`);
-
-			// Store coordinates in the format expected by the API
 			frm.doc.coordinates = `${latitude},${longitude}`;
 		} catch (error) {
 			console.error("Error processing location data:", error);

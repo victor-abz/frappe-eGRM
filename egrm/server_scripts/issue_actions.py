@@ -185,6 +185,267 @@ def reassign_issue(issue, assignee, comment):
 
 
 @frappe.whitelist()
+def accept_issue(issue):
+    """
+    Accept an issue and assign it to the current user
+    """
+    try:
+        if not issue:
+            frappe.throw(_("Missing required parameters"))
+
+        # Get the issue document
+        doc = frappe.get_doc("GRM Issue", issue)
+        if not doc:
+            frappe.throw(_("Issue not found"))
+
+        # Check if user is assigned to the issue
+        if doc.assignee != frappe.session.user:
+            frappe.throw(_("You are not assigned to this issue"))
+
+        # Get open status for the project
+        open_status = get_open_status(doc.project)
+        if not open_status:
+            frappe.throw(_("No open status found for this project"))
+
+        # Update status to open
+        doc.status = open_status
+        doc.accepted_date = now_datetime()
+
+        # Add comment and log
+        comment_text = _("Issue was accepted by {0}").format(frappe.session.user)
+        log_text = _("Issue accepted and assigned for processing")
+        add_comment_and_log(doc, comment_text, log_text, "Accepted issue")
+
+        # Save the document
+        doc.save()
+
+        return True
+    except Exception as e:
+        frappe.log_error(f"Error accepting issue: {str(e)}")
+        frappe.throw(_("Error accepting issue: {0}").format(str(e)))
+        return False
+
+
+@frappe.whitelist()
+def reject_issue(issue, reason):
+    """
+    Reject an issue with a reason
+    """
+    try:
+        if not issue or not reason:
+            frappe.throw(_("Missing required parameters"))
+
+        # Get the issue document
+        doc = frappe.get_doc("GRM Issue", issue)
+        if not doc:
+            frappe.throw(_("Issue not found"))
+
+        # Check if user is assigned to the issue
+        if doc.assignee != frappe.session.user:
+            frappe.throw(_("You are not assigned to this issue"))
+
+        # Get rejected status for the project
+        rejected_status = get_rejected_status(doc.project)
+        if not rejected_status:
+            frappe.throw(_("No rejected status found for this project"))
+
+        # Update rejection fields
+        doc.status = rejected_status
+        doc.reject_reason = reason
+        doc.rejected_date = now_datetime()
+        doc.rejected_by = frappe.session.user
+
+        # Add comment and log
+        comment_text = _("Issue was rejected by {0}, reason: {1}").format(
+            frappe.session.user, reason
+        )
+        log_text = _("Issue rejected with provided reason")
+        add_comment_and_log(doc, comment_text, log_text, "Rejected issue")
+
+        # Save the document
+        doc.save()
+
+        return True
+    except Exception as e:
+        frappe.log_error(f"Error rejecting issue: {str(e)}")
+        frappe.throw(_("Error rejecting issue: {0}").format(str(e)))
+        return False
+
+
+@frappe.whitelist()
+def record_steps(issue, steps):
+    """
+    Record steps taken on an issue
+    """
+    try:
+        if not issue or not steps:
+            frappe.throw(_("Missing required parameters"))
+
+        # Get the issue document
+        doc = frappe.get_doc("GRM Issue", issue)
+        if not doc:
+            frappe.throw(_("Issue not found"))
+
+        # Check if user is assigned to the issue
+        if doc.assignee != frappe.session.user:
+            frappe.throw(_("You are not assigned to this issue"))
+
+        # Add comment (use actual user input)
+        doc.append(
+            "grm_issue_comment",
+            {"user": frappe.session.user, "comment": steps},
+        )
+
+        # Add log entry with action tracking
+        doc.append(
+            "grm_issue_log",
+            {
+                "text": steps,
+                "user": frappe.session.user,
+                "timestamp": now_datetime(),
+                "action_taken": _("Added steps"),
+                "action_taken_by": frappe.session.user,
+                "action_taken_date": now_datetime(),
+            },
+        )
+
+        # Save the document
+        doc.save()
+
+        return True
+    except Exception as e:
+        frappe.log_error(f"Error recording steps: {str(e)}")
+        frappe.throw(_("Error recording steps: {0}").format(str(e)))
+        return False
+
+
+@frappe.whitelist()
+def record_resolution(issue, resolution):
+    """
+    Record resolution for an issue and mark it as resolved
+    """
+    try:
+        if not issue or not resolution:
+            frappe.throw(_("Missing required parameters"))
+
+        # Get the issue document
+        doc = frappe.get_doc("GRM Issue", issue)
+        if not doc:
+            frappe.throw(_("Issue not found"))
+
+        # Check if user is assigned to the issue
+        if doc.assignee != frappe.session.user:
+            frappe.throw(_("You are not assigned to this issue"))
+
+        # Get final status for the project
+        final_status = get_final_status(doc.project)
+        if not final_status:
+            frappe.throw(_("No final status found for this project"))
+
+        # Update resolution fields
+        doc.status = final_status
+        doc.resolution_text = resolution
+        doc.resolved_by = frappe.session.user
+        doc.resolution_date = now_datetime()
+
+        # Calculate resolution days
+        if doc.issue_date:
+            delta = doc.resolution_date - doc.issue_date
+            doc.resolution_days = delta.days
+
+        # Add comment and log
+        comment_text = _("Issue was resolved by {0}").format(frappe.session.user)
+        log_text = _("Issue has been marked as resolved")
+        add_comment_and_log(doc, comment_text, log_text, "Resolved issue")
+
+        # Save the document
+        doc.save()
+
+        return True
+    except Exception as e:
+        frappe.log_error(f"Error recording resolution: {str(e)}")
+        frappe.throw(_("Error recording resolution: {0}").format(str(e)))
+        return False
+
+
+@frappe.whitelist()
+def rate_issue(issue, rating, comment):
+    """
+    Rate an issue (citizen feedback)
+    """
+    try:
+        if not issue or not rating or not comment:
+            frappe.throw(_("Missing required parameters"))
+
+        # Get the issue document
+        doc = frappe.get_doc("GRM Issue", issue)
+        if not doc:
+            frappe.throw(_("Issue not found"))
+
+        # Validate rating
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            frappe.throw(_("Rating must be between 1 and 5"))
+
+        # Update rating fields
+        doc.rating = rating
+        doc.rated_date = now_datetime()
+
+        # Add comment and log
+        comment_text = _("Issue was rated by citizen, rating: {0}").format(rating)
+        log_text = _("Citizen has provided feedback rating")
+        add_comment_and_log(doc, comment_text, log_text, "Rated issue")
+
+        # Save the document
+        doc.save()
+
+        return True
+    except Exception as e:
+        frappe.log_error(f"Error rating issue: {str(e)}")
+        frappe.throw(_("Error rating issue: {0}").format(str(e)))
+        return False
+
+
+@frappe.whitelist()
+def appeal_issue(issue, comment):
+    """
+    Submit an appeal for an issue
+    """
+    try:
+        if not issue or not comment:
+            frappe.throw(_("Missing required parameters"))
+
+        # Get the issue document
+        doc = frappe.get_doc("GRM Issue", issue)
+        if not doc:
+            frappe.throw(_("Issue not found"))
+
+        # Get open status to reopen the issue
+        open_status = get_open_status(doc.project)
+        if not open_status:
+            frappe.throw(_("No open status found for this project"))
+
+        # Update appeal fields
+        doc.appeal_submitted = 1
+        doc.appeal_date = now_datetime()
+        doc.status = open_status  # Reopen the issue
+
+        # Add comment and log
+        comment_text = _("Appeal submitted by citizen")
+        log_text = _("Appeal has been submitted for review")
+        add_comment_and_log(doc, comment_text, log_text, "Submitted appeal")
+
+        # Save the document
+        doc.save()
+
+        return True
+    except Exception as e:
+        frappe.log_error(f"Error submitting appeal: {str(e)}")
+        frappe.throw(_("Error submitting appeal: {0}").format(str(e)))
+        return False
+
+
+@frappe.whitelist()
 def collect_feedback(issue, resolution_accepted, rating, comment):
     """
     Collect citizen feedback on issue resolution
@@ -344,7 +605,91 @@ def get_initial_status(project):
         return None
 
 
-def add_comment_and_log(doc, comment, log_text):
+def get_open_status(project):
+    """
+    Get open status for a project
+    """
+    try:
+        if not project:
+            return None
+
+        # Get open status
+        status = frappe.db.sql(
+            """
+            SELECT s.name
+            FROM `tabGRM Issue Status` s
+            INNER JOIN `tabGRM Project Link` p ON p.parent = s.name
+            WHERE p.project = %s
+            AND s.open_status = 1
+            LIMIT 1
+        """,
+            project,
+            as_dict=1,
+        )
+
+        return status[0].name if status else None
+    except Exception as e:
+        frappe.log_error(f"Error getting open status: {str(e)}")
+        return None
+
+
+def get_final_status(project):
+    """
+    Get final status for a project
+    """
+    try:
+        if not project:
+            return None
+
+        # Get final status
+        status = frappe.db.sql(
+            """
+            SELECT s.name
+            FROM `tabGRM Issue Status` s
+            INNER JOIN `tabGRM Project Link` p ON p.parent = s.name
+            WHERE p.project = %s
+            AND s.final_status = 1
+            LIMIT 1
+        """,
+            project,
+            as_dict=1,
+        )
+
+        return status[0].name if status else None
+    except Exception as e:
+        frappe.log_error(f"Error getting final status: {str(e)}")
+        return None
+
+
+def get_rejected_status(project):
+    """
+    Get rejected status for a project
+    """
+    try:
+        if not project:
+            return None
+
+        # Get rejected status
+        status = frappe.db.sql(
+            """
+            SELECT s.name
+            FROM `tabGRM Issue Status` s
+            INNER JOIN `tabGRM Project Link` p ON p.parent = s.name
+            WHERE p.project = %s
+            AND s.rejected_status = 1
+            LIMIT 1
+        """,
+            project,
+            as_dict=1,
+        )
+
+        return status[0].name if status else None
+    except Exception as e:
+        frappe.log_error(f"Error getting rejected status: {str(e)}")
+        return None
+
+
+def add_comment_and_log(doc, comment, log_text, action_type=None):
     """
     Add a comment and log entry to an issue
     """
@@ -355,14 +700,19 @@ def add_comment_and_log(doc, comment, log_text):
         )
 
         # Add log entry
-        doc.append(
-            "grm_issue_log",
-            {
-                "text": log_text,
-                "user": frappe.session.user,
-                "timestamp": now_datetime(),
-            },
-        )
+        log_entry = {
+            "text": log_text,
+            "user": frappe.session.user,
+            "timestamp": now_datetime(),
+        }
+
+        # Add action tracking fields if provided
+        if action_type:
+            log_entry["action_taken"] = action_type
+            log_entry["action_taken_by"] = frappe.session.user
+            log_entry["action_taken_date"] = now_datetime()
+
+        doc.append("grm_issue_log", log_entry)
     except Exception as e:
         frappe.log_error(f"Error adding comment and log: {str(e)}")
         raise
