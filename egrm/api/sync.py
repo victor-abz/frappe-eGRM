@@ -38,6 +38,8 @@ SYNC_TABLES = {
     "grm_projects": "GRM Project",
     "users": "User",
     "grm_project_links": "GRM Project Link",
+    "grm_issue_logs": "GRM Issue Log",
+    "grm_issue_comments": "GRM Issue Comment",
 }
 
 # Reverse mapping for table name lookup
@@ -228,17 +230,41 @@ def push_changes():
         last_pulled_at = data.get("lastPulledAt")
 
         # ------------------------------------------------------------------
-        # 🔄  Only accept newly-created `grm_issues` records.
-        #      Ignore updates / deletes and all other tables.
+        # 🔄  Accept Issue Actions sync: grm_issues (created/updated) and
+        #      child tables (grm_issue_logs, grm_issue_comments created only)
         # ------------------------------------------------------------------
         filtered_changes = {}
 
+        # Handle grm_issues table - accept both created and updated records
         if "grm_issues" in changes:
             issue_created = changes["grm_issues"].get("created", [])
+            issue_updated = changes["grm_issues"].get("updated", [])
 
-            if issue_created:
+            if issue_created or issue_updated:
                 filtered_changes["grm_issues"] = {
                     "created": issue_created,
+                    "updated": issue_updated,
+                    "deleted": [],
+                }
+
+        # Handle grm_issue_logs table - accept created records only
+        if "grm_issue_logs" in changes:
+            logs_created = changes["grm_issue_logs"].get("created", [])
+
+            if logs_created:
+                filtered_changes["grm_issue_logs"] = {
+                    "created": logs_created,
+                    "updated": [],
+                    "deleted": [],
+                }
+
+        # Handle grm_issue_comments table - accept created records only
+        if "grm_issue_comments" in changes:
+            comments_created = changes["grm_issue_comments"].get("created", [])
+
+            if comments_created:
+                filtered_changes["grm_issue_comments"] = {
+                    "created": comments_created,
                     "updated": [],
                     "deleted": [],
                 }
@@ -248,7 +274,7 @@ def push_changes():
 
         if not changes:
             frappe.log(
-                "📤 [SYNC_BACKEND] No new grm_issues (created) to process – returning 204"
+                "📤 [SYNC_BACKEND] No Issue Actions changes to process – returning 204"
             )
             frappe.response.http_status_code = 204
             return
@@ -823,6 +849,20 @@ def validate_user_record_access(doctype, record_data, user):
             )
             return False
 
+    elif doctype in ["GRM Issue Log", "GRM Issue Comment"]:
+        # For Issue Actions child tables, validate that the user creating the record
+        # is the same as the current user (Issue Actions are always performed by the current user)
+        record_user = record_data.get("user")
+        if record_user and record_user != user:
+            log.warning(
+                f"❌ [SYNC_BACKEND] User {user} cannot create {doctype} record for other user {record_user}"
+            )
+            return False
+
+        # Note: Additional validation for parent issue access is handled by the mobile app
+        # before sending the sync request, so we trust that the user has access to the related issue
+        frappe.log(f"✅ [SYNC_BACKEND] User {user} can create {doctype} record")
+
     frappe.log(f"✅ [SYNC_BACKEND] User {user} has access to {doctype} record")
     return True
 
@@ -953,6 +993,10 @@ def create_record(doctype, raw_record):
         f"🔒 [SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s"
     )
 
+    # Handle child table creation differently
+    if doctype in ["GRM Issue Log", "GRM Issue Comment"]:
+        return create_child_record(doctype, raw_record)
+
     # Check if record already exists
     existence_check_start = time.time()
     record_exists = frappe.db.exists(doctype, record_id)
@@ -982,15 +1026,19 @@ def create_record(doctype, raw_record):
         f"📄 [SYNC_BACKEND] Document creation took: {doc_creation_duration:.4f}s"
     )
 
-    # Set the name to WatermelonDB ID for consistency
-    doc.name = record_id
+    # Set the name for sync records - store the desired name in a temporary attribute
+    doc._sync_name = record_id
 
     # Set all fields
     field_setting_start = time.time()
     field_count = 0
     for field, value in frappe_data.items():
         print("Field validation", field, hasattr(doc, field))
-        if hasattr(doc, field) and field not in ["creation", "modified", "amended_from"]:
+        if hasattr(doc, field) and field not in [
+            "creation",
+            "modified",
+            "amended_from",
+        ]:
             setattr(doc, field, value)
             field_count += 1
     field_setting_duration = time.time() - field_setting_start
@@ -999,12 +1047,13 @@ def create_record(doctype, raw_record):
         f"🏗️ [SYNC_BACKEND] Field setting took: {field_setting_duration:.4f}s ({field_count} fields)"
     )
 
-    # Mark as sync operation to bypass some validations if needed
-    doc._from_sync = True
-
     # Insert the document
     insert_start = time.time()
     doc.insert(ignore_permissions=False)  # Respect permissions
+    # Submit the issue
+    if doctype == "GRM Issue":
+        if doc.docstatus == 0:
+            doc.submit()
     insert_duration = time.time() - insert_start
     frappe.log(f"💾 [SYNC_BACKEND] Document insertion took: {insert_duration:.4f}s")
 
@@ -1021,14 +1070,113 @@ def create_record(doctype, raw_record):
     frappe.log(f"  - Document insert: {insert_duration:.4f}s")
 
 
+def create_child_record(doctype, raw_record):
+    """Create child table record by adding it to parent document"""
+    create_start = time.time()
+    record_id = raw_record.get("id")
+    user = frappe.session.user
+    frappe.log(
+        f"📝 [SYNC_BACKEND] Creating child table {doctype} record with ID: {record_id} by user: {user}"
+    )
+
+    # Get parent issue ID from raw record
+    parent_issue_id = raw_record.get("grm_issue")
+    if not parent_issue_id:
+        frappe.log_error(
+            f"❌ [SYNC_BACKEND] Missing parent issue ID in {doctype} record {record_id}"
+        )
+        raise ValueError(f"Missing parent issue ID for {doctype} child record")
+
+    # Check if parent issue exists
+    parent_exists = frappe.db.exists("GRM Issue", parent_issue_id)
+    if not parent_exists:
+        frappe.log_error(
+            f"❌ [SYNC_BACKEND] Parent issue {parent_issue_id} does not exist for {doctype} record {record_id}"
+        )
+        raise ValueError(f"Parent issue {parent_issue_id} does not exist")
+
+    # Get parent document
+    parent_doc = frappe.get_doc("GRM Issue", parent_issue_id)
+    frappe.log(f"📋 [SYNC_BACKEND] Retrieved parent issue {parent_issue_id}")
+
+    # Convert WatermelonDB data to Frappe format
+    conversion_start = time.time()
+    frappe_data = watermelon_to_frappe_data(raw_record)
+    conversion_duration = time.time() - conversion_start
+    frappe.log(f"🔄 [SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
+
+    # Determine the child table field name dynamically using Frappe meta
+    child_table_field = get_child_table_field_name("GRM Issue", doctype)
+    if not child_table_field:
+        frappe.log_error(
+            f"❌ [SYNC_BACKEND] Cannot find child table field for {doctype} in GRM Issue"
+        )
+        raise ValueError(f"Cannot find child table field for {doctype} in GRM Issue")
+
+    frappe.log(f"🔍 [SYNC_BACKEND] Using child table field: {child_table_field}")
+
+    # Create child record as proper Document object
+    child_doc = frappe.new_doc(doctype)
+    child_doc.name = record_id  # Use WatermelonDB ID
+    child_doc.parent = parent_issue_id
+    child_doc.parenttype = "GRM Issue"
+    child_doc.parentfield = child_table_field
+
+    # Add all fields from frappe_data except the parent reference
+    for field, value in frappe_data.items():
+        if field not in ["grm_issue", "name", "parent", "parenttype", "parentfield"]:
+            if hasattr(child_doc, field):
+                setattr(child_doc, field, value)
+
+    frappe.log(f"📝 [SYNC_BACKEND] Child record data: {child_doc.as_dict()}")
+
+    # Add child record to parent document
+    if not hasattr(parent_doc, child_table_field):
+        # If the child table field doesn't exist, create it as empty list
+        setattr(parent_doc, child_table_field, [])
+
+    child_table = getattr(parent_doc, child_table_field, [])
+
+    # Check if child record already exists
+    existing_child = None
+    for existing_record in child_table:
+        if existing_record.get("name") == record_id:
+            existing_child = existing_record
+            break
+
+    # Add new child record as Document object
+    child_table.append(child_doc)
+    frappe.log(
+        f"📝 [SYNC_BACKEND] Added child record {record_id} to parent {parent_issue_id}"
+    )
+
+    # Save parent document
+    save_start = time.time()
+    parent_doc.save(ignore_permissions=False)
+    save_duration = time.time() - save_start
+    frappe.log(f"💾 [SYNC_BACKEND] Parent document save took: {save_duration:.4f}s")
+
+    create_duration = time.time() - create_start
+    frappe.log(
+        f"✅ [SYNC_BACKEND] Created child table {doctype} record {record_id} in {create_duration:.4f}s"
+    )
+    frappe.log(f"📊 [SYNC_BACKEND] Child create breakdown:")
+    frappe.log(f"  - Data conversion: {conversion_duration:.4f}s")
+    frappe.log(f"  - Parent document save: {save_duration:.4f}s")
+
+
 def update_record(doctype, raw_record):
-    """Update existing record with WatermelonDB data with enhanced logging"""
+    """
+    Update existing record using WatermelonDB's _changed property for optimized field updates.
+    Uses direct database updates to avoid TimestampMismatchError.
+    """
     update_start = time.time()
     record_id = raw_record.get("id")
     user = frappe.session.user
     frappe.log(
         f"✏️ [SYNC_BACKEND] Updating {doctype} record with ID: {record_id} by user: {user}"
     )
+    frappe.log(f"✏️ [SYNC_BACKEND] Update raw data {raw_record}")
 
     if not record_id:
         frappe.log_error(f"❌ [SYNC_BACKEND] Missing ID in raw record for {doctype}")
@@ -1037,73 +1185,47 @@ def update_record(doctype, raw_record):
     # Validate user has permission to update this record
     validation_start = time.time()
     if not validate_user_record_access(doctype, raw_record, user):
-        validation_duration = time.time() - validation_start
-        frappe.log_error(
-            f"❌ [SYNC_BACKEND] User {user} lacks permission to update {doctype} record {record_id} (validation took {validation_duration:.4f}s)"
-        )
         raise frappe.PermissionError(f"Permission denied to update {doctype} record")
-    validation_duration = time.time() - validation_start
-    frappe.log(
-        f"🔒 [SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s"
-    )
 
-    # Check if record exists and user has permission
-    existence_check_start = time.time()
-    record_exists = frappe.db.exists(doctype, record_id)
-    existence_check_duration = time.time() - existence_check_start
-    frappe.log(
-        f"🔍 [SYNC_BACKEND] Existence check took: {existence_check_duration:.4f}s"
-    )
+    # Verify record exists
+    if not frappe.db.exists(doctype, record_id):
+        raise ValueError(f"Record {record_id} not found")
 
-    if not record_exists:
-        frappe.log_error(f"❌ [SYNC_BACKEND] Record {record_id} not found for update")
-        raise ValueError(f"Record {record_id} not found or no permission")
+    # Parse changed fields from WatermelonDB
+    changed_fields_raw = raw_record.get("_changed", "")
+    if not changed_fields_raw:
+        frappe.log_error(f"No _changed property in record {record_id}")
+        return
 
-    # Convert WatermelonDB data to Frappe format
-    conversion_start = time.time()
+    changed_fields = [
+        field.strip() for field in changed_fields_raw.split(",") if field.strip()
+    ]
+    if not changed_fields:
+        return
+
+    # Convert and filter data
     frappe_data = watermelon_to_frappe_data(raw_record)
-    conversion_duration = time.time() - conversion_start
-    frappe.log(f"🔄 [SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
+    fields_to_update = {
+        field: frappe_data[field] for field in changed_fields if field in frappe_data
+    }
 
-    # Get existing document
-    doc_fetch_start = time.time()
-    doc = frappe.get_doc(doctype, record_id)
-    doc_fetch_duration = time.time() - doc_fetch_start
-    frappe.log(f"📄 [SYNC_BACKEND] Document fetch took: {doc_fetch_duration:.4f}s")
+    if not fields_to_update:
+        return
 
-    # Update fields
-    field_setting_start = time.time()
-    field_count = 0
-    for field, value in frappe_data.items():
-        if hasattr(doc, field) and field not in ["name", "creation"]:
-            setattr(doc, field, value)
-            field_count += 1
-    field_setting_duration = time.time() - field_setting_start
-    frappe.log(f"Final fields after conversion {doc}")
-    frappe.log(
-        f"🏗️ [SYNC_BACKEND] Field setting took: {field_setting_duration:.4f}s ({field_count} fields)"
-    )
+    # Update fields directly in database
+    for field_name, field_value in fields_to_update.items():
+        if field_name != "updated_at":
+            frappe.db.set_value(
+                doctype, record_id, field_name, field_value, update_modified=False
+            )
 
-    # Mark as sync operation
-    doc._from_sync = True
-
-    # Save the document
-    save_start = time.time()
-    doc.save(ignore_permissions=False)
-    save_duration = time.time() - save_start
-    frappe.log(f"💾 [SYNC_BACKEND] Document save took: {save_duration:.4f}s")
+    frappe.db.commit()
 
     update_duration = time.time() - update_start
     frappe.log(
-        f"✅ [SYNC_BACKEND] Updated {doctype} record {record_id} in {update_duration:.4f}s"
+        f"✅ [SYNC_BACKEND] Updated {doctype} record {record_id} "
+        f"with {len(fields_to_update)} fields in {update_duration:.4f}s"
     )
-    frappe.log(f"📊 [SYNC_BACKEND] Update breakdown:")
-    frappe.log(f"  - Permission validation: {validation_duration:.4f}s")
-    frappe.log(f"  - Existence check: {existence_check_duration:.4f}s")
-    frappe.log(f"  - Data conversion: {conversion_duration:.4f}s")
-    frappe.log(f"  - Document fetch: {doc_fetch_duration:.4f}s")
-    frappe.log(f"  - Field setting: {field_setting_duration:.4f}s")
-    frappe.log(f"  - Document save: {save_duration:.4f}s")
 
 
 def delete_record(doctype, record_id):
@@ -1148,8 +1270,6 @@ def delete_record(doctype, record_id):
         frappe.log(
             f"🔒 [SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s"
         )
-
-        doc._from_sync = True
 
         # Delete document
         delete_operation_start = time.time()
@@ -1363,6 +1483,7 @@ def watermelon_to_frappe_data(raw_record):
             "escalated_date",
             "rated_date",
             "appeal_date",
+            "timestamp",
         ]:
             if value and isinstance(value, (int, float)):
                 # Convert from milliseconds to datetime
@@ -1377,7 +1498,7 @@ def watermelon_to_frappe_data(raw_record):
             # Direct assignment - fields already aligned
             frappe_data[key] = value
 
-    frappe_data["name"] = raw_record['id']
+    frappe_data["name"] = raw_record["id"]
 
     field_processing_duration = time.time() - field_processing_start
     conversion_duration = time.time() - conversion_start
@@ -1452,3 +1573,36 @@ def get_user_data(project_id=None):
     except Exception as e:
         frappe.log_error(f"Legacy get_user_data failed: {str(e)}")
         return {"status": "error", "message": str(e)}
+
+
+def get_child_table_field_name(parent_doctype, child_doctype):
+    """
+    Dynamically determine the field name for a child table in the parent DocType
+
+    Args:
+        parent_doctype (str): The parent DocType name (e.g., "GRM Issue")
+        child_doctype (str): The child DocType name (e.g., "GRM Issue Log")
+
+    Returns:
+        str: Field name in parent DocType, or None if not found
+    """
+    try:
+        # Get parent DocType meta
+        parent_meta = frappe.get_meta(parent_doctype)
+
+        # Find table fields that link to the child doctype
+        for field in parent_meta.fields:
+            if field.fieldtype == "Table" and field.options == child_doctype:
+                frappe.log(
+                    f"🔍 [SYNC_BACKEND] Found child table field: {field.fieldname} for {child_doctype}"
+                )
+                return field.fieldname
+
+        frappe.log_error(
+            f"❌ [SYNC_BACKEND] No table field found for {child_doctype} in {parent_doctype}"
+        )
+        return None
+
+    except Exception as e:
+        frappe.log_error(f"❌ [SYNC_BACKEND] Error finding child table field: {str(e)}")
+        return None

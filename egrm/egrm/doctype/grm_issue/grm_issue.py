@@ -13,20 +13,20 @@ class GRMIssue(Document):
     def autoname(self):
         """Use WatermelonDB ID if provided, otherwise use Frappe naming series"""
         # Check if coming from sync with custom ID
-        print("AutoName", self.name)
-        if hasattr(self, "_watermelon_id") and self._watermelon_id:
-            # Use WatermelonDB-generated ID directly
-            self.name = self._watermelon_id
-        elif self.name:
-            # Already has a name from sync, keep it
-            pass
-        else:
-            pass
-        print("AutoName2", self.name)
+        print("AutoName - checking for sync name")
+
+        # If this document is being created from sync, use the provided sync name
+        if hasattr(self, "_sync_name") and self._sync_name:
+            self.name = self._sync_name
+            print(f"AutoName - using sync name: {self.name}")
+            return
+
+        # If no sync name, let Frappe handle naming series/auto-generation
+        # This will happen for documents created through the UI
+        print("AutoName - no sync name, using default naming")
 
     def before_validate(self):
         try:
-            # Set intake_date to today if not already set
             print("Name during validate", self.name)
             user = frappe.session.user
             frappe.log(f"Getting regions for user: {user}")

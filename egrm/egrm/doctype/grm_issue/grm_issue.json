@@ -1,11 +1,11 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:ISS-{MM}{YY}-{####}",
  "creation": "2025-05-17 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "_sync_name",
   "main_tab",
   "issue_date",
   "intake_date",
@@ -77,6 +77,15 @@
   "confirmed"
  ],
  "fields": [
+  {
+   "fieldname": "_sync_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Sync Name",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  },
   {
    "fieldname": "main_tab",
    "fieldtype": "Tab Break",
@@ -516,11 +525,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-07 13:57:25.936952",
+ "modified": "2025-07-08 12:20:56.286795",
  "modified_by": "Administrator",
  "module": "egrm",
  "name": "GRM Issue",
- "naming_rule": "Expression",
+ "naming_rule": "By script",
  "owner": "Administrator",
  "permissions": [
   {
@@ -603,6 +612,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [
@@ -614,5 +624,6 @@
    "color": "Blue",
    "title": "Open"
   }
- ]
+ ],
+ "title_field": "tracking_code"
 }
