@@ -59,10 +59,6 @@ def has_permission(doc, ptype, user):
                 ):
                     return True
 
-            # Analyst has read-only access
-            if role == "GRM Analyst" and ptype == "read":
-                return True
-
         # If we reach here, no access
         return False
     except Exception as e:
@@ -177,8 +173,6 @@ def permission_query_conditions(user):
                     f"({project_condition} AND (`tabGRM Issue`.administrative_region IN ('{regions_str}') OR {assignee_condition}))"
                 )
 
-            elif role == "GRM Analyst":
-                conditions.append(project_condition)
 
         if not conditions:
             return "1=0"  # No access

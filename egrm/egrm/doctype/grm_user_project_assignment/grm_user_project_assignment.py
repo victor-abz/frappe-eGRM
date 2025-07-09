@@ -48,8 +48,7 @@ class GRMUserProjectAssignment(Document):
                 "GRM Administrator",
                 "GRM Project Manager",
                 "GRM Department Head",
-                "GRM Field Officer",
-                "GRM Analyst",
+                "GRM Field Officer"
             ]
 
             if self.role not in valid_grm_roles:

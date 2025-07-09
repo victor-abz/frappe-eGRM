@@ -26,7 +26,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-07 15:15:29.468896",
+ "modified": "2025-07-09 12:57:54.848361",
  "modified_by": "Administrator",
  "module": "egrm",
  "name": "GRM Issue Age Group",
@@ -75,10 +75,6 @@
   {
    "read": 1,
    "role": "GRM Field Officer"
-  },
-  {
-   "read": 1,
-   "role": "GRM Analyst"
   }
  ],
  "row_format": "Dynamic",

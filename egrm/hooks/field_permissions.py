@@ -161,39 +161,7 @@ ROLE_FIELD_PERMISSIONS = {
             ],
             "hide": [],
         }
-    },
-    "GRM Analyst": {
-        "GRM Issue": {
-            "read": [
-                "name",
-                "title",
-                "tracking_code",
-                "status",
-                "project",
-                "category",
-                "issue_type",
-                "description",
-                "assignee",
-                "administrative_region",
-                "intake_date",
-                "issue_date",
-                "created_date",
-                "citizen_type",
-                "gender",
-                "citizen_age_group",
-                "citizen_group_1",
-                "citizen_group_2",
-                "resolution_days",
-                "resolution_date",
-                "resolution_accepted",
-                "rating",
-                "escalate_flag",
-                "confirmed",
-            ],
-            "write": [],
-            "hide": ["citizen", "contact_information"],  # Sensitive data
-        }
-    },
+    }
 }
 
 

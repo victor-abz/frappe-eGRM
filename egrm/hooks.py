@@ -13,8 +13,7 @@ role_home_page = {
     "GRM Administrator": "grm-administrator",
     "GRM Project Manager": "grm-project-manager",
     "GRM Department Head": "grm-department-head",
-    "GRM Field Officer": "grm-field-officer",
-    "GRM Analyst": "grm-analyst"
+    "GRM Field Officer": "grm-field-officer"
 }
 
 # Notification Configuration

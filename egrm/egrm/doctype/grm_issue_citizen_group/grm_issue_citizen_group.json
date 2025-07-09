@@ -84,10 +84,6 @@
   {
    "read": 1,
    "role": "GRM Field Officer"
-  },
-  {
-   "read": 1,
-   "role": "GRM Analyst"
   }
  ],
  "row_format": "Dynamic",
