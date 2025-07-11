@@ -1,0 +1,65 @@
+{
+ "cards": [
+  {
+   "card": "Total Issues"
+  },
+  {
+   "card": "Pending Issues"
+  },
+  {
+   "card": "Resolved Issues"
+  },
+  {
+   "card": "Total Open Issues"
+  },
+  {
+   "card": "Average Resolution Time"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Monthly Issue Trend",
+   "width": "Half"
+  },
+  {
+   "chart": "Status Distribution",
+   "width": "Half"
+  },
+  {
+   "chart": "Monthly Category Comparison",
+   "width": "Half"
+  },
+  {
+   "chart": "Monthly Type Comparison",
+   "width": "Half"
+  },
+  {
+   "chart": "Issues by Category",
+   "width": "Half"
+  },
+  {
+   "chart": "Issues by Status",
+   "width": "Half"
+  },
+  {
+   "chart": "Average Resolution Time",
+   "width": "Half"
+  },
+  {
+   "chart": "Issue Distribution by Type",
+   "width": "Half"
+  }
+ ],
+ "creation": "2025-07-11 21:37:13.243650",
+ "dashboard_name": "GRM Issue Dashboard",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2025-07-11 21:44:18.125698",
+ "modified_by": "Administrator",
+ "module": "egrm",
+ "name": "GRM Issue Dashboard",
+ "owner": "Administrator"
+}
