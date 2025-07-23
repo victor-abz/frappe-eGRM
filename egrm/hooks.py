@@ -6,6 +6,15 @@ app_email = "svicky.shema@gmail.com"
 app_license = "MIT"
 
 # Website Configurations
+website_route_rules = [
+    {"from_route": "/download-app", "to_route": "download_app"},
+]
+
+# Allow guest access
+has_website_permission = {
+    "Android App Version": "egrm.egrm.doctype.android_app_version.android_app_version.has_website_permission"
+}
+
 home_page = "login"
 
 # Role home pages
@@ -52,4 +61,15 @@ user_data_fields = [
         "redact_fields": ["citizen", "contact_information"],
         "partial": 1,
     }
+]
+
+app_home = "/app/grm-field-officer"
+
+add_to_apps_screen = [
+	{
+		"name": app_name,
+		# "logo": "/assets/erpnext/images/erpnext-logo.svg",
+		"title": app_title,
+		"route": app_home
+	}
 ]

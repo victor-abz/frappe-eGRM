@@ -40,6 +40,7 @@ SYNC_TABLES = {
     "grm_project_links": "GRM Project Link",
     "grm_issue_logs": "GRM Issue Log",
     "grm_issue_comments": "GRM Issue Comment",
+    "grm_issue_attachments": "GRM Issue Attachment",
 }
 
 # Reverse mapping for table name lookup
@@ -231,7 +232,7 @@ def push_changes():
 
         # ------------------------------------------------------------------
         # 🔄  Accept Issue Actions sync: grm_issues (created/updated) and
-        #      child tables (grm_issue_logs, grm_issue_comments created only)
+        #      child tables (grm_issue_logs, grm_issue_comments, grm_issue_attachments created only)
         # ------------------------------------------------------------------
         filtered_changes = {}
 
@@ -265,6 +266,17 @@ def push_changes():
             if comments_created:
                 filtered_changes["grm_issue_comments"] = {
                     "created": comments_created,
+                    "updated": [],
+                    "deleted": [],
+                }
+
+        # Handle grm_issue_attachments table - accept created records only
+        if "grm_issue_attachments" in changes:
+            attachments_created = changes["grm_issue_attachments"].get("created", [])
+
+            if attachments_created:
+                filtered_changes["grm_issue_attachments"] = {
+                    "created": attachments_created,
                     "updated": [],
                     "deleted": [],
                 }
@@ -305,9 +317,18 @@ def push_changes():
             frappe.log("💾 [SYNC_BACKEND] Starting database transaction...")
             frappe.db.begin()
 
+            # Collect file URLs for uploaded attachments
+            file_url_mappings = {}
+
             for table_name, table_changes in changes.items():
                 table_start = time.time()
-                process_table_changes(table_name, table_changes)
+                if table_name == "grm_issue_attachments":
+                    # Process attachments and collect file URLs
+                    file_urls = process_table_changes(table_name, table_changes)
+                    if file_urls:
+                        file_url_mappings[table_name] = file_urls
+                else:
+                    process_table_changes(table_name, table_changes)
                 table_duration = time.time() - table_start
                 frappe.log(
                     f"⏱️ [SYNC_BACKEND] Processing {table_name} took: {table_duration:.3f}s"
@@ -319,8 +340,13 @@ def push_changes():
                 f"✅ [SYNC_BACKEND] Database transaction completed in {transaction_duration:.3f}s"
             )
 
-            # Return void - no response data needed per WatermelonDB spec
-            frappe.response.http_status_code = 204
+            # Return file URLs for uploaded attachments
+            if file_url_mappings:
+                frappe.log(f"📤 [SYNC_BACKEND] Returning file URLs: {file_url_mappings}")
+                return {"file_urls": file_url_mappings}
+            else:
+                # Return void - no response data needed per WatermelonDB spec
+                frappe.response.http_status_code = 204
 
         except Exception as e:
             frappe.db.rollback()
@@ -422,6 +448,9 @@ def get_changes_since(last_sync_time):
 
     changes = {}
     total_records_processed = 0
+    
+    # Track issues being synced for child table filtering
+    synced_issue_ids = set()
 
     for table_name, doctype in SYNC_TABLES.items():
         table_start = time.time()
@@ -534,6 +563,12 @@ def get_changes_since(last_sync_time):
                 f"🗑️ [SYNC_BACKEND] Found {len(deleted_ids)} deleted records in {deleted_duration:.3f}s"
             )
 
+            # Track issue IDs for child table filtering
+            if doctype == "GRM Issue":
+                for record in created_records + updated_records:
+                    synced_issue_ids.add(record.get("name"))
+                frappe.log(f"📎 [SYNC_BACKEND] Tracking {len(synced_issue_ids)} issue IDs for child table filtering")
+
             # Convert to WatermelonDB format with timing
             convert_start = time.time()
             frappe.log(
@@ -601,6 +636,15 @@ def get_changes_since(last_sync_time):
             frappe.log_error(f"Error getting changes for {doctype}: {str(e)}")
             # Continue with other tables even if one fails
             continue
+
+    # Optimize attachment fetching with proper parent filtering
+    if "grm_issue_attachments" in changes and synced_issue_ids:
+        frappe.log(f"📎 [SYNC_BACKEND] Optimizing attachment sync for {len(synced_issue_ids)} accessible issues")
+        changes["grm_issue_attachments"] = optimize_attachment_sync(
+            changes["grm_issue_attachments"], 
+            synced_issue_ids, 
+            last_sync_time
+        )
 
     function_duration = time.time() - function_start
     frappe.log("✅ [SYNC_BACKEND] All table changes processed successfully")
@@ -880,6 +924,9 @@ def process_table_changes(table_name, table_changes):
 
     frappe.log(f"📋 [SYNC_BACKEND] Mapped {table_name} -> {doctype}")
 
+    # Track file URLs for attachments
+    file_urls = {}
+
     # Process created records
     created_records = table_changes.get("created", [])
     if created_records:
@@ -892,7 +939,15 @@ def process_table_changes(table_name, table_changes):
             try:
                 record_start = time.time()
                 frappe.log(f"✏️ [SYNC_BACKEND] raw_record record {raw_record}")
-                create_record(doctype, raw_record)
+
+                # Special handling for attachments to collect file URLs
+                if doctype == "GRM Issue Attachment":
+                    file_url = create_record(doctype, raw_record, return_file_url=True)
+                    if file_url and raw_record.get("id"):
+                        file_urls[raw_record["id"]] = file_url
+                else:
+                    create_record(doctype, raw_record)
+
                 record_duration = time.time() - record_start
                 frappe.log(
                     f"📝 [SYNC_BACKEND] Created record {i+1}/{len(created_records)} in {record_duration:.3f}s"
@@ -966,8 +1021,15 @@ def process_table_changes(table_name, table_changes):
         f"✅ [SYNC_BACKEND] Completed {table_name} processing: {total_records} total records in {total_duration:.3f}s"
     )
 
+    # Return file URLs for attachments
+    if doctype == "GRM Issue Attachment" and file_urls:
+        frappe.log(f"📎 [SYNC_BACKEND] Returning file URLs for {len(file_urls)} attachments")
+        return file_urls
 
-def create_record(doctype, raw_record):
+    return None
+
+
+def create_record(doctype, raw_record, return_file_url=False):
     """Create new record from WatermelonDB data with enhanced logging"""
     create_start = time.time()
     record_id = raw_record.get("id")
@@ -994,8 +1056,8 @@ def create_record(doctype, raw_record):
     )
 
     # Handle child table creation differently
-    if doctype in ["GRM Issue Log", "GRM Issue Comment"]:
-        return create_child_record(doctype, raw_record)
+    if doctype in ["GRM Issue Log", "GRM Issue Comment", "GRM Issue Attachment"]:
+        return create_child_record(doctype, raw_record, return_file_url=return_file_url)
 
     # Check if record already exists
     existence_check_start = time.time()
@@ -1070,7 +1132,7 @@ def create_record(doctype, raw_record):
     frappe.log(f"  - Document insert: {insert_duration:.4f}s")
 
 
-def create_child_record(doctype, raw_record):
+def create_child_record(doctype, raw_record, return_file_url=False):
     """Create child table record by adding it to parent document"""
     create_start = time.time()
     record_id = raw_record.get("id")
@@ -1104,6 +1166,28 @@ def create_child_record(doctype, raw_record):
     frappe_data = watermelon_to_frappe_data(raw_record)
     conversion_duration = time.time() - conversion_start
     frappe.log(f"🔄 [SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
+
+    # Special handling for GRM Issue Attachment with file data
+    created_file_url = None
+    if doctype == "GRM Issue Attachment" and raw_record.get("file_data") and raw_record.get("needs_upload"):
+        frappe.log(f"📎 [SYNC_BACKEND] Processing file upload for attachment {record_id}")
+        frappe.log(f"📎 [SYNC_BACKEND] File details: name={raw_record.get('file_name')}, has_data={bool(raw_record.get('file_data'))}")
+
+        file_url = create_file_from_base64(raw_record, parent_issue_id)
+        if file_url:
+            frappe_data["attachment"] = file_url
+            created_file_url = file_url
+            frappe.log(f"📎 [SYNC_BACKEND] Created file attachment: {file_url}")
+        else:
+            frappe.log_error(f"❌ [SYNC_BACKEND] Failed to create file for attachment {record_id}")
+            frappe.log_error(f"❌ [SYNC_BACKEND] Raw record debug info: {raw_record}")
+            # Don't raise error - continue without file, let attachment record be created
+            frappe.log(f"⚠️ [SYNC_BACKEND] Continuing without file for attachment {record_id}")
+            # Set attachment field to the original attachment value if it exists, or file_name as fallback
+            if raw_record.get("attachment"):
+                frappe_data["attachment"] = raw_record.get("attachment")
+            else:
+                frappe_data["attachment"] = raw_record.get("file_name", "unknown_file")
 
     # Determine the child table field name dynamically using Frappe meta
     child_table_field = get_child_table_field_name("GRM Issue", doctype)
@@ -1152,7 +1236,13 @@ def create_child_record(doctype, raw_record):
 
     # Save parent document
     save_start = time.time()
-    parent_doc.save(ignore_permissions=False)
+    try:
+        parent_doc.save(ignore_permissions=False)
+    except frappe.exceptions.UpdateAfterSubmitError as e:
+        # Issue is already submitted, we need to allow updates to child table
+        frappe.log(f"⚠️ [SYNC_BACKEND] Issue is submitted, allowing child table updates")
+        parent_doc.flags.ignore_validate_update_after_submit = True
+        parent_doc.save(ignore_permissions=False)
     save_duration = time.time() - save_start
     frappe.log(f"💾 [SYNC_BACKEND] Parent document save took: {save_duration:.4f}s")
 
@@ -1163,6 +1253,12 @@ def create_child_record(doctype, raw_record):
     frappe.log(f"📊 [SYNC_BACKEND] Child create breakdown:")
     frappe.log(f"  - Data conversion: {conversion_duration:.4f}s")
     frappe.log(f"  - Parent document save: {save_duration:.4f}s")
+
+    # Return file URL if requested and available
+    if return_file_url and created_file_url:
+        return created_file_url
+
+    return None
 
 
 def update_record(doctype, raw_record):
@@ -1394,6 +1490,15 @@ def frappe_to_watermelon_raw(frappe_doc):
             # Direct assignment - fields already aligned
             raw_record[field_name] = value
 
+    # Special field mapping for attachments: map 'parent' to 'grm_issue'
+    if doc_dict.get("doctype") == "GRM Issue Attachment" and doc_dict.get("parent"):
+        raw_record["grm_issue"] = doc_dict.get("parent")
+        frappe.log(f"📎 [SYNC_BACKEND] Mapped parent field to grm_issue: {doc_dict.get('parent')}")
+    # Also handle the case where we don't have doctype but can infer it's an attachment
+    elif doc_dict.get("parent") and doc_dict.get("parenttype") == "GRM Issue":
+        raw_record["grm_issue"] = doc_dict.get("parent")
+        frappe.log(f"📎 [SYNC_BACKEND] Mapped parent field to grm_issue: {doc_dict.get('parent')}")
+
     field_processing_duration = time.time() - field_processing_start
 
     # Add standard timestamps for WatermelonDB and sync tracking
@@ -1497,6 +1602,11 @@ def watermelon_to_frappe_data(raw_record):
         else:
             # Direct assignment - fields already aligned
             frappe_data[key] = value
+
+    # Special field mapping for attachments: map 'grm_issue' back to 'parent'
+    if raw_record.get("grm_issue"):
+        frappe_data["parent"] = raw_record.get("grm_issue")
+        frappe.log(f"📎 [SYNC_BACKEND] Mapped grm_issue field to parent: {raw_record.get('grm_issue')}")
 
     frappe_data["name"] = raw_record["id"]
 
@@ -1605,4 +1715,426 @@ def get_child_table_field_name(parent_doctype, child_doctype):
 
     except Exception as e:
         frappe.log_error(f"❌ [SYNC_BACKEND] Error finding child table field: {str(e)}")
+        return None
+
+
+def create_file_from_base64(raw_record, parent_issue_id):
+    """
+    Create a Frappe File record from Base64 data sent by mobile app
+
+    Args:
+        raw_record (dict): Raw record containing file data
+        parent_issue_id (str): Parent issue ID for file organization
+
+    Returns:
+        str: File URL if successful, None if failed
+    """
+    try:
+        file_data = raw_record.get("file_data")
+        file_name = raw_record.get("file_name")
+
+        if not file_data or not file_name:
+            frappe.log_error(f"❌ [SYNC_BACKEND] Missing file data or filename")
+            return None
+
+        frappe.log(f"📎 [SYNC_BACKEND] Creating file from Base64 data: {file_name}")
+
+        # Import necessary modules
+        import base64
+        import os
+        from frappe.utils.file_manager import save_file
+
+        # Validate file name and extension
+        frappe.log(f"📎 [SYNC_BACKEND] Validating file name: {file_name}")
+        if not validate_file_name(file_name):
+            frappe.log_error(f"❌ [SYNC_BACKEND] Invalid file name: {file_name}")
+            return None
+        frappe.log(f"📎 [SYNC_BACKEND] File name validation passed")
+
+        # Decode Base64 data
+        frappe.log(f"📎 [SYNC_BACKEND] Decoding Base64 data (length: {len(file_data)})")
+        try:
+            file_content = base64.b64decode(file_data)
+        except Exception as decode_error:
+            frappe.log_error(f"❌ [SYNC_BACKEND] Invalid Base64 data: {str(decode_error)}")
+            return None
+        frappe.log(f"📎 [SYNC_BACKEND] Base64 decoding successful")
+
+        # Validate file size
+        file_size = len(file_content)
+        max_size = get_max_file_size()
+        frappe.log(f"📎 [SYNC_BACKEND] File size check: {file_size} bytes (max: {max_size} bytes)")
+        if file_size > max_size:
+            frappe.log_error(f"❌ [SYNC_BACKEND] File too large: {file_size} bytes > {max_size} bytes")
+            return None
+        frappe.log(f"📎 [SYNC_BACKEND] File size validation passed")
+
+        # Validate file type
+        frappe.log(f"📎 [SYNC_BACKEND] Validating file type for: {file_name}")
+        if not validate_file_type(file_name, file_content):
+            frappe.log_error(f"❌ [SYNC_BACKEND] Invalid file type: {file_name}")
+            return None
+        frappe.log(f"📎 [SYNC_BACKEND] File type validation passed")
+
+        frappe.log(f"📎 [SYNC_BACKEND] File validation passed: {file_name} ({file_size} bytes)")
+
+        # Create file using Frappe's file manager
+        frappe.log(f"📎 [SYNC_BACKEND] Calling save_file with fname={file_name}, dt=GRM Issue, dn={parent_issue_id}")
+        try:
+            file_doc = save_file(
+                fname=file_name,
+                content=file_content,
+                dt="GRM Issue",
+                dn=parent_issue_id,
+                folder=None,
+                is_private=0  # Public files for issue attachments
+            )
+            frappe.log(f"📎 [SYNC_BACKEND] save_file returned: {file_doc}")
+            frappe.log(f"📎 [SYNC_BACKEND] File doc type: {type(file_doc)}")
+            frappe.log(f"📎 [SYNC_BACKEND] File doc attributes: {dir(file_doc) if file_doc else 'None'}")
+
+            if file_doc and hasattr(file_doc, 'file_url'):
+                file_url = file_doc.file_url
+                frappe.log(f"📎 [SYNC_BACKEND] Successfully created file: {file_url}")
+                return file_url
+            else:
+                frappe.log_error(f"❌ [SYNC_BACKEND] save_file returned invalid result: {file_doc}")
+                return None
+        except Exception as save_error:
+            frappe.log_error(f"❌ [SYNC_BACKEND] save_file failed: {str(save_error)}")
+            return None
+
+    except Exception as e:
+        frappe.log_error(f"❌ [SYNC_BACKEND] Error creating file from Base64: {str(e)}")
+        return None
+
+
+def validate_file_name(file_name):
+    """
+    Validate file name for security and compatibility
+
+    Args:
+        file_name (str): File name to validate
+
+    Returns:
+        bool: True if valid, False otherwise
+    """
+    import re
+    import os
+
+    # Check for empty or None
+    if not file_name or not file_name.strip():
+        return False
+
+    # Check length
+    if len(file_name) > 255:
+        return False
+
+    # Check for dangerous characters
+    dangerous_chars = ['..', '/', '\\', ':', '*', '?', '"', '<', '>', '|', '\0']
+    for char in dangerous_chars:
+        if char in file_name:
+            frappe.log_error(f"❌ [SYNC_BACKEND] File name contains dangerous character '{char}': {file_name}")
+            return False
+
+    # Check for valid extension
+    allowed_extensions = [
+        '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg',  # Images
+        '.pdf', '.doc', '.docx', '.txt', '.rtf',          # Documents
+        '.3gp', '.mp3', '.wav', '.ogg', '.aac', '.flac',          # Audio
+        '.mp4', '.avi', '.mov', '.wmv', '.mkv'            # Video
+    ]
+
+    file_ext = os.path.splitext(file_name)[1].lower()
+    frappe.log(f"📎 [SYNC_BACKEND] File extension: '{file_ext}' (allowed: {allowed_extensions})")
+    if file_ext not in allowed_extensions:
+        frappe.log_error(f"❌ [SYNC_BACKEND] File extension '{file_ext}' not allowed for file: {file_name}")
+        return False
+
+    frappe.log(f"📎 [SYNC_BACKEND] File name validation successful: {file_name}")
+    return True
+
+
+def validate_file_type(file_name, file_content):
+    """
+    Validate file type based on content (magic bytes)
+
+    Args:
+        file_name (str): File name
+        file_content (bytes): File content
+
+    Returns:
+        bool: True if valid, False otherwise
+    """
+    import os
+
+    # Get file extension
+    file_ext = os.path.splitext(file_name)[1].lower()
+
+    # Check minimum file size
+    if len(file_content) < 4:
+        return False
+
+    # Magic byte signatures for common file types
+    magic_bytes = {
+        '.jpg': [b'\xFF\xD8\xFF'],
+        '.jpeg': [b'\xFF\xD8\xFF'],
+        '.png': [b'\x89PNG\r\n\x1a\n'],
+        '.gif': [b'GIF87a', b'GIF89a'],
+        '.pdf': [b'%PDF'],
+        '.mp3': [b'ID3', b'\xFF\xFB'],
+        '.mp4': [b'ftyp'],
+        '.3gp': [b'ftyp3g'],  # 3GP files have 'ftyp3g' signature
+        '.avi': [b'RIFF'],
+        '.wav': [b'RIFF'],
+    }
+
+    # Check if file has expected magic bytes
+    if file_ext in magic_bytes:
+        expected_signatures = magic_bytes[file_ext]
+        file_header = file_content[:16]  # Check first 16 bytes
+
+        frappe.log(f"📎 [SYNC_BACKEND] Checking magic bytes for {file_ext}")
+        frappe.log(f"📎 [SYNC_BACKEND] File header: {file_header.hex()}")
+        frappe.log(f"📎 [SYNC_BACKEND] Expected signatures: {[sig.hex() for sig in expected_signatures]}")
+
+        for signature in expected_signatures:
+            if file_header.startswith(signature):
+                frappe.log(f"📎 [SYNC_BACKEND] Magic bytes match for {file_ext}")
+                return True
+
+        # Check if it's actually a different image type with wrong extension
+        all_image_signatures = {
+            'PNG': b'\x89PNG\r\n\x1a\n',
+            'JPEG': b'\xFF\xD8\xFF',
+            'GIF87a': b'GIF87a',
+            'GIF89a': b'GIF89a',
+        }
+
+        detected_type = None
+        for img_type, signature in all_image_signatures.items():
+            if file_header.startswith(signature):
+                detected_type = img_type
+                break
+
+        if detected_type and file_ext in ['.jpg', '.jpeg', '.png', '.gif']:
+            frappe.log(f"⚠️ [SYNC_BACKEND] File extension mismatch: {file_name} has {file_ext} extension but is actually {detected_type}")
+            frappe.log(f"⚠️ [SYNC_BACKEND] Allowing image with mismatched extension")
+            return True
+
+        # For audio files, be more lenient with validation
+        audio_extensions = ['.3gp', '.mp3', '.wav', '.ogg', '.aac', '.flac']
+        if file_ext in audio_extensions:
+            frappe.log(f"📎 [SYNC_BACKEND] Audio file with potential signature mismatch, allowing: {file_name}")
+            return True
+        
+        # If no magic bytes match for non-audio files, it's suspicious
+        frappe.log_error(f"❌ [SYNC_BACKEND] File type mismatch: {file_name} does not match expected signature")
+        return False
+
+    # For file types without magic byte checking, allow them
+    frappe.log(f"📎 [SYNC_BACKEND] No magic byte check for {file_ext}, allowing")
+    return True
+
+
+def get_max_file_size():
+    """
+    Get maximum allowed file size in bytes
+
+    Returns:
+        int: Maximum file size in bytes
+    """
+    # Default to 25MB, can be configured in site config
+    default_size = 25 * 1024 * 1024  # 25MB
+
+    try:
+        # Check if configured in site settings
+        max_size = frappe.conf.get("max_file_size", default_size)
+        return int(max_size)
+    except:
+        return default_size
+
+
+def optimize_attachment_sync(attachment_changes, accessible_issue_ids, last_sync_time):
+    """
+    Optimize attachment sync using Frappe QB for better performance
+    
+    Args:
+        attachment_changes (dict): Current attachment changes from regular sync
+        accessible_issue_ids (set): Set of issue IDs user has access to
+        last_sync_time (datetime): Last sync timestamp
+    
+    Returns:
+        dict: Optimized attachment changes with file data
+    """
+    start_time = time.time()
+    frappe.log(f"📎 [SYNC_BACKEND] Starting optimized attachment sync")
+    
+    try:
+        # Get all accessible issues that user can see (including existing ones)
+        all_accessible_issues = get_user_accessible_issues(accessible_issue_ids)
+        
+        if not all_accessible_issues:
+            frappe.log(f"⚠️ [SYNC_BACKEND] No accessible issues found for attachment filtering")
+            return {"created": [], "updated": [], "deleted": attachment_changes.get("deleted", [])}
+        
+        # Use Frappe QB for efficient attachment querying
+        attachment_table = frappe.qb.DocType("GRM Issue Attachment")
+        
+        # Query for created attachments
+        created_query = (
+            frappe.qb.from_(attachment_table)
+            .select("*")
+            .where(attachment_table.parent.isin(all_accessible_issues))
+            .where(attachment_table.creation > last_sync_time)
+        )
+        
+        # Query for updated attachments  
+        updated_query = (
+            frappe.qb.from_(attachment_table)
+            .select("*")
+            .where(attachment_table.parent.isin(all_accessible_issues))
+            .where(attachment_table.modified > last_sync_time)
+            .where(attachment_table.creation <= last_sync_time)
+        )
+        
+        # Execute queries
+        created_attachments = created_query.run(as_dict=True)
+        updated_attachments = updated_query.run(as_dict=True)
+        
+        frappe.log(f"📎 [SYNC_BACKEND] Found {len(created_attachments)} created, {len(updated_attachments)} updated attachments")
+        
+        # Process created attachments with file data
+        processed_created = []
+        for attachment in created_attachments:
+            raw_record = frappe_to_watermelon_raw(attachment)
+            
+            # Always add file data for created attachments
+            if attachment.get("attachment"):
+                file_data = get_attachment_file_data(attachment.get("attachment"))
+                if file_data:
+                    raw_record["file_data"] = file_data
+                    frappe.log(f"📎 [SYNC_BACKEND] Added file data for created attachment: {attachment.get('name')}")
+            
+            processed_created.append(raw_record)
+        
+        # Process updated attachments with file data  
+        processed_updated = []
+        for attachment in updated_attachments:
+            raw_record = frappe_to_watermelon_raw(attachment)
+            
+            # Add file data for updated attachments to ensure mobile app has the file
+            if attachment.get("attachment"):
+                file_data = get_attachment_file_data(attachment.get("attachment"))
+                if file_data:
+                    raw_record["file_data"] = file_data
+                    frappe.log(f"📎 [SYNC_BACKEND] Added file data for updated attachment: {attachment.get('name')}")
+            
+            processed_updated.append(raw_record)
+        
+        duration = time.time() - start_time
+        frappe.log(f"📎 [SYNC_BACKEND] Optimized attachment sync completed in {duration:.3f}s")
+        
+        return {
+            "created": processed_created,
+            "updated": processed_updated,
+            "deleted": attachment_changes.get("deleted", [])
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"❌ [SYNC_BACKEND] Error in optimized attachment sync: {str(e)}")
+        # Fallback to original data
+        return attachment_changes
+
+
+def get_user_accessible_issues(synced_issue_ids):
+    """
+    Get all issues that user has access to (both synced and existing)
+    
+    Args:
+        synced_issue_ids (set): Set of issue IDs being synced
+    
+    Returns:
+        list: List of all accessible issue IDs
+    """
+    try:
+        user = frappe.session.user
+        
+        # Start with synced issues
+        all_accessible = set(synced_issue_ids)
+        
+        # Get user's accessible projects and regions for additional issues
+        user_accessible_projects = get_user_accessible_projects(user)
+        user_assignments = get_user_region_assignments(user)
+        assigned_region_ids = [assignment.administrative_region for assignment in user_assignments]
+        
+        if user_accessible_projects and assigned_region_ids:
+            # Use Frappe QB for efficient querying
+            issue_table = frappe.qb.DocType("GRM Issue")
+            
+            additional_issues_query = (
+                frappe.qb.from_(issue_table)
+                .select(issue_table.name)
+                .where(issue_table.project.isin(user_accessible_projects))
+                .where(issue_table.administrative_region.isin(assigned_region_ids))
+            )
+            
+            additional_issues = additional_issues_query.run(as_dict=True)
+            all_accessible.update([issue.name for issue in additional_issues])
+            
+            frappe.log(f"📎 [SYNC_BACKEND] User has access to {len(all_accessible)} total issues")
+        
+        return list(all_accessible)
+        
+    except Exception as e:
+        frappe.log_error(f"❌ [SYNC_BACKEND] Error getting accessible issues: {str(e)}")
+        return list(synced_issue_ids)
+
+
+def get_attachment_file_data(file_url):
+    """
+    Get file data as base64 from Frappe file system
+    
+    Args:
+        file_url (str): File URL from Frappe (e.g., '/files/filename.ext')
+    
+    Returns:
+        str: Base64 encoded file data, or None if file not found/error
+    """
+    if not file_url:
+        return None
+        
+    try:
+        import base64
+        import os
+        
+        # Get the file path from Frappe's file system
+        if file_url.startswith('/files/'):
+            # Remove the '/files/' prefix to get the actual filename
+            filename = file_url[7:]  # Remove '/files/' (7 characters)
+            
+            # Get the full file path using Frappe's file utilities
+            file_path = frappe.get_site_path('public', 'files', filename)
+            
+            frappe.log(f"📎 [SYNC_BACKEND] Reading file from path: {file_path}")
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                frappe.log(f"⚠️ [SYNC_BACKEND] File not found: {file_path}")
+                return None
+                
+            # Read file and encode as base64
+            with open(file_path, 'rb') as file:
+                file_content = file.read()
+                file_base64 = base64.b64encode(file_content).decode('utf-8')
+                
+                frappe.log(f"📎 [SYNC_BACKEND] Successfully read file: {filename} ({len(file_content)} bytes)")
+                return file_base64
+                
+        else:
+            frappe.log(f"⚠️ [SYNC_BACKEND] Unsupported file URL format: {file_url}")
+            return None
+            
+    except Exception as e:
+        frappe.log_error(f"❌ [SYNC_BACKEND] Error reading file {file_url}: {str(e)}")
         return None

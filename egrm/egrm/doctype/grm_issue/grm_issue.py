@@ -322,12 +322,18 @@ class GRMIssue(Document):
                 frappe.throw(_("Issue Date cannot be after Intake Date"))
 
             # Check that resolution_date is not before created_date
+            print(
+                ">>>>> DATES >>>>>>",
+                self.resolution_date,
+                self.issue_date,
+                getdate(self.resolution_date) < getdate(self.issue_date),
+            )
             if (
                 self.resolution_date
-                and self.creation
-                and getdate(self.resolution_date) < getdate(self.creation)
+                and self.issue_date
+                and getdate(self.resolution_date) < getdate(self.issue_date)
             ):
-                frappe.throw(_("Resolution Date cannot be before Created Date"))
+                frappe.throw(_("Resolution Date cannot be before Issue Date"))
         except Exception as e:
             frappe.log(f"Error validating dates: {str(e)}")
             raise
