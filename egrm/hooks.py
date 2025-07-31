@@ -15,8 +15,6 @@ has_website_permission = {
     "Android App Version": "egrm.egrm.doctype.android_app_version.android_app_version.has_website_permission"
 }
 
-home_page = "login"
-
 # Role home pages
 role_home_page = {
     "GRM Administrator": "grm-administrator",
