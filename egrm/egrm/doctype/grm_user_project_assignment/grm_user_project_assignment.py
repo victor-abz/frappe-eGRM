@@ -150,74 +150,75 @@ class GRMUserProjectAssignment(Document):
             raise
 
     def after_insert(self):
-        try:
-            # Get user's existing permissions
-            from frappe.permissions import add_user_permission, get_user_permissions
+        pass
+        # try:
+        #     # Get user's existing permissions
+        #     from frappe.permissions import add_user_permission, get_user_permissions
 
-            user_permissions = get_user_permissions(self.user)
+        #     user_permissions = get_user_permissions(self.user)
 
-            # Add project permission to the user if not exists
-            has_project_permission = any(
-                perm.get("allow") == "GRM Project"
-                and perm.get("for_value") == self.project
-                for perm in user_permissions
-            )
-            if not has_project_permission:
-                add_user_permission("GRM Project", self.project, self.user)
-                frappe.log(
-                    f"Added project permission {self.project} to user {self.user}"
-                )
-            else:
-                frappe.log(
-                    f"User {self.user} already has project permission for {self.project}"
-                )
+        #     # Add project permission to the user if not exists
+        #     has_project_permission = any(
+        #         perm.get("allow") == "GRM Project"
+        #         and perm.get("for_value") == self.project
+        #         for perm in user_permissions
+        #     )
+        #     if not has_project_permission:
+        #         add_user_permission("GRM Project", self.project, self.user)
+        #         frappe.log(
+        #             f"Added project permission {self.project} to user {self.user}"
+        #         )
+        #     else:
+        #         frappe.log(
+        #             f"User {self.user} already has project permission for {self.project}"
+        #         )
 
-            # Add department permission if applicable and not exists
-            if self.department:
-                has_department_permission = any(
-                    perm.get("allow") == "GRM Issue Department"
-                    and perm.get("for_value") == self.department
-                    for perm in user_permissions
-                )
-                if not has_department_permission:
-                    add_user_permission(
-                        "GRM Issue Department", self.department, self.user
-                    )
-                    frappe.log(
-                        f"Added department permission {self.department} to user {self.user}"
-                    )
-                else:
-                    frappe.log(
-                        f"User {self.user} already has department permission for {self.department}"
-                    )
+        #     # Add department permission if applicable and not exists
+        #     if self.department:
+        #         has_department_permission = any(
+        #             perm.get("allow") == "GRM Issue Department"
+        #             and perm.get("for_value") == self.department
+        #             for perm in user_permissions
+        #         )
+        #         if not has_department_permission:
+        #             add_user_permission(
+        #                 "GRM Issue Department", self.department, self.user
+        #             )
+        #             frappe.log(
+        #                 f"Added department permission {self.department} to user {self.user}"
+        #             )
+        #         else:
+        #             frappe.log(
+        #                 f"User {self.user} already has department permission for {self.department}"
+        #             )
 
-            # Add region permission if applicable and not exists
-            if self.administrative_region:
-                has_region_permission = any(
-                    perm.get("allow") == "GRM Administrative Region"
-                    and perm.get("for_value") == self.administrative_region
-                    for perm in user_permissions
-                )
-                if not has_region_permission:
-                    add_user_permission(
-                        "GRM Administrative Region",
-                        self.administrative_region,
-                        self.user,
-                    )
-                    frappe.log(
-                        f"Added region permission {self.administrative_region} to user {self.user}"
-                    )
-                else:
-                    frappe.log(
-                        f"User {self.user} already has region permission for {self.administrative_region}"
-                    )
+        #     # Add region permission if applicable and not exists
+        #     if self.administrative_region:
+        #         has_region_permission = any(
+        #             perm.get("allow") == "GRM Administrative Region"
+        #             and perm.get("for_value") == self.administrative_region
+        #             for perm in user_permissions
+        #         )
+        #         if not has_region_permission:
+        #             add_user_permission(
+        #                 "GRM Administrative Region",
+        #                 self.administrative_region,
+        #                 self.user,
+        #             )
+        #             frappe.log(
+        #                 f"Added region permission {self.administrative_region} to user {self.user}"
+        #             )
+        #         else:
+        #             frappe.log(
+        #                 f"User {self.user} already has region permission for {self.administrative_region}"
+        #             )
 
-            frappe.log(
-                f"Permissions setup completed for user {self.user} for project {self.project}"
-            )
-        except Exception as e:
-            frappe.log_error(f"Error setting up permissions: {str(e)}")
-            frappe.throw(_("Error setting up permissions. Please check the logs."))
+        #     frappe.log(
+        #         f"Permissions setup completed for user {self.user} for project {self.project}"
+        #     )
+        # except Exception as e:
+        #     frappe.log_error(f"Error setting up permissions: {str(e)}")
+        #     frappe.throw(_("Error setting up permissions. Please check the logs."))
 
     def on_trash(self):
         try:
