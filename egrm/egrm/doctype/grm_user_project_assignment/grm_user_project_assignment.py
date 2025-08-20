@@ -386,6 +386,7 @@ class GRMUserProjectAssignment(Document):
             frappe.log_error(f"Error sending activation email: {str(e)}")
             frappe.throw(_(f"Error sending activation email: {str(e)}"))
 
+    @frappe.whitelist()
     def activate_worker(self, activation_code, new_password=None):
         """Validate and activate worker"""
         try:
