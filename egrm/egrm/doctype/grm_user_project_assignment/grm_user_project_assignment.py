@@ -54,27 +54,6 @@ class GRMUserProjectAssignment(Document):
             if self.role not in valid_grm_roles:
                 frappe.throw(_("Role {0} is not a valid GRM role").format(self.role))
 
-            # Check if user already has this role permission
-            from frappe.permissions import add_user_permission, get_user_permissions
-
-            # Check if user already has this role permission using direct DB query for efficiency
-            existing_permission = frappe.db.exists(
-                "User Permission",
-                {"user": self.user, "allow": "Role", "for_value": self.role},
-            )
-
-            # Only add if user doesn't already have the permission
-            if not existing_permission:
-                add_user_permission("Role", self.role, self.user)
-                frappe.log(f"Added role permission {self.role} to user {self.user}")
-            else:
-                frappe.log(
-                    f"User {self.user} already has role permission for {self.role}"
-                )
-
-        except frappe.DuplicateEntryError:
-            # If somehow the permission was added between our check and add
-            frappe.log(f"User {self.user} already has role permission for {self.role}")
         except Exception as e:
             frappe.log_error(f"Error validating role: {str(e)}")
             raise
@@ -149,8 +128,130 @@ class GRMUserProjectAssignment(Document):
             frappe.log_error(f"Error validating unique assignment: {str(e)}")
             raise
 
+    def assign_role_to_user(self):
+        """Add the selected GRM role to the user's Has Role table"""
+        try:
+            user_doc = frappe.get_doc("User", self.user)
+
+            # Check if role already exists
+            existing_roles = [d.role for d in user_doc.roles]
+
+            if self.role not in existing_roles:
+                user_doc.append("roles", {"role": self.role})
+                user_doc.save(ignore_permissions=True)
+                frappe.log(f"Added role {self.role} to user {self.user}")
+            else:
+                frappe.log(f"User {self.user} already has role {self.role}")
+        except Exception as e:
+            frappe.log_error(f"Error assigning role to user: {str(e)}")
+            raise
+
+    def remove_role_from_user(self):
+        """Remove role from user if no other active assignments use it"""
+        try:
+            # Check if user has other active assignments with same role
+            other_assignments = frappe.db.exists(
+                "GRM User Project Assignment",
+                {
+                    "user": self.user,
+                    "role": self.role,
+                    "name": ["!=", self.name],
+                    "is_active": 1,
+                    "activation_status": "Activated"
+                }
+            )
+
+            if not other_assignments:
+                user_doc = frappe.get_doc("User", self.user)
+                user_doc.roles = [d for d in user_doc.roles if d.role != self.role]
+                user_doc.save(ignore_permissions=True)
+                frappe.log(f"Removed role {self.role} from user {self.user}")
+            else:
+                frappe.log(f"Not removing role {self.role} from user {self.user} - other active assignments exist")
+        except Exception as e:
+            frappe.log_error(f"Error removing role from user: {str(e)}")
+            raise
+
+    def handle_role_change(self, old_role):
+        """Handle role updates when assignment is modified"""
+        try:
+            if old_role != self.role:
+                # Remove old role if safe (no other active assignments use it)
+                temp_role = self.role
+                self.role = old_role
+                self.remove_role_from_user()
+                self.role = temp_role
+
+                # Add new role if assignment is active and activated
+                if self.is_active and self.activation_status == "Activated":
+                    self.assign_role_to_user()
+
+                frappe.log(f"Changed role from {old_role} to {self.role} for user {self.user}")
+        except Exception as e:
+            frappe.log_error(f"Error handling role change: {str(e)}")
+            raise
+
+    def on_update(self):
+        """Handle role changes and is_active toggles"""
+        try:
+            # Get the old document from DB to compare changes
+            if self.is_new():
+                return
+
+            old_doc = self.get_doc_before_save()
+            if not old_doc:
+                return
+
+            # Handle role change
+            if old_doc.role != self.role:
+                self.handle_role_change(old_doc.role)
+
+            # Handle is_active toggle
+            if old_doc.is_active != self.is_active:
+                if self.is_active and self.activation_status == "Activated":
+                    # Reactivated - assign role
+                    self.assign_role_to_user()
+                    frappe.log(f"Reactivated assignment - assigned role {self.role} to user {self.user}")
+                elif not self.is_active:
+                    # Deactivated - remove role
+                    self.remove_role_from_user()
+                    frappe.log(f"Deactivated assignment - removed role {self.role} from user {self.user}")
+
+            # Handle activation status change
+            if old_doc.activation_status != self.activation_status:
+                if self.activation_status == "Activated" and self.is_active:
+                    # Just got activated - assign role
+                    self.assign_role_to_user()
+                    frappe.log(f"Worker activated - assigned role {self.role} to user {self.user}")
+                elif old_doc.activation_status == "Activated" and self.activation_status != "Activated":
+                    # Lost activation - remove role
+                    self.remove_role_from_user()
+                    frappe.log(f"Worker deactivated - removed role {self.role} from user {self.user}")
+
+            # IMPORTANT: Ensure role is assigned if user is active and activated
+            # This handles existing assignments created before this feature was added
+            if self.is_active and self.activation_status == "Activated":
+                # Check if user actually has the role
+                user_doc = frappe.get_doc("User", self.user)
+                existing_roles = [d.role for d in user_doc.roles]
+                if self.role not in existing_roles:
+                    frappe.log(f"Assigning missing role {self.role} to user {self.user} (migration fix)")
+                    self.assign_role_to_user()
+
+        except Exception as e:
+            frappe.log_error(f"Error in on_update: {str(e)}")
+            raise
+
     def after_insert(self):
-        pass
+        """Assign role to user after creating assignment"""
+        try:
+            # For non-government workers, activate immediately and assign role
+            if not self.is_government_worker_role():
+                self.assign_role_to_user()
+                frappe.log(f"Assigned role {self.role} to non-government worker {self.user}")
+        except Exception as e:
+            frappe.log_error(f"Error in after_insert: {str(e)}")
+            raise
         # try:
         #     # Get user's existing permissions
         #     from frappe.permissions import add_user_permission, get_user_permissions
@@ -222,29 +323,15 @@ class GRMUserProjectAssignment(Document):
 
     def on_trash(self):
         try:
-            # Remove project permission from the user
-            from frappe.permissions import remove_user_permission
-
-            remove_user_permission("GRM Project", self.project, self.user)
-
-            # Remove department permission if applicable
-            if self.department:
-                remove_user_permission(
-                    "GRM Issue Department", self.department, self.user
-                )
-
-            # Remove region permission if applicable
-            if self.administrative_region:
-                remove_user_permission(
-                    "GRM Administrative Region", self.administrative_region, self.user
-                )
+            # Remove role from user if no other active assignments use it
+            self.remove_role_from_user()
 
             frappe.log(
-                f"Removed permissions for user {self.user} for project {self.project}"
+                f"Removed assignment for user {self.user} for project {self.project}"
             )
         except Exception as e:
-            frappe.log_error(f"Error removing permissions: {str(e)}")
-            frappe.throw(_("Error removing permissions. Please check the logs."))
+            frappe.log_error(f"Error removing assignment: {str(e)}")
+            frappe.throw(_("Error removing assignment. Please check the logs."))
 
     def before_insert(self):
         """Auto-generate activation code for government workers"""
@@ -704,6 +791,23 @@ def export_project_activation_codes(project_code):
     except Exception as e:
         frappe.log_error(f"Error exporting project activation codes: {str(e)}")
         frappe.throw(_(f"Error exporting activation codes: {str(e)}"))
+
+
+@frappe.whitelist()
+def get_grm_roles(doctype, txt, searchfield, start, page_len, filters):
+    """Return only GRM-specific roles for the role field dropdown"""
+    return frappe.db.sql("""
+        SELECT name
+        FROM `tabRole`
+        WHERE name LIKE 'GRM%%'
+        AND (name LIKE %(txt)s OR %(txt)s = '')
+        ORDER BY name
+        LIMIT %(start)s, %(page_len)s
+    """, {
+        'txt': f'%{txt}%',
+        'start': start,
+        'page_len': page_len
+    })
 
 
 def get_user_assignments(user):
