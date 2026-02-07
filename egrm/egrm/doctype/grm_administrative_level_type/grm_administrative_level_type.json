@@ -7,7 +7,13 @@
  "field_order": [
   "level_name",
   "level_order",
-  "project"
+  "project",
+  "sb_sla",
+  "acknowledgment_days",
+  "resolution_days",
+  "cb_sla",
+  "reminder_before_days",
+  "auto_escalate"
  ],
  "fields": [
   {
@@ -32,6 +38,45 @@
    "label": "Project",
    "options": "GRM Project",
    "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "description": "Service Level Agreement timeframes for this administrative level",
+   "fieldname": "sb_sla",
+   "fieldtype": "Section Break",
+   "label": "SLA Configuration"
+  },
+  {
+   "default": "7",
+   "description": "Number of business days to acknowledge complaint (default: 7 per WB guidelines)",
+   "fieldname": "acknowledgment_days",
+   "fieldtype": "Int",
+   "label": "Acknowledgment Days"
+  },
+  {
+   "default": "30",
+   "description": "Number of business days to resolve complaint (default: 30 per WB guidelines)",
+   "fieldname": "resolution_days",
+   "fieldtype": "Int",
+   "label": "Resolution Days"
+  },
+  {
+   "fieldname": "cb_sla",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "2",
+   "description": "Send reminder notification this many days before SLA expires",
+   "fieldname": "reminder_before_days",
+   "fieldtype": "Int",
+   "label": "Reminder Before (Days)"
+  },
+  {
+   "default": "1",
+   "description": "Automatically escalate to parent level if SLA is breached",
+   "fieldname": "auto_escalate",
+   "fieldtype": "Check",
+   "label": "Auto-Escalate on SLA Breach"
   }
  ],
  "index_web_pages_for_search": 1,

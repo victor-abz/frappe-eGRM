@@ -809,6 +809,79 @@ frappe.ui.form.on("GRM Issue", {
 			frm.get_field("escalate_flag").$input.css("background-color", "#ffccc7");
 			frm.set_intro(__("This issue has been escalated and requires attention."), "red");
 		}
+
+		// Manual escalate button
+		if (!frm.is_new() && !['Resolved', 'Closed'].includes(frm.doc.status)) {
+			frm.add_custom_button(__('Escalate to Higher Level'), function() {
+				let d = new frappe.ui.Dialog({
+					title: __('Escalate Issue'),
+					fields: [
+						{
+							fieldname: 'reason',
+							label: __('Escalation Reason'),
+							fieldtype: 'Small Text',
+							reqd: 1
+						}
+					],
+					primary_action_label: __('Escalate'),
+					primary_action: function(values) {
+						frappe.call({
+							method: 'manual_escalate',
+							doc: frm.doc,
+							args: { reason: values.reason },
+							callback: function(r) {
+								if (r.message) {
+									d.hide();
+									frm.reload_doc();
+								}
+							}
+						});
+					}
+				});
+				d.show();
+			}, __('Actions'));
+		}
+
+		// Resend notification button
+		if (!frm.is_new()) {
+			frm.add_custom_button(__('Resend Notification'), function() {
+				let d = new frappe.ui.Dialog({
+					title: __('Resend Notification'),
+					fields: [
+						{
+							fieldname: 'notification_type',
+							label: __('Notification Type'),
+							fieldtype: 'Select',
+							options: 'receipt\nacknowledgment\nin_progress\nresolved\nclosed\nescalated',
+							reqd: 1
+						}
+					],
+					primary_action_label: __('Send'),
+					primary_action: function(values) {
+						frappe.call({
+							method: 'resend_notification',
+							doc: frm.doc,
+							args: { notification_type: values.notification_type },
+							callback: function(r) {
+								d.hide();
+								frm.reload_doc();
+							}
+						});
+					}
+				});
+				d.show();
+			}, __('Actions'));
+		}
+
+		// Color-code SLA status
+		if (frm.doc.sla_acknowledgment_status) {
+			let color = {'On Time': 'green', 'Nearing Due': 'orange', 'Breached': 'red'}[frm.doc.sla_acknowledgment_status];
+			if (color) frm.get_field('sla_acknowledgment_status').$wrapper.find('.like-disabled-input').css('color', color);
+		}
+		if (frm.doc.sla_resolution_status) {
+			let color = {'On Time': 'green', 'Nearing Due': 'orange', 'Breached': 'red'}[frm.doc.sla_resolution_status];
+			if (color) frm.get_field('sla_resolution_status').$wrapper.find('.like-disabled-input').css('color', color);
+		}
 	},
 
 	setup: function (frm) {

@@ -16,7 +16,18 @@
   "section_break_1",
   "default_language",
   "auto_escalation_days",
-  "enable_citizen_feedback"
+  "enable_citizen_feedback",
+  "sb_notifications",
+  "enable_notifications",
+  "cb_notif1",
+  "receipt_template",
+  "acknowledgment_template",
+  "in_progress_template",
+  "cb_notif2",
+  "resolved_template",
+  "closed_template",
+  "escalated_template",
+  "sla_reminder_template"
  ],
  "fields": [
   {
@@ -84,6 +95,83 @@
    "fieldname": "section_break_1",
    "fieldtype": "Section Break",
    "label": "Configuration"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_notifications",
+   "fieldtype": "Section Break",
+   "label": "Notification Settings"
+  },
+  {
+   "default": "1",
+   "description": "Send automated email/SMS notifications to citizens",
+   "fieldname": "enable_notifications",
+   "fieldtype": "Check",
+   "label": "Enable Automated Notifications"
+  },
+  {
+   "fieldname": "cb_notif1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.enable_notifications",
+   "description": "Sent immediately when complaint is submitted",
+   "fieldname": "receipt_template",
+   "fieldtype": "Link",
+   "label": "Receipt Template",
+   "options": "GRM Notification Template"
+  },
+  {
+   "depends_on": "eval:doc.enable_notifications",
+   "description": "Sent when complaint is acknowledged",
+   "fieldname": "acknowledgment_template",
+   "fieldtype": "Link",
+   "label": "Acknowledgment Template",
+   "options": "GRM Notification Template"
+  },
+  {
+   "depends_on": "eval:doc.enable_notifications",
+   "description": "Sent when complaint status changes to In Progress",
+   "fieldname": "in_progress_template",
+   "fieldtype": "Link",
+   "label": "In Progress Template",
+   "options": "GRM Notification Template"
+  },
+  {
+   "fieldname": "cb_notif2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.enable_notifications",
+   "description": "Sent when complaint is resolved",
+   "fieldname": "resolved_template",
+   "fieldtype": "Link",
+   "label": "Resolved Template",
+   "options": "GRM Notification Template"
+  },
+  {
+   "depends_on": "eval:doc.enable_notifications",
+   "description": "Sent when complaint is closed",
+   "fieldname": "closed_template",
+   "fieldtype": "Link",
+   "label": "Closed Template",
+   "options": "GRM Notification Template"
+  },
+  {
+   "depends_on": "eval:doc.enable_notifications",
+   "description": "Sent when complaint is escalated",
+   "fieldname": "escalated_template",
+   "fieldtype": "Link",
+   "label": "Escalated Template",
+   "options": "GRM Notification Template"
+  },
+  {
+   "depends_on": "eval:doc.enable_notifications",
+   "description": "Sent as reminder before SLA expires",
+   "fieldname": "sla_reminder_template",
+   "fieldtype": "Link",
+   "label": "SLA Reminder Template",
+   "options": "GRM Notification Template"
   }
  ],
  "index_web_pages_for_search": 1,

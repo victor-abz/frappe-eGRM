@@ -6,6 +6,7 @@ from frappe.utils import cint, getdate, now_datetime
 from egrm.egrm.doctype.grm_user_project_assignment.grm_user_project_assignment import (
     get_user_assignments,
 )
+from egrm.egrm.utils.sla_manager import SLAManager
 from egrm.utils.tracking_code_generator import generate_tracking_code
 
 
@@ -156,10 +157,26 @@ class GRMIssue(Document):
             frappe.log(f"Error generating codes for GRM Issue: {str(e)}")
             raise
 
+    def after_insert(self):
+        try:
+            self._init_sla_after_insert()
+            self.send_notification('receipt')
+            frappe.log(f"After insert completed for GRM Issue {self.name}")
+        except Exception as e:
+            frappe.log(f"Error in after_insert for GRM Issue: {str(e)}")
+
     def on_update(self):
         try:
             # Check for escalation needs
             self.check_escalation()
+
+            # Update SLA status
+            self._update_sla_on_save()
+
+            # Handle status change notifications
+            if self.has_value_changed('status'):
+                self.handle_status_change_notification()
+
             frappe.log(f"Updated GRM Issue {self.name}")
         except Exception as e:
             frappe.log(f"Error updating GRM Issue: {str(e)}")
@@ -502,3 +519,169 @@ class GRMIssue(Document):
         except Exception as e:
             frappe.log(f"Error checking sensitive data permissions: {str(e)}")
             return False
+
+    def _init_sla_after_insert(self):
+        """Initialize SLA tracking after issue creation."""
+        try:
+            sla_manager = SLAManager(self)
+            sla_manager.initialize_sla()
+            # Save SLA fields without triggering hooks again
+            frappe.db.set_value(self.doctype, self.name, {
+                "sla_acknowledgment_days": self.sla_acknowledgment_days,
+                "sla_resolution_days": self.sla_resolution_days,
+                "sla_acknowledgment_due": self.sla_acknowledgment_due,
+                "sla_resolution_due": self.sla_resolution_due,
+                "sla_acknowledgment_status": self.sla_acknowledgment_status,
+                "sla_resolution_status": self.sla_resolution_status,
+                "sla_days_remaining": self.sla_days_remaining,
+            }, update_modified=False)
+        except Exception as e:
+            frappe.log_error(f"SLA initialization error for {self.name}: {e}", "SLA Error")
+
+    def _update_sla_on_save(self):
+        """Update SLA status on each save."""
+        try:
+            sla_manager = SLAManager(self)
+            if self.has_value_changed("administrative_region"):
+                sla_manager.initialize_sla()
+                self.add_comment("Info", f"SLA recalculated due to region change to {self.administrative_region}")
+            else:
+                sla_manager.update_sla_status()
+        except Exception as e:
+            frappe.log_error(f"SLA update error for {self.name}: {e}", "SLA Error")
+
+    def send_notification(self, notification_type):
+        """Send notification via configured channels."""
+        try:
+            project = frappe.get_doc("GRM Project", self.project)
+        except Exception:
+            return
+
+        if not project.get("enable_notifications"):
+            return
+
+        template_field = f"{notification_type}_template"
+        template_name = project.get(template_field)
+        if not template_name:
+            return
+
+        try:
+            template = frappe.get_doc("GRM Notification Template", template_name)
+
+            if template.email_template:
+                self._send_email_notification(template.email_template)
+
+            if template.enable_sms and template.sms_message:
+                self._send_sms_notification(template)
+
+            self.add_comment(
+                "Info",
+                f"{notification_type.replace('_', ' ').title()} notification sent"
+            )
+        except Exception as e:
+            frappe.log_error(
+                f"Failed to send {notification_type} notification for {self.name}: {e}",
+                "GRM Notification Error"
+            )
+
+    def _send_email_notification(self, email_template_name):
+        """Send email using Frappe Email Template."""
+        contact_info = self.get_contact_info()
+        if not contact_info or "@" not in str(contact_info):
+            return
+
+        try:
+            email_template = frappe.get_doc("Email Template", email_template_name)
+            subject = frappe.render_template(email_template.subject, {"doc": self})
+            message = frappe.render_template(
+                email_template.get("response_html") or email_template.get("response") or "",
+                {"doc": self}
+            )
+
+            frappe.sendmail(
+                recipients=[contact_info],
+                subject=subject,
+                message=message,
+                reference_doctype=self.doctype,
+                reference_name=self.name,
+            )
+        except Exception as e:
+            frappe.log_error(f"Email send failed for {self.name}: {e}", "GRM Email Error")
+
+    def _send_sms_notification(self, template):
+        """Send SMS using configured SMS provider."""
+        contact_info = self.get_contact_info()
+        if not contact_info or "@" in str(contact_info):
+            return  # Not a phone number
+
+        try:
+            context = self._get_notification_context()
+            sms_message = template.render_sms(context)
+            if not sms_message:
+                return
+
+            from frappe.core.doctype.sms_settings.sms_settings import send_sms
+            send_sms(
+                receiver_list=[contact_info],
+                msg=sms_message,
+                success_msg=False,
+            )
+        except Exception as e:
+            frappe.log_error(f"SMS send failed for {self.name}: {e}", "GRM SMS Error")
+
+    def _get_notification_context(self):
+        """Get context dict for template rendering."""
+        return {
+            "tracking_code": self.tracking_code,
+            "subject": getattr(self, "description", ""),
+            "status": self.status,
+            "administrative_region": self.administrative_region,
+            "created_date": frappe.utils.formatdate(self.creation, "dd MMM yyyy") if self.creation else "",
+            "complainant_name": self.get_citizen_name(),
+            "sla_acknowledgment_due": frappe.utils.formatdate(self.sla_acknowledgment_due, "dd MMM yyyy") if self.get("sla_acknowledgment_due") else None,
+            "sla_resolution_due": frappe.utils.formatdate(self.sla_resolution_due, "dd MMM yyyy") if self.get("sla_resolution_due") else None,
+            "sla_days_remaining": self.get("sla_days_remaining"),
+            "project": self.project,
+        }
+
+    def handle_status_change_notification(self):
+        """Send appropriate notification based on status change."""
+        # Map GRM Issue Status names to notification types
+        status_name = frappe.db.get_value("GRM Issue Status", self.status, "status_name") or ""
+        status_template_map = {
+            "In Progress": "in_progress",
+            "Resolved": "resolved",
+            "Closed": "closed",
+        }
+
+        # Check for acknowledgment-type statuses (open_status=1 but not initial)
+        status_doc = frappe.get_cached_doc("GRM Issue Status", self.status)
+        if status_doc.open_status and not status_doc.initial_status:
+            self.send_notification("acknowledgment")
+            return
+
+        template_type = status_template_map.get(status_name)
+        if template_type:
+            self.send_notification(template_type)
+
+    @frappe.whitelist()
+    def manual_escalate(self, reason=None):
+        """Allow manual escalation from UI."""
+        sla_manager = SLAManager(self)
+        if sla_manager.escalate_to_parent_level():
+            if reason:
+                self.sla_escalation_reason = reason
+            else:
+                self.sla_escalation_reason = "Manual escalation by user"
+            self.save(ignore_permissions=True)
+            frappe.msgprint(_("Issue escalated successfully"))
+            return True
+        else:
+            frappe.msgprint(_("Cannot escalate - already at highest level"))
+            return False
+
+    @frappe.whitelist()
+    def resend_notification(self, notification_type):
+        """Allow manual resend of notification."""
+        self.send_notification(notification_type)
+        frappe.msgprint(_("Notification sent successfully"))

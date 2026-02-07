@@ -11,11 +11,28 @@ class GRMProject(Document):
     def validate(self):
         try:
             self.validate_dates()
+            self.validate_notification_templates()
             # Ensure project code uniqueness - this is already handled by unique field in DocType
             frappe.log(f"Validating GRM Project {self.name}")
         except Exception as e:
             frappe.log_error(f"Error validating GRM Project: {str(e)}")
             raise
+
+    def validate_notification_templates(self):
+        """Ensure selected templates are active and compatible"""
+        template_fields = [
+            'receipt_template', 'acknowledgment_template', 'in_progress_template',
+            'resolved_template', 'closed_template', 'escalated_template',
+            'sla_reminder_template'
+        ]
+        for field in template_fields:
+            template_name = self.get(field)
+            if template_name:
+                template = frappe.get_doc("GRM Notification Template", template_name)
+                if not template.active:
+                    frappe.throw(_("Template {0} is not active").format(template_name))
+                if template.project and template.project != self.name:
+                    frappe.throw(_("Template {0} belongs to another project").format(template_name))
 
     def validate_dates(self):
         try:

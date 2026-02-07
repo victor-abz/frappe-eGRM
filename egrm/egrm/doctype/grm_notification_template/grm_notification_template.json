@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "creation": "2025-11-16 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "template_type",
+  "sb_email",
+  "email_template",
+  "cb_sms",
+  "enable_sms",
+  "sms_message",
+  "sb_settings",
+  "project",
+  "cb_settings",
+  "active",
+  "sb_preview",
+  "template_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "template_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Template Type",
+   "options": "Receipt\nAcknowledgment\nIn Progress\nResolved\nClosed\nEscalated\nSLA Reminder",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sb_email",
+   "fieldtype": "Section Break",
+   "label": "Email Configuration"
+  },
+  {
+   "description": "Link to Frappe Email Template for email notifications",
+   "fieldname": "email_template",
+   "fieldtype": "Link",
+   "label": "Email Template",
+   "options": "Email Template"
+  },
+  {
+   "fieldname": "cb_sms",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_sms",
+   "fieldtype": "Check",
+   "label": "Enable SMS"
+  },
+  {
+   "depends_on": "eval:doc.enable_sms",
+   "description": "SMS message template (supports Jinja2: {{ tracking_code }}, {{ status }}, etc.)",
+   "fieldname": "sms_message",
+   "fieldtype": "Text",
+   "label": "SMS Message"
+  },
+  {
+   "fieldname": "sb_settings",
+   "fieldtype": "Section Break",
+   "label": "Settings"
+  },
+  {
+   "description": "Leave blank for shared templates, or select project for project-specific template",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "GRM Project"
+  },
+  {
+   "fieldname": "cb_settings",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_preview",
+   "fieldtype": "Section Break",
+   "label": "Template Variables Reference"
+  },
+  {
+   "fieldname": "template_help",
+   "fieldtype": "HTML",
+   "label": "",
+   "options": "<p>Available template variables for Jinja2:</p><ul><li><code>{{ tracking_code }}</code> - Issue tracking code</li><li><code>{{ subject }}</code> - Issue subject</li><li><code>{{ status }}</code> - Current status</li><li><code>{{ administrative_region }}</code> - Administrative region name</li><li><code>{{ created_date }}</code> - Issue creation date</li><li><code>{{ complainant_name }}</code> - Complainant name</li><li><code>{{ resolution_summary }}</code> - Resolution summary (if resolved)</li><li><code>{{ sla_acknowledgment_due }}</code> - Acknowledgment due date</li><li><code>{{ sla_resolution_due }}</code> - Resolution due date</li></ul>"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-16 00:00:00",
+ "modified_by": "Administrator",
+ "module": "egrm",
+ "name": "GRM Notification Template",
+ "naming_rule": "By fieldname",
+ "autoname": "field:template_name",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Project Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

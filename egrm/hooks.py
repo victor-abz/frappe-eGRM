@@ -5,6 +5,13 @@ app_description = "Electronic Grievance Redress Mechanism"
 app_email = "svicky.shema@gmail.com"
 app_license = "MIT"
 
+fixtures = [
+    {
+        "dt": "Email Template",
+        "filters": [["name", "like", "GRM%"]]
+    }
+]
+
 # Website Configurations
 website_route_rules = [
     {"from_route": "/download-app", "to_route": "download_app"},
@@ -47,7 +54,8 @@ has_permission = {
 # Scheduled Tasks
 scheduler_events = {
     "daily": [
-        "egrm.server_scripts.scheduled_tasks.check_issue_escalations"
+        "egrm.server_scripts.scheduled_tasks.check_issue_escalations",
+        "egrm.egrm.scheduled_jobs.sla_monitor.monitor_sla"
     ]
 }
 
