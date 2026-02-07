@@ -1,0 +1,31 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Submit Complaint{% endblock %}
+
+{% block page_content %}
+<div class="container" style="max-width: 800px; margin: 50px auto; text-align: center;">
+    <h1>Submit a Complaint</h1>
+
+    <div style="padding: 40px; background: #f7fafc; border-radius: 8px; margin: 30px 0;">
+        <h3>Alternative Submission Methods</h3>
+        <p style="font-size: 1.1em; line-height: 1.8;">
+            To submit a complaint, please use one of the following methods:
+        </p>
+
+        <ul style="text-align: left; font-size: 1.1em; max-width: 500px; margin: 30px auto;">
+            <li><strong>Mobile App:</strong> Download our mobile app for offline submission</li>
+            <li><strong>Field Officer:</strong> Contact your local GRM field officer</li>
+            <li><strong>Phone:</strong> Call the project hotline</li>
+            <li><strong>In Person:</strong> Visit project office</li>
+        </ul>
+    </div>
+
+    <p style="color: #666; margin-top: 30px;">
+        Web-based submission form coming soon
+    </p>
+
+    <div style="margin-top: 30px;">
+        <a href="/grm-public" class="btn btn-primary">Back to Homepage</a>
+    </div>
+</div>
+{% endblock %}

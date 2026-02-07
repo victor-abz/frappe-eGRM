@@ -1,0 +1,79 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Public Reports Archive{% endblock %}
+
+{% block head %}
+<style>
+.report-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.3s;
+}
+.report-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.report-info h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+.report-meta {
+    color: #666;
+    font-size: 0.9em;
+}
+.download-btn {
+    background: #667eea;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.3s;
+}
+.download-btn:hover {
+    background: #764ba2;
+    color: white;
+}
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="container">
+    <h1>GRM Public Reports Archive</h1>
+    <p class="lead">Historical monthly and quarterly transparency reports</p>
+
+    {% if reports %}
+    <div style="margin-top: 30px;">
+        {% for report in reports %}
+        <div class="report-card">
+            <div class="report-info">
+                <h4>{{ report.type }} Report - {{ report.date }}</h4>
+                <div class="report-meta">
+                    <span>Project: {{ report.project }}</span>
+                    <span style="margin-left: 20px;">{{ report.filename }}</span>
+                </div>
+            </div>
+            <a href="{{ report.url }}" target="_blank" class="download-btn">Download PDF</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No Reports Available</h3>
+        <p>Public reports will appear here once generated.</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 50px; text-align: center;">
+        <a href="/grm-public" class="btn btn-default">Back to Homepage</a>
+    </div>
+</div>
+{% endblock %}

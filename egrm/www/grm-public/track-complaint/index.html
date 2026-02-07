@@ -1,0 +1,186 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Track Your Complaint{% endblock %}
+
+{% block head %}
+<meta name="description" content="Track your GRM complaint status">
+<style>
+.tracking-form {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 40px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.tracking-input {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2em;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    margin: 20px 0;
+}
+.tracking-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2em;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.tracking-btn:hover {
+    background: #764ba2;
+}
+.result-card {
+    margin-top: 30px;
+    padding: 30px;
+    background: #f7fafc;
+    border-radius: 8px;
+    display: none;
+}
+.result-card.show {
+    display: block;
+}
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+.info-label {
+    font-weight: bold;
+    color: #666;
+}
+.error-msg {
+    padding: 20px;
+    background: #fed7d7;
+    color: #c53030;
+    border-radius: 6px;
+    margin-top: 20px;
+    display: none;
+}
+.error-msg.show {
+    display: block;
+}
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="container">
+    <div class="tracking-form">
+        <h1 style="text-align: center; margin-bottom: 10px;">Track Your Complaint</h1>
+        <p style="text-align: center; color: #666;">Enter your tracking code to check the status</p>
+
+        <input type="text" id="tracking_code" class="tracking-input"
+            placeholder="Enter tracking code" autocomplete="off">
+
+        <button onclick="trackComplaint()" class="tracking-btn">Track Complaint</button>
+
+        <div id="error-msg" class="error-msg"></div>
+
+        <div id="result-card" class="result-card">
+            <h3 style="margin-bottom: 20px;">Complaint Status</h3>
+            <div class="info-row">
+                <span class="info-label">Tracking Code:</span>
+                <span id="result-code"></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Status:</span>
+                <span id="result-status"></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Category:</span>
+                <span id="result-category"></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Submitted:</span>
+                <span id="result-submitted"></span>
+            </div>
+            <div class="info-row" id="ack-row" style="display: none;">
+                <span class="info-label">Acknowledged On:</span>
+                <span id="result-ack-date"></span>
+            </div>
+            <div class="info-row" id="resolved-row" style="display: none;">
+                <span class="info-label">Resolved On:</span>
+                <span id="result-resolved-date"></span>
+            </div>
+            <div class="info-row" id="appeal-row" style="display: none;">
+                <span class="info-label">Appeal Status:</span>
+                <span style="color: #ed8936; font-weight: bold;">Appeal Submitted</span>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="/grm-public" style="color: #667eea;">Back to Homepage</a>
+    </div>
+</div>
+
+<script>
+function trackComplaint() {
+    const trackingCode = document.getElementById('tracking_code').value.trim();
+    const resultCard = document.getElementById('result-card');
+    const errorMsg = document.getElementById('error-msg');
+
+    resultCard.classList.remove('show');
+    errorMsg.classList.remove('show');
+
+    if (!trackingCode) {
+        errorMsg.textContent = 'Please enter a tracking code';
+        errorMsg.classList.add('show');
+        return;
+    }
+
+    frappe.call({
+        method: 'egrm.api.public_tracking.track_complaint',
+        args: { tracking_code: trackingCode },
+        callback: function(r) {
+            if (r.message && r.message.status === 'success') {
+                const data = r.message.data;
+                document.getElementById('result-code').textContent = data.tracking_code;
+                document.getElementById('result-status').textContent = data.status || 'Unknown';
+                document.getElementById('result-category').textContent = data.category || 'N/A';
+                document.getElementById('result-submitted').textContent = data.submission_date || 'N/A';
+
+                if (data.acknowledged_date) {
+                    document.getElementById('result-ack-date').textContent = data.acknowledged_date;
+                    document.getElementById('ack-row').style.display = 'flex';
+                } else {
+                    document.getElementById('ack-row').style.display = 'none';
+                }
+
+                if (data.resolution_date) {
+                    document.getElementById('result-resolved-date').textContent = data.resolution_date;
+                    document.getElementById('resolved-row').style.display = 'flex';
+                } else {
+                    document.getElementById('resolved-row').style.display = 'none';
+                }
+
+                if (data.appeal_submitted) {
+                    document.getElementById('appeal-row').style.display = 'flex';
+                } else {
+                    document.getElementById('appeal-row').style.display = 'none';
+                }
+
+                resultCard.classList.add('show');
+            } else {
+                errorMsg.textContent = r.message.message || 'Complaint not found';
+                errorMsg.classList.add('show');
+            }
+        },
+        error: function(err) {
+            errorMsg.textContent = 'Error tracking complaint. Please try again.';
+            errorMsg.classList.add('show');
+        }
+    });
+}
+
+document.getElementById('tracking_code').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') { trackComplaint(); }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "templates/web.html" %}
+
+{% block title %}GRM Public Portal{% endblock %}
+
+{% block head %}
+<meta name="description" content="Grievance Redress Mechanism - Track and submit complaints">
+<style>
+.grm-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 60px 20px;
+    text-align: center;
+    margin: -15px -15px 30px -15px;
+}
+.grm-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 20px;
+    transition: box-shadow 0.3s;
+}
+.grm-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.grm-btn {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 12px 30px;
+    border-radius: 6px;
+    text-decoration: none;
+    margin: 10px 5px;
+    transition: background 0.3s;
+}
+.grm-btn:hover {
+    background: #764ba2;
+    color: white;
+}
+.grm-btn-secondary {
+    background: #48bb78;
+}
+.grm-btn-secondary:hover {
+    background: #38a169;
+}
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="grm-hero">
+    <h1 style="font-size: 2.5em; margin-bottom: 20px;">Grievance Redress Mechanism</h1>
+    <p style="font-size: 1.2em; max-width: 800px; margin: 0 auto;">
+        Track complaints, view statistics, and submit grievances for active projects.
+    </p>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="grm-card">
+                <h3>View Dashboard</h3>
+                <p>Access public statistics and aggregate metrics for all active projects.</p>
+                <a href="/grm-public/dashboard" class="grm-btn">View Dashboard</a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="grm-card">
+                <h3>Track Complaint</h3>
+                <p>Check the status of your complaint using your tracking code.</p>
+                <a href="/grm-public/track-complaint" class="grm-btn grm-btn-secondary">Track Now</a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="grm-card">
+                <h3>Submit Complaint</h3>
+                <p>File a new grievance through our web portal (optional).</p>
+                <a href="/grm-public/submit-grievance" class="grm-btn">Submit</a>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 50px;">
+        <h2>Active Projects</h2>
+        {% if projects %}
+        <div class="row">
+            {% for project in projects %}
+            <div class="col-md-6">
+                <div class="grm-card">
+                    <h4>{{ project.title }}</h4>
+                    <p>{{ project.description or "No description available" }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>No active projects available.</p>
+        {% endif %}
+    </div>
+
+    <div style="margin-top: 50px; padding: 30px; background: #f7fafc; border-radius: 8px;">
+        <h2>About the GRM Process</h2>
+        <ol style="font-size: 1.1em; line-height: 1.8;">
+            <li><strong>Submit</strong> - File your grievance through web, mobile, or field officer</li>
+            <li><strong>Receive</strong> - Get tracking code and expected timeline</li>
+            <li><strong>Review</strong> - Staff reviews and acknowledges within 7 days</li>
+            <li><strong>Investigate</strong> - Assigned officer investigates the issue</li>
+            <li><strong>Resolve</strong> - Solution proposed and implemented</li>
+            <li><strong>Appeal</strong> - If not satisfied, appeal within 14 days</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

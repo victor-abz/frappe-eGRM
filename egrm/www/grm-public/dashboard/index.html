@@ -1,0 +1,177 @@
+{% extends "templates/web.html" %}
+
+{% block title %}GRM Public Dashboard{% endblock %}
+
+{% block head %}
+<meta name="description" content="Public GRM Dashboard - Aggregate Statistics">
+<style>
+.metric-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    background: white;
+}
+.metric-number {
+    font-size: 3em;
+    font-weight: bold;
+    color: #667eea;
+    margin: 10px 0;
+}
+.metric-label {
+    font-size: 1.1em;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.filter-bar {
+    background: #f7fafc;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+.breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+.breakdown-table th,
+.breakdown-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+.breakdown-table th {
+    background: #f7fafc;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="container">
+    <h1>GRM Public Dashboard</h1>
+    <p class="lead">Aggregate statistics for all active grievance redress projects.</p>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+        <form method="get" action="/grm-public/dashboard">
+            <div class="row">
+                <div class="col-md-6">
+                    <label>Project:</label>
+                    <select name="project" class="form-control" onchange="this.form.submit()">
+                        <option value="">All Projects</option>
+                        {% for project in projects %}
+                        <option value="{{ project.name }}" {% if project.name == selected_project %}selected{% endif %}>
+                            {{ project.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label>Date Range:</label>
+                    <select name="range" class="form-control" onchange="this.form.submit()">
+                        <option value="7d" {% if selected_range == "7d" %}selected{% endif %}>Last 7 Days</option>
+                        <option value="30d" {% if selected_range == "30d" %}selected{% endif %}>Last 30 Days</option>
+                        <option value="90d" {% if selected_range == "90d" %}selected{% endif %}>Last 90 Days</option>
+                        <option value="1y" {% if selected_range == "1y" %}selected{% endif %}>Last Year</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-warning">{{ error }}</div>
+    {% elif metrics %}
+
+    <!-- Overview Metrics -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-label">Total Complaints</div>
+                <div class="metric-number">{{ metrics.overview.total_issues }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-label">Open</div>
+                <div class="metric-number" style="color: #ed8936;">{{ metrics.overview.open_issues }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-label">Resolved</div>
+                <div class="metric-number" style="color: #48bb78;">{{ metrics.overview.resolved_issues }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-label">Pending</div>
+                <div class="metric-number" style="color: #4299e1;">{{ metrics.overview.pending_issues }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breakdown Tables -->
+    <div class="row" style="margin-top: 40px;">
+        <div class="col-md-6">
+            <h3>By Status</h3>
+            {% if metrics.status_breakdown %}
+            <table class="breakdown-table">
+                <thead><tr><th>Status</th><th style="text-align: right;">Count</th></tr></thead>
+                <tbody>
+                    {% for item in metrics.status_breakdown %}
+                    <tr><td>{{ item.status }}</td><td style="text-align: right;"><strong>{{ item.count }}</strong></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No data available</p>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <h3>By Category</h3>
+            {% if metrics.category_breakdown %}
+            <table class="breakdown-table">
+                <thead><tr><th>Category</th><th style="text-align: right;">Count</th></tr></thead>
+                <tbody>
+                    {% for item in metrics.category_breakdown %}
+                    <tr><td>{{ item.category }}</td><td style="text-align: right;"><strong>{{ item.count }}</strong></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No data available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row" style="margin-top: 40px;">
+        <div class="col-md-12">
+            <h3>By Region</h3>
+            {% if metrics.region_breakdown %}
+            <table class="breakdown-table">
+                <thead><tr><th>Region</th><th style="text-align: right;">Count</th></tr></thead>
+                <tbody>
+                    {% for item in metrics.region_breakdown %}
+                    <tr><td>{{ item.region }}</td><td style="text-align: right;"><strong>{{ item.count }}</strong></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No data available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% else %}
+    <p>No metrics available</p>
+    {% endif %}
+
+    <div style="margin-top: 50px; text-align: center;">
+        <a href="/grm-public" class="btn btn-default">Back to Homepage</a>
+    </div>
+</div>
+{% endblock %}
