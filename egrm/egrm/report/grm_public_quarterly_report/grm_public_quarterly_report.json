@@ -1,0 +1,26 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2025-11-16 00:00:00",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "idx": 0,
+ "is_standard": "Yes",
+ "modified": "2025-11-16 00:00:00",
+ "modified_by": "Administrator",
+ "module": "egrm",
+ "name": "GRM Public Quarterly Report",
+ "owner": "Administrator",
+ "ref_doctype": "GRM Issue",
+ "report_name": "GRM Public Quarterly Report",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "GRM Administrator"
+  },
+  {
+   "role": "GRM Project Manager"
+  }
+ ]
+}
