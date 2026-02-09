@@ -15,6 +15,7 @@ fixtures = [
 # Website Configurations
 website_route_rules = [
     {"from_route": "/download-app", "to_route": "download_app"},
+    {"from_route": "/grm-portal/<path:app_path>", "to_route": "grm-portal"},
 ]
 
 # Allow guest access

@@ -36,14 +36,14 @@ def get_public_dashboard(project_id=None, date_range=None):
         if not projects:
             return {"status": "success", "data": _empty_dashboard()}
 
-        date_filter = get_date_filter(date_range)
+        date_filter = _get_date_filter(date_range)
 
         data = {
-            "overview": get_overview_stats(projects, date_filter),
-            "status_breakdown": get_status_breakdown(projects, date_filter),
-            "category_breakdown": get_category_breakdown(projects, date_filter),
-            "region_breakdown": get_region_breakdown(projects, date_filter),
-            "trend_data": get_trend_data(projects, date_range),
+            "overview": _get_overview_stats(projects, date_filter),
+            "status_breakdown": _get_status_breakdown(projects, date_filter),
+            "category_breakdown": _get_category_breakdown(projects, date_filter),
+            "region_breakdown": _get_region_breakdown(projects, date_filter),
+            "trend_data": _get_trend_data(projects, date_range),
         }
 
         return {"status": "success", "data": data}
@@ -64,13 +64,6 @@ def get_public_dashboard(project_id=None, date_range=None):
 # ---------------------------------------------------------------------------
 
 def _get_active_projects(project_id=None):
-    """
-    Return a list of active GRM Project names.
-
-    If *project_id* is supplied and it corresponds to an active project,
-    only that project is returned.  Otherwise all active projects are
-    returned.
-    """
     if project_id:
         is_active = frappe.db.get_value("GRM Project", project_id, "is_active")
         if is_active:
@@ -85,12 +78,7 @@ def _get_active_projects(project_id=None):
     return [p.name for p in projects]
 
 
-# ---------------------------------------------------------------------------
-# Helper: empty dashboard shape
-# ---------------------------------------------------------------------------
-
 def _empty_dashboard():
-    """Return the dashboard payload when there is no data."""
     return {
         "overview": {
             "total_issues": 0,
@@ -106,243 +94,181 @@ def _empty_dashboard():
 
 
 # ---------------------------------------------------------------------------
-# Date filter
+# Shared SQL helpers
 # ---------------------------------------------------------------------------
 
-def get_date_filter(date_range):
-    """
-    Convert a human-friendly range string to a date object.
-
-    Supported values: ``"7d"``, ``"30d"``, ``"90d"``, ``"1y"``.
-    Returns ``None`` when *date_range* is not recognised (no filter).
-    """
+def _get_date_filter(date_range):
     if not date_range:
         return None
 
     today = getdate()
-
     range_map = {
         "7d": {"days": -7},
         "30d": {"days": -30},
         "90d": {"days": -90},
         "1y": {"years": -1},
     }
-
     kwargs = range_map.get(date_range)
     if kwargs:
         return add_to_date(today, **kwargs)
-
     return None
 
 
-# ---------------------------------------------------------------------------
-# Filters builder
-# ---------------------------------------------------------------------------
+def _project_placeholders(projects):
+    """Return (placeholder_str, values_list) for SQL IN clause."""
+    placeholders = ", ".join(["%s"] * len(projects))
+    return placeholders, list(projects)
 
-def _base_filters(projects, date_filter):
-    """
-    Build the common filter dict shared by all issue queries.
 
-    Only *submitted* issues (``docstatus=1``) are included so that
-    draft or cancelled records do not skew public numbers.
-    """
-    filters = {
-        "project": ["in", projects],
-        "docstatus": 1,
-    }
+def _where_clause(projects, date_filter):
+    """Build WHERE clause fragment and params for common issue filters."""
+    ph, params = _project_placeholders(projects)
+    where = f"gi.project IN ({ph}) AND gi.docstatus = 1"
     if date_filter:
-        filters["creation"] = [">=", date_filter]
-    return filters
+        where += " AND gi.creation >= %s"
+        params.append(date_filter)
+    return where, params
 
 
 # ---------------------------------------------------------------------------
-# Overview stats
+# Overview stats — 1 query with conditional aggregation
 # ---------------------------------------------------------------------------
 
-def get_overview_stats(projects, date_filter):
-    """
-    Return total, open, resolved, and pending issue counts.
+def _get_overview_stats(projects, date_filter):
+    where, params = _where_clause(projects, date_filter)
 
-    * **open** -- statuses with ``open_status = 1``
-    * **resolved** -- statuses with ``final_status = 1``
-    * **pending** -- statuses with ``initial_status = 1``
-    """
-    filters = _base_filters(projects, date_filter)
-
-    total_issues = frappe.db.count("GRM Issue", filters)
-
-    # Open issues
-    open_statuses = frappe.get_all(
-        "GRM Issue Status", filters={"open_status": 1}, fields=["name"]
+    row = frappe.db.sql(
+        f"""
+        SELECT
+            COUNT(*) AS total_issues,
+            SUM(CASE WHEN s.open_status = 1 THEN 1 ELSE 0 END) AS open_issues,
+            SUM(CASE WHEN s.final_status = 1 THEN 1 ELSE 0 END) AS resolved_issues,
+            SUM(CASE WHEN s.initial_status = 1 THEN 1 ELSE 0 END) AS pending_issues
+        FROM `tabGRM Issue` gi
+        LEFT JOIN `tabGRM Issue Status` s ON gi.status = s.name
+        WHERE {where}
+        """,
+        params,
+        as_dict=True,
     )
-    open_status_ids = [s.name for s in open_statuses]
-    open_issues = 0
-    if open_status_ids:
-        open_filters = filters.copy()
-        open_filters["status"] = ["in", open_status_ids]
-        open_issues = frappe.db.count("GRM Issue", open_filters)
 
-    # Resolved issues (final_status)
-    resolved_statuses = frappe.get_all(
-        "GRM Issue Status", filters={"final_status": 1}, fields=["name"]
-    )
-    resolved_status_ids = [s.name for s in resolved_statuses]
-    resolved_issues = 0
-    if resolved_status_ids:
-        resolved_filters = filters.copy()
-        resolved_filters["status"] = ["in", resolved_status_ids]
-        resolved_issues = frappe.db.count("GRM Issue", resolved_filters)
-
-    # Pending issues (initial_status)
-    pending_statuses = frappe.get_all(
-        "GRM Issue Status", filters={"initial_status": 1}, fields=["name"]
-    )
-    pending_status_ids = [s.name for s in pending_statuses]
-    pending_issues = 0
-    if pending_status_ids:
-        pending_filters = filters.copy()
-        pending_filters["status"] = ["in", pending_status_ids]
-        pending_issues = frappe.db.count("GRM Issue", pending_filters)
-
+    r = row[0] if row else {}
     return {
-        "total_issues": total_issues,
-        "open_issues": open_issues,
-        "resolved_issues": resolved_issues,
-        "pending_issues": pending_issues,
+        "total_issues": r.get("total_issues") or 0,
+        "open_issues": r.get("open_issues") or 0,
+        "resolved_issues": r.get("resolved_issues") or 0,
+        "pending_issues": r.get("pending_issues") or 0,
     }
 
 
 # ---------------------------------------------------------------------------
-# Status breakdown
+# Status breakdown — 1 query with GROUP BY
 # ---------------------------------------------------------------------------
 
-def get_status_breakdown(projects, date_filter):
-    """
-    Return a list of ``{"status": <name>, "count": <int>}`` for every
-    GRM Issue Status that has at least one matching issue.
-    """
-    filters = _base_filters(projects, date_filter)
+def _get_status_breakdown(projects, date_filter):
+    where, params = _where_clause(projects, date_filter)
 
-    statuses = frappe.get_all(
-        "GRM Issue Status", fields=["name", "status_name"]
+    rows = frappe.db.sql(
+        f"""
+        SELECT s.status_name AS status, COUNT(*) AS count
+        FROM `tabGRM Issue` gi
+        JOIN `tabGRM Issue Status` s ON gi.status = s.name
+        WHERE {where}
+        GROUP BY gi.status
+        HAVING count > 0
+        ORDER BY count DESC
+        """,
+        params,
+        as_dict=True,
     )
-
-    breakdown = []
-    for status in statuses:
-        status_filters = filters.copy()
-        status_filters["status"] = status.name
-        count = frappe.db.count("GRM Issue", status_filters)
-        if count > 0:
-            breakdown.append({"status": status.status_name, "count": count})
-
-    return breakdown
+    return [{"status": r.status, "count": r.count} for r in rows]
 
 
 # ---------------------------------------------------------------------------
-# Category breakdown
+# Category breakdown — 1 query with JOIN
 # ---------------------------------------------------------------------------
 
-def get_category_breakdown(projects, date_filter):
-    """
-    Return a list of ``{"category": <name>, "count": <int>}`` for every
-    GRM Issue Category that has at least one matching issue.
+def _get_category_breakdown(projects, date_filter):
+    where, params = _where_clause(projects, date_filter)
 
-    Categories are resolved through the GRM Issue records themselves
-    (which carry a ``category`` Link field) rather than trying to
-    filter the Category DocType by project directly.
-    """
-    filters = _base_filters(projects, date_filter)
-
-    # Get distinct categories referenced by matching issues
-    categories_used = frappe.get_all(
-        "GRM Issue",
-        filters=filters,
-        fields=["category"],
-        group_by="category",
+    rows = frappe.db.sql(
+        f"""
+        SELECT ic.category_name AS category, COUNT(*) AS count
+        FROM `tabGRM Issue` gi
+        JOIN `tabGRM Issue Category` ic ON gi.category = ic.name
+        WHERE {where}
+          AND gi.category IS NOT NULL AND gi.category != ''
+        GROUP BY gi.category
+        HAVING count > 0
+        ORDER BY count DESC
+        """,
+        params,
+        as_dict=True,
     )
-
-    breakdown = []
-    for row in categories_used:
-        if not row.category:
-            continue
-
-        # Count issues for this category
-        cat_filters = filters.copy()
-        cat_filters["category"] = row.category
-        count = frappe.db.count("GRM Issue", cat_filters)
-
-        # Resolve display name
-        category_name = frappe.db.get_value(
-            "GRM Issue Category", row.category, "category_name"
-        )
-
-        if count > 0 and category_name:
-            breakdown.append({"category": category_name, "count": count})
-
-    return breakdown
+    return [{"category": r.category, "count": r.count} for r in rows]
 
 
 # ---------------------------------------------------------------------------
-# Region breakdown
+# Region breakdown — 1 query with JOIN
 # ---------------------------------------------------------------------------
 
-def get_region_breakdown(projects, date_filter):
-    """
-    Return a list of ``{"region": <name>, "count": <int>}`` for every
-    GRM Administrative Region with at least one matching issue.
-    """
-    filters = _base_filters(projects, date_filter)
+def _get_region_breakdown(projects, date_filter):
+    where, params = _where_clause(projects, date_filter)
 
-    regions = frappe.get_all(
-        "GRM Administrative Region",
-        filters={"project": ["in", projects]},
-        fields=["name", "region_name"],
+    rows = frappe.db.sql(
+        f"""
+        SELECT r.region_name AS region, COUNT(*) AS count
+        FROM `tabGRM Issue` gi
+        JOIN `tabGRM Administrative Region` r
+            ON gi.administrative_region = r.name
+        WHERE {where}
+          AND gi.administrative_region IS NOT NULL
+          AND gi.administrative_region != ''
+        GROUP BY gi.administrative_region
+        HAVING count > 0
+        ORDER BY count DESC
+        """,
+        params,
+        as_dict=True,
     )
-
-    breakdown = []
-    for region in regions:
-        region_filters = filters.copy()
-        region_filters["administrative_region"] = region.name
-        count = frappe.db.count("GRM Issue", region_filters)
-
-        if count > 0:
-            breakdown.append({"region": region.region_name, "count": count})
-
-    return breakdown
+    return [{"region": r.region, "count": r.count} for r in rows]
 
 
 # ---------------------------------------------------------------------------
-# Trend data
+# Trend data — 1 query with GROUP BY DATE
 # ---------------------------------------------------------------------------
 
-def get_trend_data(projects, date_range):
-    """
-    Return daily issue counts suitable for charting.
-
-    Each entry is ``{"date": "YYYY-MM-DD", "count": <int>}``.
-
-    Note: The original plan had a duplicate-key bug (two ``"creation"``
-    keys in the same dict).  This implementation uses the ``["between",
-    ...]`` filter to correctly select issues for each day.
-    """
+def _get_trend_data(projects, date_range):
     days_map = {"7d": 7, "30d": 30, "90d": 90, "1y": 365}
     days = days_map.get(date_range, 30)
 
     today = getdate()
-    trend_data = []
+    start_date = add_to_date(today, days=-days)
 
-    for i in range(days):
-        day = add_to_date(today, days=-i)
-        next_day = add_to_date(day, days=1)
+    ph, params = _project_placeholders(projects)
+    params.extend([start_date, today])
 
-        filters = {
-            "project": ["in", projects],
-            "docstatus": 1,
-            "creation": ["between", [day, next_day]],
-        }
+    rows = frappe.db.sql(
+        f"""
+        SELECT DATE(creation) AS date, COUNT(*) AS count
+        FROM `tabGRM Issue`
+        WHERE project IN ({ph})
+          AND docstatus = 1
+          AND DATE(creation) >= %s
+          AND DATE(creation) <= %s
+        GROUP BY DATE(creation)
+        ORDER BY date ASC
+        """,
+        params,
+        as_dict=True,
+    )
 
-        count = frappe.db.count("GRM Issue", filters)
-        trend_data.append({"date": day.strftime("%Y-%m-%d"), "count": count})
+    # Build a dict for quick lookup, then fill gaps with zeros
+    counts_by_date = {str(r.date): r.count for r in rows}
+    trend = []
+    for i in range(days + 1):
+        day = add_to_date(start_date, days=i)
+        day_str = day.strftime("%Y-%m-%d")
+        trend.append({"date": day_str, "count": counts_by_date.get(day_str, 0)})
 
-    # Return in chronological order (oldest first)
-    return list(reversed(trend_data))
+    return trend
