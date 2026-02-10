@@ -23,7 +23,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-grm-border bg-white/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         <Link to="/grm-portal" className="flex items-center gap-2 text-grm-text font-bold text-sm">
-          <ShieldCheck className="h-5 w-5 text-teal-600" />
+          <ShieldCheck className="h-5 w-5 text-primary-500" />
           <span>{__("GRM Portal")}</span>
         </Link>
         <div className="flex items-center gap-1">
@@ -33,7 +33,7 @@ export default function Navbar() {
               to={link.to}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                 isActive(link.to)
-                  ? "bg-teal-50 text-teal-700"
+                  ? "bg-primary-50 text-primary-700"
                   : "text-grm-secondary hover:bg-gray-50"
               }`}
             >

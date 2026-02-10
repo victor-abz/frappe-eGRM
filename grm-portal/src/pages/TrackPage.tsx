@@ -43,8 +43,8 @@ export default function TrackPage() {
   return (
     <div className="max-w-md mx-auto px-4 py-12">
       <div className="text-center mb-8">
-        <div className="inline-flex p-3 bg-amber-100 rounded-full mb-4">
-          <Search className="w-6 h-6 text-amber-600" />
+        <div className="inline-flex p-3 bg-primary-100 rounded-full mb-4">
+          <Search className="w-6 h-6 text-primary-600" />
         </div>
         <h1 className="text-xl font-bold text-gray-900 mb-1">{__("Track Your Complaint")}</h1>
         <p className="text-sm text-grm-muted">{__("Enter your tracking code to check the status")}</p>
@@ -58,13 +58,13 @@ export default function TrackPage() {
             placeholder={__("Enter tracking code...")}
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 text-sm bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent placeholder:text-gray-400"
+            className="w-full pl-10 pr-4 py-3 text-sm bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
           />
         </div>
         <button
           type="submit"
           disabled={loading || !code.trim()}
-          className="w-full mt-3 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white font-semibold text-sm rounded-xl shadow-md transition-colors"
+          className="w-full mt-3 py-2.5 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 text-white font-semibold text-sm rounded-xl shadow-md transition-colors"
         >
           {loading ? __("Searching...") : __("Track Complaint")}
         </button>

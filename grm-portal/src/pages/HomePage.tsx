@@ -42,10 +42,10 @@ const actions = [
     description: "Download public reports",
     icon: FileText,
     to: "/grm-portal/reports",
-    bgColor: "bg-emerald-50",
-    iconColor: "text-emerald-600",
-    btnColor: "bg-emerald-600 hover:bg-emerald-700",
-    borderColor: "border-emerald-100",
+    bgColor: "bg-primary-50",
+    iconColor: "text-primary-600",
+    btnColor: "bg-primary-600 hover:bg-primary-700",
+    borderColor: "border-primary-100",
   },
   {
     title: "Dashboard",
@@ -62,7 +62,7 @@ const actions = [
 const processSteps = [
   { title: "Submit", description: "File your grievance via web, mobile, or field officer", icon: Send, iconColor: "text-blue-600", bg: "bg-blue-50", ring: "ring-blue-200" },
   { title: "Track", description: "Get a tracking code and monitor progress", icon: Eye, iconColor: "text-purple-600", bg: "bg-purple-50", ring: "ring-purple-200" },
-  { title: "Resolve", description: "Solution proposed, implemented, and verified", icon: CheckCircle, iconColor: "text-emerald-600", bg: "bg-emerald-50", ring: "ring-emerald-200" },
+  { title: "Resolve", description: "Solution proposed, implemented, and verified", icon: CheckCircle, iconColor: "text-primary-600", bg: "bg-primary-50", ring: "ring-primary-200" },
 ];
 
 const projectColors = [
@@ -71,7 +71,7 @@ const projectColors = [
   { border: "border-l-cyan-500", iconBg: "bg-cyan-100", iconColor: "text-cyan-600" },
   { border: "border-l-violet-500", iconBg: "bg-violet-100", iconColor: "text-violet-600" },
   { border: "border-l-amber-500", iconBg: "bg-amber-100", iconColor: "text-amber-600" },
-  { border: "border-l-emerald-500", iconBg: "bg-emerald-100", iconColor: "text-emerald-600" },
+  { border: "border-l-primary-500", iconBg: "bg-primary-100", iconColor: "text-primary-600" },
   { border: "border-l-sky-500", iconBg: "bg-sky-100", iconColor: "text-sky-600" },
   { border: "border-l-red-500", iconBg: "bg-red-100", iconColor: "text-red-600" },
 ];
@@ -103,9 +103,9 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero — compact */}
-      <section className="w-full bg-gradient-to-br from-teal-600 to-emerald-800 text-white py-6 px-4 relative overflow-hidden">
+      <section className="w-full bg-gradient-to-br from-primary-500 to-primary-800 text-white py-6 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-36 h-36 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
-        <div className="absolute bottom-0 right-0 w-48 h-48 bg-emerald-400/20 rounded-full translate-x-1/3 translate-y-1/3 blur-2xl" />
+        <div className="absolute bottom-0 right-0 w-48 h-48 bg-primary-400/20 rounded-full translate-x-1/3 translate-y-1/3 blur-2xl" />
         <div className="max-w-7xl mx-auto flex items-center gap-4 relative z-10">
           <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm border border-white/30 shrink-0">
             <ShieldCheck className="w-8 h-8 text-white" strokeWidth={1.5} />
@@ -114,7 +114,7 @@ export default function HomePage() {
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">
               {__("Grievance Redress")}
             </h1>
-            <p className="text-sm text-emerald-50 font-medium mt-0.5">
+            <p className="text-sm text-primary-100 font-medium mt-0.5">
               {__("We are here to help. Track complaints, view statistics, and submit new grievances easily.")}
             </p>
           </div>
@@ -156,13 +156,13 @@ export default function HomePage() {
                 placeholder={__("Search projects...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400"
+                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
               />
             </div>
             <select
               value={activeCategory}
               onChange={(e) => setActiveCategory(e.target.value)}
-              className="px-3 py-2 text-xs font-medium bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="px-3 py-2 text-xs font-medium bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="All">{__("All Categories")}</option>
               {categories?.map((cat) => (

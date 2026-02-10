@@ -21,15 +21,15 @@ export default function ReportsPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-emerald-100 rounded-lg">
-          <FileText className="w-6 h-6 text-emerald-700" />
+        <div className="p-2 bg-primary-100 rounded-lg">
+          <FileText className="w-6 h-6 text-primary-700" />
         </div>
         <h1 className="text-xl font-bold text-gray-900">{__("Public Reports")}</h1>
       </div>
 
       {isLoading && (
         <div className="text-center py-12 text-gray-400">
-          <div className="animate-spin w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full mx-auto mb-2" />
+          <div className="animate-spin w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full mx-auto mb-2" />
           <p className="text-sm">{__("Loading reports...")}</p>
         </div>
       )}
@@ -50,12 +50,12 @@ export default function ReportsPage() {
               className={`flex items-center justify-between px-4 py-3 ${idx % 2 === 1 ? "bg-gray-50" : ""} ${idx > 0 ? "border-t border-grm-border" : ""}`}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-1.5 bg-emerald-50 rounded-lg shrink-0">
-                  <FileText className="w-4 h-4 text-emerald-600" />
+                <div className="p-1.5 bg-primary-50 rounded-lg shrink-0">
+                  <FileText className="w-4 h-4 text-primary-500" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">
+                    <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-primary-100 text-primary-700">
                       {report.type}
                     </span>
                     <span className="text-xs text-grm-muted">{report.date}</span>
@@ -69,7 +69,7 @@ export default function ReportsPage() {
                 href={report.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 text-grm-muted hover:text-emerald-600 transition-colors shrink-0"
+                className="p-2 text-grm-muted hover:text-primary-500 transition-colors shrink-0"
               >
                 <Download className="w-4 h-4" />
               </a>
