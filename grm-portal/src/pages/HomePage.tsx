@@ -151,15 +151,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Action Cards — 4 across */}
+      {/* Action Cards — centered, wrap gracefully when fewer are enabled */}
       <section className="py-8 px-4 -mt-4 relative z-20">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             {actions.map((action) => (
               <Link
                 key={action.title}
                 to={action.to}
-                className={`${action.bgColor} rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border ${action.borderColor} flex flex-col items-center text-center h-full no-underline`}
+                className={`${action.bgColor} rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border ${action.borderColor} flex flex-col items-center text-center no-underline basis-[calc(50%-0.5rem)] sm:basis-60 lg:basis-64 max-w-xs`}
               >
                 <div className={`w-11 h-11 rounded-full bg-white shadow-md flex items-center justify-center mb-2.5 ${action.iconColor}`}>
                   <action.icon className="w-5 h-5" strokeWidth={2} />
