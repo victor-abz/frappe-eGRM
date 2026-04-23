@@ -54,3 +54,9 @@ jspm_packages/
 # Aider AI Chat
 .aider*
 .grm-mobile-app
+# Agentic QE (per-dev tool artifacts)
+.agentic-qe/
+.claude/
+.mcp.json
+CLAUDE.md
+

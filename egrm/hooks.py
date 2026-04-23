@@ -12,11 +12,19 @@ fixtures = [
     }
 ]
 
+# Default homepage for guest and logged-in users (overrides Website Settings fallback)
+home_page = "grm-portal"
+website_home_page = "grm-portal"
+
 # Website Configurations
 website_route_rules = [
     {"from_route": "/download-app", "to_route": "download_app"},
     {"from_route": "/grm-portal/<path:app_path>", "to_route": "grm-portal"},
 ]
+
+# Ensure Website Settings points to the portal on (re)install and migrations
+after_install = "egrm.install.after_install"
+after_migrate = ["egrm.install.set_default_home_page"]
 
 # Allow guest access
 has_website_permission = {

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ShieldCheck, BarChart3, Search, Send, FileText, Globe } from "lucide-react";
+import { ShieldCheck, BarChart3, Search, Send, FileText, Globe, LogIn } from "lucide-react";
 import { useTranslate } from "@/hooks/useTranslate";
 
 const links = [
@@ -9,6 +9,8 @@ const links = [
   { to: "/grm-portal/submit", label: "Submit", icon: Send },
   { to: "/grm-portal/reports", label: "Reports", icon: FileText },
 ];
+
+const LOGIN_URL = "/login";
 
 export default function Navbar() {
   const location = useLocation();
@@ -41,6 +43,15 @@ export default function Navbar() {
               <span className="hidden sm:inline">{__(link.label)}</span>
             </Link>
           ))}
+
+          {/* Login link — full page nav so Frappe handles auth + role redirect */}
+          <a
+            href={LOGIN_URL}
+            className="ml-2 flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors no-underline"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{__("Login")}</span>
+          </a>
 
           {/* Language Dropdown */}
           <div className="ml-2 flex items-center gap-1.5 border-l border-grm-border pl-2">
