@@ -6,8 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "public_portal_section",
-  "show_public_dashboard",
-  "show_public_reports"
+  "enable_public_dashboard",
+  "enable_public_reports"
  ],
  "fields": [
   {
@@ -16,24 +16,24 @@
    "label": "Public Portal Visibility"
   },
   {
-   "default": "1",
-   "description": "Show the public Dashboard page and its homepage card to guest (non-authenticated) visitors. Logged-in staff always see it.",
-   "fieldname": "show_public_dashboard",
+   "default": "0",
+   "description": "When enabled, guest (non-authenticated) visitors can see the public Dashboard page and its homepage card. Logged-in staff always see it regardless of this setting.",
+   "fieldname": "enable_public_dashboard",
    "fieldtype": "Check",
-   "label": "Show Public Dashboard"
+   "label": "Enable Public Dashboard"
   },
   {
-   "default": "1",
-   "description": "Show the public Reports page and its homepage card to guest (non-authenticated) visitors. Logged-in staff always see it.",
-   "fieldname": "show_public_reports",
+   "default": "0",
+   "description": "When enabled, guest (non-authenticated) visitors can see the public Reports page and its homepage card. Logged-in staff always see it regardless of this setting.",
+   "fieldname": "enable_public_reports",
    "fieldtype": "Check",
-   "label": "Show Public Reports"
+   "label": "Enable Public Reports"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-23 22:15:00.000000",
+ "modified": "2026-04-23 23:00:00.000000",
  "modified_by": "Administrator",
  "module": "EGRM",
  "name": "EGRM Settings",

@@ -5,8 +5,9 @@ Guest-accessible endpoint that returns the public portal's visibility flags
 together with the caller's authentication / staff state so the React SPA
 can decide which pages and cards to render.
 
-Staff (any authenticated user with a GRM role) always sees every page; the
-flags only gate guest visitors.
+Public pages (Dashboard, Reports) are OFF by default; administrators opt
+them in via EGRM Settings. Staff (any authenticated user with a GRM role
+or System Manager) always see every page regardless of the flags.
 """
 
 import frappe
@@ -38,8 +39,8 @@ def get_portal_config() -> dict:
     return {
         "is_staff": is_staff,
         "is_authenticated": frappe.session.user not in ("Guest", "", None),
-        # For guests, honor the flags. Staff always see every page.
-        "show_dashboard": is_staff or visibility["show_public_dashboard"],
-        "show_reports": is_staff or visibility["show_public_reports"],
+        # Staff bypass the gate; guests only see a page when its flag is enabled.
+        "show_dashboard": is_staff or visibility["enable_public_dashboard"],
+        "show_reports": is_staff or visibility["enable_public_reports"],
         "flags": visibility,
     }

@@ -7,12 +7,12 @@ class EGRMSettings(Document):
 
 
 def get_portal_visibility() -> dict:
-    """Return portal visibility flags; falls back to enabled if the Single is missing."""
+    """Return portal visibility flags; defaults to disabled when the Single is missing."""
     try:
         settings = frappe.get_cached_doc("EGRM Settings")
         return {
-            "show_public_dashboard": bool(settings.show_public_dashboard),
-            "show_public_reports": bool(settings.show_public_reports),
+            "enable_public_dashboard": bool(settings.enable_public_dashboard),
+            "enable_public_reports": bool(settings.enable_public_reports),
         }
     except frappe.DoesNotExistError:
-        return {"show_public_dashboard": True, "show_public_reports": True}
+        return {"enable_public_dashboard": False, "enable_public_reports": False}

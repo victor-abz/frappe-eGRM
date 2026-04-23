@@ -6,17 +6,18 @@ export interface PortalConfig {
   show_dashboard: boolean;
   show_reports: boolean;
   flags: {
-    show_public_dashboard: boolean;
-    show_public_reports: boolean;
+    enable_public_dashboard: boolean;
+    enable_public_reports: boolean;
   };
 }
 
+// Defaults mirror the DocType: public pages are OFF until an admin enables them.
 const DEFAULT_CONFIG: PortalConfig = {
   is_staff: false,
   is_authenticated: false,
-  show_dashboard: true,
-  show_reports: true,
-  flags: { show_public_dashboard: true, show_public_reports: true },
+  show_dashboard: false,
+  show_reports: false,
+  flags: { enable_public_dashboard: false, enable_public_reports: false },
 };
 
 export function usePortalConfig(): {
