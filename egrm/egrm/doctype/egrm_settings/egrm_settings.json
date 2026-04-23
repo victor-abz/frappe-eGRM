@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "creation": "2026-04-23 22:15:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "public_portal_section",
+  "show_public_dashboard",
+  "show_public_reports"
+ ],
+ "fields": [
+  {
+   "fieldname": "public_portal_section",
+   "fieldtype": "Section Break",
+   "label": "Public Portal Visibility"
+  },
+  {
+   "default": "1",
+   "description": "Show the public Dashboard page and its homepage card to guest (non-authenticated) visitors. Logged-in staff always see it.",
+   "fieldname": "show_public_dashboard",
+   "fieldtype": "Check",
+   "label": "Show Public Dashboard"
+  },
+  {
+   "default": "1",
+   "description": "Show the public Reports page and its homepage card to guest (non-authenticated) visitors. Logged-in staff always see it.",
+   "fieldname": "show_public_reports",
+   "fieldtype": "Check",
+   "label": "Show Public Reports"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-23 22:15:00.000000",
+ "modified_by": "Administrator",
+ "module": "EGRM",
+ "name": "EGRM Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "GRM Administrator",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

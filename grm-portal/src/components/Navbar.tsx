@@ -1,13 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
 import { ShieldCheck, BarChart3, Search, Send, FileText, Globe, LogIn } from "lucide-react";
 import { useTranslate } from "@/hooks/useTranslate";
+import { usePortalConfig } from "@/hooks/usePortalConfig";
 
-const links = [
+type NavLink = {
+  to: string;
+  label: string;
+  icon: typeof ShieldCheck;
+  gate?: "dashboard" | "reports";
+};
+
+const ALL_LINKS: NavLink[] = [
   { to: "/grm-portal", label: "Home", icon: ShieldCheck },
-  { to: "/grm-portal/dashboard", label: "Dashboard", icon: BarChart3 },
+  { to: "/grm-portal/dashboard", label: "Dashboard", icon: BarChart3, gate: "dashboard" },
   { to: "/grm-portal/track", label: "Track", icon: Search },
   { to: "/grm-portal/submit", label: "Submit", icon: Send },
-  { to: "/grm-portal/reports", label: "Reports", icon: FileText },
+  { to: "/grm-portal/reports", label: "Reports", icon: FileText, gate: "reports" },
 ];
 
 const LOGIN_URL = "/login";
@@ -15,6 +23,13 @@ const LOGIN_URL = "/login";
 export default function Navbar() {
   const location = useLocation();
   const { __, lang, setLang, languages } = useTranslate();
+  const { config } = usePortalConfig();
+
+  const links = ALL_LINKS.filter((link) => {
+    if (link.gate === "dashboard") return config.show_dashboard;
+    if (link.gate === "reports") return config.show_reports;
+    return true;
+  });
 
   const isActive = (to: string) =>
     to === "/grm-portal"

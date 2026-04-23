@@ -15,9 +15,22 @@ import {
 import { useProjects } from "@/hooks/useProjects";
 import { useFrappeGetDocList } from "frappe-react-sdk";
 import { useTranslate } from "@/hooks/useTranslate";
+import { usePortalConfig } from "@/hooks/usePortalConfig";
 import { stripHtml } from "@/utils";
 
-const actions = [
+type Action = {
+  title: string;
+  description: string;
+  icon: typeof Send;
+  to: string;
+  bgColor: string;
+  iconColor: string;
+  btnColor: string;
+  borderColor: string;
+  gate?: "dashboard" | "reports";
+};
+
+const ALL_ACTIONS: Action[] = [
   {
     title: "Raise Issue",
     description: "File a new grievance",
@@ -47,6 +60,7 @@ const actions = [
     iconColor: "text-primary-600",
     btnColor: "bg-primary-600 hover:bg-primary-700",
     borderColor: "border-primary-100",
+    gate: "reports",
   },
   {
     title: "Dashboard",
@@ -57,6 +71,7 @@ const actions = [
     iconColor: "text-blue-600",
     btnColor: "bg-blue-600 hover:bg-blue-700",
     borderColor: "border-blue-100",
+    gate: "dashboard",
   },
 ];
 
@@ -79,10 +94,17 @@ const projectColors = [
 
 export default function HomePage() {
   const { __ } = useTranslate();
+  const { config } = usePortalConfig();
   const { data: projects } = useProjects();
   const { data: categories } = useFrappeGetDocList("GRM Issue Category", {
     fields: ["name", "category_name"],
     orderBy: { field: "category_name", order: "asc" },
+  });
+
+  const actions = ALL_ACTIONS.filter((action) => {
+    if (action.gate === "dashboard") return config.show_dashboard;
+    if (action.gate === "reports") return config.show_reports;
+    return true;
   });
 
   const [searchQuery, setSearchQuery] = useState("");

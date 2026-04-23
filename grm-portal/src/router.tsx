@@ -5,6 +5,7 @@ import DashboardPage from "./pages/DashboardPage";
 import TrackPage from "./pages/TrackPage";
 import SubmitPage from "./pages/SubmitPage";
 import ReportsPage from "./pages/ReportsPage";
+import GatedRoute from "./components/GatedRoute";
 
 const router = createBrowserRouter([
   {
@@ -21,7 +22,11 @@ const router = createBrowserRouter([
       },
       {
         path: "dashboard",
-        element: <DashboardPage />,
+        element: (
+          <GatedRoute gate="dashboard">
+            <DashboardPage />
+          </GatedRoute>
+        ),
       },
       {
         path: "track",
@@ -33,7 +38,11 @@ const router = createBrowserRouter([
       },
       {
         path: "reports",
-        element: <ReportsPage />,
+        element: (
+          <GatedRoute gate="reports">
+            <ReportsPage />
+          </GatedRoute>
+        ),
       },
     ],
   },
