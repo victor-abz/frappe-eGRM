@@ -27,7 +27,10 @@
   "resolved_template",
   "closed_template",
   "escalated_template",
-  "sla_reminder_template"
+  "sla_reminder_template",
+  "section_setup_state",
+  "is_setup_complete",
+  "current_setup_step"
  ],
  "fields": [
   {
@@ -172,6 +175,27 @@
    "fieldtype": "Link",
    "label": "SLA Reminder Template",
    "options": "GRM Notification Template"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_setup_state",
+   "fieldtype": "Section Break",
+   "label": "Setup State"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_setup_complete",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Setup Complete",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "current_setup_step",
+   "fieldtype": "Int",
+   "label": "Current Setup Step",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
