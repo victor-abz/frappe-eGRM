@@ -40,12 +40,18 @@ has_website_permission = {
     "Android App Version": "egrm.egrm.doctype.android_app_version.android_app_version.has_website_permission"
 }
 
-# Role home pages
+# Role home pages (post-duty-role migration: legacy 4 roles are gone;
+# duty-roles all land on the unified eGRM workspace; platform admins land
+# on the Platform workspace).
 role_home_page = {
-    "GRM Administrator": "grm-administrator",
-    "GRM Project Manager": "grm-project-manager",
-    "GRM Department Head": "grm-department-head",
-    "GRM Field Officer": "grm-field-officer"
+    "System Manager": "egrm",
+    "GRM Platform Administrator": "platform",
+    "GRM Intake": "egrm",
+    "GRM Review": "egrm",
+    "GRM Assignment": "egrm",
+    "GRM Investigate & Resolve": "egrm",
+    "GRM Feedback": "egrm",
+    "GRM Supervise": "egrm",
 }
 
 # Notification Configuration
@@ -87,7 +93,7 @@ user_data_fields = [
     }
 ]
 
-app_home = "/desk/grm-field-officer"
+app_home = "/desk/egrm"
 
 add_to_apps_screen = [
 	{
