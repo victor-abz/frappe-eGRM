@@ -44,7 +44,6 @@
   {
    "create": 1,
    "delete": 1,
-   "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
@@ -56,33 +55,47 @@
   {
    "create": 1,
    "delete": 1,
-   "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRM Administrator",
+   "role": "GRM Platform Administrator",
    "share": 1,
    "write": 1
   },
   {
    "create": 1,
-   "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRM Project Manager",
-   "share": 1,
+   "role": "GRM Supervise",
    "write": 1
   },
   {
    "read": 1,
-   "role": "GRM Department Head"
+   "report": 1,
+   "role": "GRM Intake"
   },
   {
    "read": 1,
-   "role": "GRM Field Officer"
+   "report": 1,
+   "role": "GRM Review"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "GRM Assignment"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "GRM Investigate & Resolve"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "GRM Feedback"
   }
  ],
  "row_format": "Dynamic",
