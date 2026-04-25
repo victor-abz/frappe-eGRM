@@ -8,6 +8,8 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_to_date, get_datetime, now, now_datetime
 
+from egrm.utils.user_permissions import revoke_project_access, sync_assignment
+
 log = logging.getLogger(__name__)
 
 
@@ -283,6 +285,8 @@ class GRMUserProjectAssignment(Document):
                     frappe.log(f"Assigning missing role {self.role} to user {self.user} (migration fix)")
                     self.assign_role_to_user()
 
+            sync_assignment(self)
+
         except Exception as e:
             frappe.log_error(f"Error in on_update: {str(e)}")
             raise
@@ -294,6 +298,7 @@ class GRMUserProjectAssignment(Document):
             if not self.is_government_worker_role():
                 self.assign_role_to_user()
                 frappe.log(f"Assigned role {self.role} to non-government worker {self.user}")
+            sync_assignment(self)
         except Exception as e:
             frappe.log_error(f"Error in after_insert: {str(e)}")
             raise
@@ -374,6 +379,7 @@ class GRMUserProjectAssignment(Document):
             frappe.log(
                 f"Removed assignment for user {self.user} for project {self.project}"
             )
+            revoke_project_access(self.user, self.project, exclude_assignment=self.name)
         except Exception as e:
             frappe.log_error(f"Error removing assignment: {str(e)}")
             frappe.throw(_("Error removing assignment. Please check the logs."))
