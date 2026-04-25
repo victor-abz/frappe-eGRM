@@ -32,6 +32,11 @@ after_migrate = [
 # Branding for the v16 Desktop / Apps screen tile
 app_logo_url = "/assets/egrm/images/egrm-logo.svg"
 
+# Client-side duty filter — hides phase-group cards in the eGRM workspace
+# whose duty the user doesn't hold (v16 Workspace Link has no
+# display_depends_on, so JSON-level gating doesn't work).
+app_include_js = "egrm_workspace_filter.bundle.js"
+
 # Boot session hook — inject frappe.boot.egrm with per-user duty payload
 boot_session = "egrm.utils.boot.boot_session"
 
