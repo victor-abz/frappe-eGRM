@@ -24,8 +24,14 @@
   "name": "GRM Project Role",
   "owner": "Administrator",
   "permissions": [
-    { "create": 1, "delete": 1, "read": 1, "role": "System Manager", "write": 1 },
-    { "create": 1, "read": 1, "role": "GRM Administrator", "write": 1 }
+    { "role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "report": 1, "export": 1, "share": 1 },
+    { "role": "GRM Platform Administrator", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "report": 1, "export": 1, "share": 1 },
+    { "role": "GRM Supervise", "read": 1, "write": 1, "print": 1, "report": 1 },
+    { "role": "GRM Intake", "read": 1 },
+    { "role": "GRM Review", "read": 1 },
+    { "role": "GRM Assignment", "read": 1 },
+    { "role": "GRM Investigate & Resolve", "read": 1 },
+    { "role": "GRM Feedback", "read": 1 }
   ],
   "sort_field": "modified",
   "sort_order": "DESC",
