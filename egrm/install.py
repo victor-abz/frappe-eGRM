@@ -42,7 +42,24 @@ def seed_desktop_icons() -> None:
         # Older Frappe versions without these helpers — nothing to do.
         return
 
-    create_desktop_icons_from_installed_apps()
-    create_desktop_icons_from_workspace()
-    clear_desktop_icons_cache()
+    # Each helper is wrapped because frappe v16's
+    # create_desktop_icons_from_workspace can crash on its internal error path
+    # (it calls frappe.error_log(...) which is the doctype list, not a
+    # callable). We must NOT let that crash abort the whole migrate, since
+    # the rest of the desktop icon work is non-critical.
+    try:
+        create_desktop_icons_from_installed_apps()
+    except Exception as exc:
+        frappe.log_error(title="seed_desktop_icons: installed_apps failed", message=str(exc))
+
+    try:
+        create_desktop_icons_from_workspace()
+    except Exception as exc:
+        frappe.log_error(title="seed_desktop_icons: workspace failed", message=str(exc))
+
+    try:
+        clear_desktop_icons_cache()
+    except Exception:
+        pass
+
     frappe.db.commit()
