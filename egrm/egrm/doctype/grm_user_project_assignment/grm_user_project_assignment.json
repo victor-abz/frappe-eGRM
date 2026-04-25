@@ -45,10 +45,10 @@
   {
    "fieldname": "role",
    "fieldtype": "Link",
-   "get_query": "egrm.egrm.doctype.grm_user_project_assignment.grm_user_project_assignment.get_grm_roles",
+   "get_query": "egrm.egrm.doctype.grm_user_project_assignment.grm_user_project_assignment.role_query",
    "in_list_view": 1,
-   "label": "Role",
-   "options": "Role",
+   "label": "Project Role",
+   "options": "GRM Project Role",
    "reqd": 1
   },
   {

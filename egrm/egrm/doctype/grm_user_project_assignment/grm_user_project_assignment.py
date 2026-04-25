@@ -810,6 +810,38 @@ def get_grm_roles(doctype, txt, searchfield, start, page_len, filters):
     })
 
 
+@frappe.whitelist()
+def role_query(doctype, txt, searchfield, start, page_len, filters):
+    """Filter Project Role suggestions to roles in the selected project.
+
+    Used by the GRM User Project Assignment.role field's get_query
+    callback. Restricts visible Project Roles to the project the form is
+    currently bound to and to active roles only.
+    """
+    if not frappe.has_permission("GRM Project Role", "read"):
+        return []
+
+    # Filters may arrive as a JSON string when called over HTTP.
+    if isinstance(filters, str):
+        filters = frappe.parse_json(filters)
+    project = (filters or {}).get("project")
+    if not project:
+        return []
+
+    # Whitelist searchfield to prevent SQL injection — only allow columns
+    # we expect Frappe's link picker to query against.
+    allowed_searchfields = {"name", "role_name"}
+    safe_searchfield = searchfield if searchfield in allowed_searchfields else "name"
+
+    return frappe.db.sql(
+        f"""SELECT name, role_name FROM `tabGRM Project Role`
+            WHERE project = %s AND is_active = 1
+              AND ({safe_searchfield} LIKE %s OR role_name LIKE %s)
+            ORDER BY role_name LIMIT %s, %s""",
+        (project, f"%{txt}%", f"%{txt}%", start, page_len),
+    )
+
+
 def get_user_assignments(user):
     """
     Get user's region assignments from GRM User Project Assignment

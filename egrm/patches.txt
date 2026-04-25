@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 egrm.patches.v16_0.seed_duty_catalog
 egrm.patches.v16_0.backfill_default_project_roles
+egrm.patches.v16_0.migrate_assignments_to_project_roles
