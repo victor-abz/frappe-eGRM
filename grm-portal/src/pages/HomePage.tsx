@@ -10,7 +10,6 @@ import {
   Send,
   Eye,
   CheckCircle,
-  LogIn,
 } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { useFrappeGetDocList } from "frappe-react-sdk";
@@ -141,13 +140,6 @@ export default function HomePage() {
               {__("We are here to help. Track complaints, view statistics, and submit new grievances easily.")}
             </p>
           </div>
-          <a
-            href="/login"
-            className="hidden sm:flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2 text-sm font-semibold text-primary-700 shadow-md hover:bg-white transition-colors no-underline shrink-0"
-          >
-            <LogIn className="h-4 w-4" />
-            <span>{__("Staff Login")}</span>
-          </a>
         </div>
       </section>
 
