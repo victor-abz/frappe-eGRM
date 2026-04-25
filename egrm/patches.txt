@@ -9,5 +9,6 @@ egrm.patches.v16_0.backfill_default_project_roles
 egrm.patches.v16_0.migrate_assignments_to_project_roles
 egrm.patches.v16_0.seed_grm_role_catalog
 egrm.patches.v16_0.migrate_users_to_duty_roles
+egrm.patches.v16_0.delete_legacy_workspaces
 egrm.patches.v16_0.delete_legacy_grm_roles
 egrm.patches.v16_0.backfill_project_user_permissions
