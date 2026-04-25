@@ -60,3 +60,5 @@ jspm_packages/
 .mcp.json
 CLAUDE.md
 
+egrm/public/node_modules/
+yarn.lock

@@ -24,7 +24,13 @@ website_route_rules = [
 
 # Ensure Website Settings points to the portal on (re)install and migrations
 after_install = "egrm.install.after_install"
-after_migrate = ["egrm.install.set_default_home_page"]
+after_migrate = [
+    "egrm.install.set_default_home_page",
+    "egrm.install.seed_desktop_icons",
+]
+
+# Branding for the v16 Desktop / Apps screen tile
+app_logo_url = "/assets/egrm/images/egrm-logo.svg"
 
 # Allow guest access
 has_website_permission = {
@@ -78,13 +84,14 @@ user_data_fields = [
     }
 ]
 
-app_home = "/app/grm-field-officer"
+app_home = "/desk/grm-field-officer"
 
 add_to_apps_screen = [
 	{
 		"name": app_name,
-		# "logo": "/assets/erpnext/images/erpnext-logo.svg",
+		"logo": "/assets/egrm/images/egrm-logo.svg",
 		"title": app_title,
-		"route": app_home
+		"route": app_home,
+		"has_permission": "egrm.api.app_permission.check_app_permission",
 	}
 ]
