@@ -1,0 +1,37 @@
+{
+  "app": "egrm",
+  "charts": [],
+  "content": "[{\"id\":\"sec-projects\",\"type\":\"card\",\"data\":{\"card_name\":\"Projects\",\"col\":4}},{\"id\":\"sec-users\",\"type\":\"card\",\"data\":{\"card_name\":\"Users & Access\",\"col\":4}},{\"id\":\"sec-system\",\"type\":\"card\",\"data\":{\"card_name\":\"System\",\"col\":4}}]",
+  "creation": "2026-04-25 00:00:00",
+  "doctype": "Workspace",
+  "icon": "shield",
+  "is_hidden": 0,
+  "label": "Platform",
+  "links": [
+    { "label": "Projects", "link_count": 2, "link_type": "DocType", "type": "Card Break" },
+    { "label": "All Projects", "link_to": "GRM Project", "link_type": "DocType", "type": "Link" },
+    { "label": "Onboard New Project", "link_to": "/desk/grm-project-wizard", "link_type": "URL", "type": "Link" },
+
+    { "label": "Users & Access", "link_count": 2, "link_type": "DocType", "type": "Card Break" },
+    { "label": "Users by Project", "link_to": "/desk/grm-users", "link_type": "URL", "type": "Link" },
+    { "label": "Frappe Users (raw)", "link_to": "User", "link_type": "DocType", "type": "Link" },
+
+    { "label": "System", "link_count": 3, "link_type": "DocType", "type": "Card Break" },
+    { "label": "Administrative Level Types", "link_to": "GRM Administrative Level Type", "link_type": "DocType", "type": "Link" },
+    { "label": "Android App Versions", "link_to": "Android App Version", "link_type": "DocType", "type": "Link" },
+    { "label": "Duties Catalog", "link_to": "GRM Duty", "link_type": "DocType", "type": "Link" }
+  ],
+  "modified": "2026-04-25 00:00:00",
+  "modified_by": "Administrator",
+  "module": "egrm",
+  "name": "Platform",
+  "owner": "Administrator",
+  "public": 1,
+  "roles": [
+    { "role": "System Manager" },
+    { "role": "GRM Platform Administrator" }
+  ],
+  "sequence_id": 2.0,
+  "title": "Platform",
+  "type": "Workspace"
+}
