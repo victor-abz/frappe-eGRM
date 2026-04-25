@@ -241,6 +241,16 @@ def push_changes():
             issue_created = changes["grm_issues"].get("created", [])
             issue_updated = changes["grm_issues"].get("updated", [])
 
+            # Updating an existing GRM Issue requires `write` permission on the
+            # doctype. Under the duty-role permission model only roles that map
+            # to write on GRM Issue (e.g. GRM Supervise / Platform Administrator
+            # plus duty-roles authorised to update issues) can take this path.
+            if issue_updated and not frappe.has_permission("GRM Issue", "write"):
+                frappe.throw(
+                    _("You do not have permission to update issues."),
+                    frappe.PermissionError,
+                )
+
             if issue_created or issue_updated:
                 filtered_changes["grm_issues"] = {
                     "created": issue_created,
