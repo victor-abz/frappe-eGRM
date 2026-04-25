@@ -32,6 +32,9 @@ after_migrate = [
 # Branding for the v16 Desktop / Apps screen tile
 app_logo_url = "/assets/egrm/images/egrm-logo.svg"
 
+# Boot session hook — inject frappe.boot.egrm with per-user duty payload
+boot_session = "egrm.utils.boot.boot_session"
+
 # Allow guest access
 has_website_permission = {
     "Android App Version": "egrm.egrm.doctype.android_app_version.android_app_version.has_website_permission"
