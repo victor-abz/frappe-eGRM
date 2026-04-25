@@ -64,6 +64,7 @@ def _other_active_assignments_grant_duty(
 class GRMUserProjectAssignment(Document):
     def validate(self):
         try:
+            self.validate_creator_permissions()
             self.validate_user()
             self.validate_role()
             self.validate_department_and_region()
@@ -73,6 +74,46 @@ class GRMUserProjectAssignment(Document):
         except Exception as e:
             frappe.log_error(f"Error validating GRM User Project Assignment: {str(e)}")
             raise
+
+    def validate_creator_permissions(self):
+        """Block PM-tier users from assigning users to projects they don't manage.
+
+        - Administrator / System Manager / GRM Platform Administrator: unrestricted.
+        - Anyone else: must hold an active assignment for THIS project whose
+          Project Role includes the Supervise duty.
+        """
+        user = frappe.session.user
+        if user in ("Administrator", "Guest"):
+            return
+        creator_roles = set(frappe.get_roles(user))
+        if creator_roles & {"System Manager", "GRM Platform Administrator"}:
+            return
+
+        # Look for any active assignment whose Project Role includes 'Supervise'
+        # for the same project the new assignment targets.
+        my_assignments = frappe.get_all(
+            "GRM User Project Assignment",
+            filters={
+                "user": user,
+                "project": self.project,
+                "is_active": 1,
+                "activation_status": ["in", ("Activated", "")],
+            },
+            pluck="role",
+        )
+        for project_role in my_assignments:
+            if frappe.db.exists(
+                "GRM Project Role Duty",
+                {"parent": project_role, "duty": "Supervise"},
+            ):
+                return
+
+        frappe.throw(
+            frappe._(
+                "You can only assign users to projects where you hold a Supervise duty."
+            ),
+            frappe.PermissionError,
+        )
 
     def validate_user(self):
         try:
