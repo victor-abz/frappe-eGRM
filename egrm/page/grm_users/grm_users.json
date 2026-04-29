@@ -1,0 +1,17 @@
+{
+  "creation": "2026-04-29 00:00:00",
+  "doctype": "Page",
+  "icon": "users",
+  "modified": "2026-04-29 00:00:00",
+  "module": "egrm",
+  "name": "grm-users",
+  "owner": "Administrator",
+  "page_name": "grm-users",
+  "roles": [
+    { "role": "System Manager" },
+    { "role": "GRM Platform Administrator" },
+    { "role": "GRM Supervise" }
+  ],
+  "standard": "Yes",
+  "title": "GRM Users by Project"
+}

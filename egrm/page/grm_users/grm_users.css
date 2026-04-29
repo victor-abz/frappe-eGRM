@@ -1,0 +1,180 @@
+/* Custom desk page: GRM Users by Project. */
+
+.grm-users {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.grm-users-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.grm-users-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.grm-users-toolbar-left label {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.grm-users-toolbar-left select {
+    min-width: 240px;
+}
+
+.grm-users-form {
+    border: 1px solid var(--gray-200, #e2e8f0);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    background: var(--card-bg, #fff);
+}
+
+.grm-users-form.hidden {
+    display: none;
+}
+
+.grm-users-form-inner .grm-users-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.grm-users-form-inner .grm-users-form-header h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.grm-users-form-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.grm-users-table-region {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--gray-200, #e2e8f0);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.grm-users-table-wrap {
+    overflow-x: auto;
+}
+
+.grm-users-table {
+    margin-bottom: 0;
+    font-size: 13px;
+}
+
+.grm-users-table th {
+    background: var(--gray-50, #f7fafc);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.grm-users-table td {
+    vertical-align: middle;
+}
+
+.grm-users-actions {
+    white-space: nowrap;
+}
+
+.grm-users-actions .btn {
+    margin-right: 4px;
+}
+
+.grm-users-empty {
+    text-align: center;
+    padding: 48px 16px;
+}
+
+/* Status badges */
+.grm-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+}
+
+.grm-status-badge.grm-indicator-green,
+.grm-status-badge.grm-active-yes {
+    background: var(--green-100, #d1fae5);
+    color: var(--green-700, #047857);
+}
+
+.grm-status-badge.grm-indicator-blue {
+    background: var(--blue-100, #dbeafe);
+    color: var(--blue-700, #1d4ed8);
+}
+
+.grm-status-badge.grm-indicator-red,
+.grm-status-badge.grm-active-no {
+    background: var(--red-100, #fee2e2);
+    color: var(--red-700, #b91c1c);
+}
+
+.grm-status-badge.grm-indicator-orange {
+    background: var(--orange-100, #ffedd5);
+    color: var(--orange-700, #c2410c);
+}
+
+.grm-status-badge.grm-indicator-grey {
+    background: var(--gray-100, #f1f5f9);
+    color: var(--gray-700, #334155);
+}
+
+/* User typeahead dropdown */
+.grm-user-typeahead {
+    position: relative;
+}
+
+.grm-user-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    margin-top: 2px;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--gray-200, #e2e8f0);
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.grm-user-results.hidden {
+    display: none;
+}
+
+.grm-user-result {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.grm-user-result:hover {
+    background: var(--gray-50, #f7fafc);
+}
+
+.grm-user-result-name {
+    font-weight: 500;
+}
+
+.grm-user-result-empty {
+    padding: 12px;
+    text-align: center;
+}
