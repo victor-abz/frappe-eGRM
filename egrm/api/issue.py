@@ -11,6 +11,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, get_datetime, now_datetime
 
+from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
 from egrm.api.sync import create_issue_from_sync  # Import the sync creation function
 
 # Configure logging
@@ -808,8 +809,8 @@ def get_user_accessible_projects(user):
     Returns:
         list: List of project IDs
     """
-    # Check if user is Administrator or has System Manager role (full access)
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+    # Check if user is Administrator or has an all-projects GRM role (full access)
+    if user == "Administrator" or GRM_ALL_PROJECTS_ROLES & set(frappe.get_roles(user)):
         projects = frappe.get_all("GRM Project", fields=["name"])
         return [p.name for p in projects]
 
@@ -865,8 +866,8 @@ def user_has_project_access(user, project_id):
     Returns:
         bool: True if user has access, False otherwise
     """
-    # Check if user is Administrator or has System Manager role (full access)
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+    # Check if user is Administrator or has an all-projects GRM role (full access)
+    if user == "Administrator" or GRM_ALL_PROJECTS_ROLES & set(frappe.get_roles(user)):
         return True
 
     # Check if user is assigned to project

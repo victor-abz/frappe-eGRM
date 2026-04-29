@@ -10,6 +10,60 @@ from egrm.egrm.utils.sla_manager import SLAManager
 from egrm.utils.tracking_code_generator import generate_tracking_code
 
 
+# Per-field duty enforcement map. A non-bypass user changing one of these
+# fields must hold the corresponding duty for the issue's project. Bypass
+# roles: System Manager, GRM Platform Administrator, GRM Supervise (the
+# latter is intentionally permitted to override anything within scope).
+FIELD_DUTY_REQUIREMENTS: dict[str, str] = {
+    "status": "Review",
+    "category": "Review",
+    "issue_type": "Review",
+    "assignee": "Assignment",
+    "resolution_text": "Investigate & Resolve",
+    "resolved_by": "Investigate & Resolve",
+    "resolution_date": "Investigate & Resolve",
+    "resolution_days": "Investigate & Resolve",
+    "resolution_agreement": "Investigate & Resolve",
+    "rating": "Feedback",
+    "appeal_submitted": "Feedback",
+    "appeal_date": "Feedback",
+}
+
+DUTY_ENFORCEMENT_BYPASS_ROLES: set[str] = {
+    "System Manager",
+    "GRM Platform Administrator",
+    "GRM Supervise",
+}
+
+
+def _user_has_duty(user: str, duty: str, project: str) -> bool:
+    """Return True if the user has the named duty for this project (or
+    holds a bypass role). Used by GRM Issue field-level checks."""
+    if not user or user == "Guest":
+        return False
+    if user == "Administrator":
+        return True
+    user_roles = set(frappe.get_roles(user))
+    if user_roles & DUTY_ENFORCEMENT_BYPASS_ROLES:
+        return True
+    role_names = frappe.get_all(
+        "GRM User Project Assignment",
+        filters={
+            "user": user, "project": project, "is_active": 1,
+            "activation_status": ["in", ("Activated", "")],
+        },
+        pluck="role",
+    )
+    if not role_names:
+        return False
+    matches = frappe.get_all(
+        "GRM Project Role Duty",
+        filters={"parent": ["in", role_names], "duty": duty},
+        limit=1,
+    )
+    return bool(matches)
+
+
 class GRMIssue(Document):
     def autoname(self):
         """Use WatermelonDB ID if provided, otherwise use Frappe naming series"""
@@ -123,6 +177,23 @@ class GRMIssue(Document):
             frappe.log_error(f"Error in before_validate: {str(e)}")
             raise
 
+    def _enforce_duty_field_constraints(self) -> None:
+        """For each restricted field, if it changed since fetched_doc, verify
+        the user holds the required duty for this issue's project. Insert is
+        gated separately via L1 'create' permission (GRM Intake)."""
+        if self.is_new():
+            return
+        user = frappe.session.user
+        for field, duty in FIELD_DUTY_REQUIREMENTS.items():
+            if not self.has_value_changed(field):
+                continue
+            if _user_has_duty(user, duty, self.project):
+                continue
+            frappe.throw(
+                frappe._("You need the {0} duty to change {1}.").format(duty, field),
+                frappe.PermissionError,
+            )
+
     def validate(self):
         try:
             # Generate tracking code if not provided (for cases where it wasn't generated in before_insert)
@@ -139,6 +210,8 @@ class GRMIssue(Document):
 
             # Validate project related fields
             self.validate_project_entities()
+
+            self._enforce_duty_field_constraints()
 
             # Validate dates
             self.validate_dates()

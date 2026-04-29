@@ -4,6 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils import get_datetime, now_datetime
 
+from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
+
 log = logging.getLogger(__name__)
 
 
@@ -314,6 +316,18 @@ def bulk_send_activation_codes(project_code, filters=None):
     Returns:
         dict: Bulk operation results
     """
+    # Explicit role guard: only supervisors / platform administrators / system
+    # managers may bulk send activation codes (writes to GRM User Project
+    # Assignment in a loop).
+    roles = set(frappe.get_roles(frappe.session.user))
+    if frappe.session.user != "Administrator" and not (
+        roles & GRM_ALL_PROJECTS_ROLES
+    ):
+        frappe.throw(
+            _("You do not have permission to bulk send activation codes."),
+            frappe.PermissionError,
+        )
+
     try:
         # Check permissions
         if not frappe.has_permission("GRM User Project Assignment", "write"):

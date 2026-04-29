@@ -27,7 +27,10 @@
   "resolved_template",
   "closed_template",
   "escalated_template",
-  "sla_reminder_template"
+  "sla_reminder_template",
+  "section_setup_state",
+  "is_setup_complete",
+  "current_setup_step"
  ],
  "fields": [
   {
@@ -172,6 +175,27 @@
    "fieldtype": "Link",
    "label": "SLA Reminder Template",
    "options": "GRM Notification Template"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_setup_state",
+   "fieldtype": "Section Break",
+   "label": "Setup State"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_setup_complete",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Setup Complete",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "current_setup_step",
+   "fieldtype": "Int",
+   "label": "Current Setup Step",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -184,41 +208,14 @@
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "GRM Administrator",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "GRM Project Manager",
-   "share": 1,
-   "write": 1
-  }
+  { "role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "report": 1, "export": 1, "share": 1 },
+  { "role": "GRM Platform Administrator", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "report": 1, "export": 1, "share": 1 },
+  { "role": "GRM Supervise", "read": 1, "write": 1, "print": 1, "report": 1 },
+  { "role": "GRM Intake", "read": 1 },
+  { "role": "GRM Review", "read": 1 },
+  { "role": "GRM Assignment", "read": 1 },
+  { "role": "GRM Investigate & Resolve", "read": 1 },
+  { "role": "GRM Feedback", "read": 1 }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

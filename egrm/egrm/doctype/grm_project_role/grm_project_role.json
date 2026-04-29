@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "format:{project}-{role_name}",
+  "creation": "2026-04-25 00:00:00",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "role_name", "project", "admin_level",
+    "section_break_duties", "duties",
+    "section_break_meta", "description", "is_active"
+  ],
+  "fields": [
+    { "fieldname": "role_name", "fieldtype": "Data", "label": "Role Name", "reqd": 1, "in_list_view": 1 },
+    { "fieldname": "project", "fieldtype": "Link", "label": "Project", "options": "GRM Project", "reqd": 1, "in_list_view": 1 },
+    { "fieldname": "admin_level", "fieldtype": "Link", "label": "Administrative Level", "options": "GRM Administrative Level Type", "in_list_view": 1 },
+    { "fieldname": "section_break_duties", "fieldtype": "Section Break", "label": "Duties" },
+    { "fieldname": "duties", "fieldtype": "Table", "label": "Duties", "options": "GRM Project Role Duty", "reqd": 1 },
+    { "fieldname": "section_break_meta", "fieldtype": "Section Break" },
+    { "fieldname": "description", "fieldtype": "Small Text", "label": "Description" },
+    { "fieldname": "is_active", "fieldtype": "Check", "label": "Is Active", "default": "1", "in_list_view": 1 }
+  ],
+  "module": "EGRM",
+  "name": "GRM Project Role",
+  "owner": "Administrator",
+  "permissions": [
+    { "role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "report": 1, "export": 1, "share": 1 },
+    { "role": "GRM Platform Administrator", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "report": 1, "export": 1, "share": 1 },
+    { "role": "GRM Supervise", "read": 1, "write": 1, "print": 1, "report": 1 },
+    { "role": "GRM Intake", "read": 1 },
+    { "role": "GRM Review", "read": 1 },
+    { "role": "GRM Assignment", "read": 1 },
+    { "role": "GRM Investigate & Resolve", "read": 1 },
+    { "role": "GRM Feedback", "read": 1 }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

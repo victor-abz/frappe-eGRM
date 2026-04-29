@@ -1,0 +1,57 @@
+.grm-wizard {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.grm-wizard-header {
+    margin-bottom: 24px;
+}
+
+.grm-wizard-stepper {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.grm-wizard-stepper .grm-step {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--gray-200, #e2e8f0);
+}
+
+.grm-wizard-stepper .grm-step.active {
+    background: var(--primary, #4f46e5);
+}
+
+.grm-wizard-stepper .grm-step.done {
+    background: var(--green-500, #10b981);
+}
+
+.grm-wizard-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.grm-wizard-body {
+    min-height: 300px;
+    padding: 16px;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--gray-200, #e2e8f0);
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.grm-wizard-placeholder {
+    text-align: center;
+    padding: 48px 16px;
+}
+
+.grm-wizard-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}

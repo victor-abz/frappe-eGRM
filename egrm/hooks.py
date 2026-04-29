@@ -32,17 +32,31 @@ after_migrate = [
 # Branding for the v16 Desktop / Apps screen tile
 app_logo_url = "/assets/egrm/images/egrm-logo.svg"
 
+# Client-side duty filter — hides phase-group cards in the eGRM workspace
+# whose duty the user doesn't hold (v16 Workspace Link has no
+# display_depends_on, so JSON-level gating doesn't work).
+app_include_js = "egrm_workspace_filter.bundle.js"
+
+# Boot session hook — inject frappe.boot.egrm with per-user duty payload
+boot_session = "egrm.utils.boot.boot_session"
+
 # Allow guest access
 has_website_permission = {
     "Android App Version": "egrm.egrm.doctype.android_app_version.android_app_version.has_website_permission"
 }
 
-# Role home pages
+# Role home pages (post-duty-role migration: legacy 4 roles are gone;
+# duty-roles all land on the unified eGRM workspace; platform admins land
+# on the Platform workspace).
 role_home_page = {
-    "GRM Administrator": "grm-administrator",
-    "GRM Project Manager": "grm-project-manager",
-    "GRM Department Head": "grm-department-head",
-    "GRM Field Officer": "grm-field-officer"
+    "System Manager": "egrm",
+    "GRM Platform Administrator": "platform",
+    "GRM Intake": "egrm",
+    "GRM Review": "egrm",
+    "GRM Assignment": "egrm",
+    "GRM Investigate & Resolve": "egrm",
+    "GRM Feedback": "egrm",
+    "GRM Supervise": "egrm",
 }
 
 # Notification Configuration
@@ -84,7 +98,7 @@ user_data_fields = [
     }
 ]
 
-app_home = "/desk/grm-field-officer"
+app_home = "/desk/egrm"
 
 add_to_apps_screen = [
 	{

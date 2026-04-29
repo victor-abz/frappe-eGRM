@@ -10,6 +10,8 @@ import frappe
 from frappe import _
 from frappe.utils import get_datetime
 
+from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
+
 # Configure logging
 log = logging.getLogger(__name__)
 
@@ -26,8 +28,8 @@ def get_user_projects():
         user = frappe.session.user
         frappe.log(f"Getting projects for user: {user}")
 
-        # Check if user is Administrator or has System Manager role (full access)
-        if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+        # Check if user is Administrator or has an all-projects GRM role (full access)
+        if user == "Administrator" or set(frappe.get_roles(user)) & GRM_ALL_PROJECTS_ROLES:
             projects = frappe.get_all(
                 "GRM Project", fields=["name", "project_name", "description", "active"]
             )
