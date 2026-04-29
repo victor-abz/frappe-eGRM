@@ -88,9 +88,14 @@ class GRMProjectWizard {
             2: GRMWizardStep2UptakeNotes,
             3: GRMWizardStep3AdminLevels,
             4: GRMWizardStep4ProjectRoles,
+            5: GRMWizardStep5IssueCategories,
+            6: GRMWizardStep6IssueTypes,
+            7: GRMWizardStep7IssueStatuses,
+            8: GRMWizardStep8Departments,
             9: GRMWizardStep9SLAs,
+            10: GRMWizardStep10CitizenLookups,
+            11: GRMWizardStep11NotificationTemplates,
             12: GRMWizardStep12Activate,
-            // Steps 5, 6, 7, 8, 10, 11 will be assigned in subsequent tasks
         };
         return map[n] || null;
     }
@@ -1309,5 +1314,1767 @@ class GRMWizardStep9SLAs {
 
     async save() {
         return await this._do_save();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 5 — Issue Categories & Routing
+// ---------------------------------------------------------------------------
+class GRMWizardStep5IssueCategories {
+    constructor($body, project, wizard) {
+        this.$body = $body;
+        this.project = project;
+        this.wizard = wizard;
+        this.rows = [];
+        this.departments = [];
+        this.admin_levels = [];
+        this.editing = null;
+        this.adding = false;
+        this.render();
+    }
+
+    async render() {
+        if (!this.project) {
+            this.$body.html(`
+                <div class="grm-wizard-placeholder">
+                  <p class="text-muted">${__("Save Step 1 first to create the project.")}</p>
+                </div>
+            `);
+            return;
+        }
+        this.$body.html(`
+            <div class="grm-step5" style="max-width: 1100px;">
+              <div class="grm-step5-intro" style="margin-bottom: 16px;">
+                <p>${__("Issue Categories define the kinds of grievances this project handles, plus the default routing (which department picks them up, escalation paths, and confidentiality).")}</p>
+                <p class="text-muted small">${__("Each category must be assigned to one of this project's departments. If you haven't created departments yet, set them up in Step 8 first.")}</p>
+              </div>
+              <div id="grm-step5-notice"></div>
+              <div id="grm-step5-table-wrap"></div>
+              <div id="grm-step5-form-wrap" style="margin-top: 12px;"></div>
+              <div style="margin-top: 12px;">
+                <button class="btn btn-default btn-sm" id="grm-step5-add">+ ${__("Add Category")}</button>
+              </div>
+            </div>
+        `);
+        this.$body.find("#grm-step5-add").on("click", () => this.start_add());
+        await this.load_lookups();
+        await this.load_and_render_table();
+        this.render_notice();
+    }
+
+    render_notice() {
+        const $n = this.$body.find("#grm-step5-notice").empty();
+        if (!this.departments.length) {
+            $n.html(`
+                <div class="alert alert-warning" style="margin-bottom:12px;">
+                  ${__("No departments defined yet — go to Step 8 first to add departments, then return to this step.")}
+                </div>
+            `);
+            this.$body.find("#grm-step5-add").prop("disabled", true);
+        } else {
+            this.$body.find("#grm-step5-add").prop("disabled", false);
+        }
+    }
+
+    async load_lookups() {
+        const project = this.project.name;
+        try {
+            this.departments = await frappe.db.get_list("GRM Issue Department", {
+                filters: [["GRM Project Link", "project", "=", project]],
+                fields: ["name", "department_name"],
+                limit: 0,
+                order_by: "department_name asc",
+            });
+        } catch (e) {
+            this.departments = [];
+        }
+        try {
+            this.admin_levels = await frappe.db.get_list("GRM Administrative Level Type", {
+                filters: { project },
+                fields: ["name", "level_name"],
+                limit: 0,
+                order_by: "level_order asc",
+            });
+        } catch (e) {
+            this.admin_levels = [];
+        }
+    }
+
+    async load_and_render_table() {
+        try {
+            this.rows = await frappe.db.get_list("GRM Issue Category", {
+                filters: [["GRM Project Link", "project", "=", this.project.name]],
+                fields: [
+                    "name",
+                    "category_name",
+                    "label",
+                    "abbreviation",
+                    "assigned_department",
+                    "assigned_appeal_department",
+                    "assigned_escalation_department",
+                    "confidentiality_level",
+                    "redirection_protocol",
+                    "administrative_level",
+                ],
+                limit: 0,
+                order_by: "category_name asc",
+            });
+        } catch (e) {
+            this.rows = [];
+        }
+        this.render_table();
+    }
+
+    render_table() {
+        const $w = this.$body.find("#grm-step5-table-wrap").empty();
+        if (!this.rows.length) {
+            $w.html(`<p class="text-muted">${__("No categories yet — click \"Add Category\" to create the first one.")}</p>`);
+            return;
+        }
+        const dept_label = (n) => {
+            const d = this.departments.find((x) => x.name === n);
+            return d ? (d.department_name || d.name) : (n || "");
+        };
+        const head = `
+            <thead>
+              <tr>
+                <th>${__("Name")}</th>
+                <th>${__("Label")}</th>
+                <th style="width:100px;">${__("Abbrev.")}</th>
+                <th>${__("Department")}</th>
+                <th style="width:140px;">${__("Confidentiality")}</th>
+                <th style="width:140px;">${__("Actions")}</th>
+              </tr>
+            </thead>
+        `;
+        const body_rows = this.rows.map((r) => `
+            <tr data-name="${frappe.utils.escape_html(r.name)}">
+              <td>${frappe.utils.escape_html(r.category_name || "")}</td>
+              <td>${frappe.utils.escape_html(r.label || "")}</td>
+              <td>${frappe.utils.escape_html(r.abbreviation || "")}</td>
+              <td>${frappe.utils.escape_html(dept_label(r.assigned_department))}</td>
+              <td>${frappe.utils.escape_html(r.confidentiality_level || "")}</td>
+              <td>
+                <button class="btn btn-xs btn-default grm-edit-cat" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
+                <button class="btn btn-xs btn-danger grm-delete-cat" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+              </td>
+            </tr>
+        `).join("");
+        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+
+        $w.find("button.grm-edit-cat").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.start_edit(name);
+        });
+        $w.find("button.grm-delete-cat").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.confirm_delete(name);
+        });
+    }
+
+    department_options(selected, include_blank) {
+        const opts = [];
+        if (include_blank) opts.push(`<option value="">${__("(none)")}</option>`);
+        for (const d of this.departments) {
+            const sel = d.name === selected ? " selected" : "";
+            opts.push(`<option value="${frappe.utils.escape_html(d.name)}"${sel}>${frappe.utils.escape_html(d.department_name || d.name)}</option>`);
+        }
+        return opts.join("");
+    }
+
+    admin_level_options(selected) {
+        const opts = [`<option value="">${__("(none)")}</option>`];
+        for (const lvl of this.admin_levels) {
+            const sel = lvl.name === selected ? " selected" : "";
+            opts.push(`<option value="${frappe.utils.escape_html(lvl.name)}"${sel}>${frappe.utils.escape_html(lvl.level_name || lvl.name)}</option>`);
+        }
+        return opts.join("");
+    }
+
+    start_add() {
+        if (!this.departments.length) {
+            frappe.show_alert({ message: __("Add a department in Step 8 first."), indicator: "red" });
+            return;
+        }
+        this.adding = true;
+        this.editing = null;
+        this.render_form(null);
+    }
+
+    start_edit(name) {
+        const row = this.rows.find((x) => x.name === name);
+        if (!row) return;
+        this.editing = name;
+        this.adding = false;
+        this.render_form(row);
+    }
+
+    render_form(row) {
+        const is_edit = !!row;
+        const r = row || {};
+        const conf = r.confidentiality_level || "Public";
+        const redir = r.redirection_protocol != null ? String(r.redirection_protocol) : "0";
+        const $w = this.$body.find("#grm-step5-form-wrap").empty();
+        $w.html(`
+            <div class="grm-step5-form card" style="border:1px solid var(--border-color, #d1d8dd); padding:12px; border-radius:6px;">
+              <h5 style="margin-top:0;">${is_edit ? __("Edit Category") : __("New Category")}</h5>
+              <div class="row">
+                <div class="col-md-4">
+                  <label class="control-label reqd">${__("Category Name")}</label>
+                  <input type="text" class="form-control" id="grm-cf-category_name" value="${frappe.utils.escape_html(r.category_name || "")}" ${is_edit ? "disabled" : ""}>
+                  ${is_edit ? `<small class="text-muted">${__("Category name is the record id and can't be changed after creation.")}</small>` : ""}
+                </div>
+                <div class="col-md-5">
+                  <label class="control-label reqd">${__("Display Label")}</label>
+                  <input type="text" class="form-control" id="grm-cf-label" value="${frappe.utils.escape_html(r.label || "")}">
+                </div>
+                <div class="col-md-3">
+                  <label class="control-label reqd">${__("Abbreviation")}</label>
+                  <input type="text" class="form-control" id="grm-cf-abbreviation" value="${frappe.utils.escape_html(r.abbreviation || "")}">
+                </div>
+              </div>
+              <div class="row" style="margin-top:8px;">
+                <div class="col-md-6">
+                  <label class="control-label reqd">${__("Assigned Department")}</label>
+                  <select class="form-control" id="grm-cf-assigned_department">
+                    <option value="">${__("(select)")}</option>
+                    ${this.department_options(r.assigned_department, false)}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="control-label">${__("Appeal Department")}</label>
+                  <select class="form-control" id="grm-cf-assigned_appeal_department">
+                    ${this.department_options(r.assigned_appeal_department, true)}
+                  </select>
+                </div>
+              </div>
+              <div class="row" style="margin-top:8px;">
+                <div class="col-md-6">
+                  <label class="control-label">${__("Escalation Department")}</label>
+                  <select class="form-control" id="grm-cf-assigned_escalation_department">
+                    ${this.department_options(r.assigned_escalation_department, true)}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="control-label">${__("Administrative Level")}</label>
+                  <select class="form-control" id="grm-cf-administrative_level">
+                    ${this.admin_level_options(r.administrative_level)}
+                  </select>
+                </div>
+              </div>
+              <div class="row" style="margin-top:8px;">
+                <div class="col-md-6">
+                  <label class="control-label reqd">${__("Confidentiality Level")}</label>
+                  <select class="form-control" id="grm-cf-confidentiality_level">
+                    <option value="Public" ${conf === "Public" ? "selected" : ""}>${__("Public")}</option>
+                    <option value="Confidential" ${conf === "Confidential" ? "selected" : ""}>${__("Confidential")}</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="control-label reqd">${__("Redirection Protocol")}</label>
+                  <select class="form-control" id="grm-cf-redirection_protocol">
+                    <option value="0" ${redir === "0" ? "selected" : ""}>${__("0 = direct routing")}</option>
+                    <option value="1" ${redir === "1" ? "selected" : ""}>${__("1 = redirect via supervisor")}</option>
+                  </select>
+                </div>
+              </div>
+              <div style="margin-top:12px;">
+                <button class="btn btn-primary btn-sm" id="grm-cf-save">${__("Save Category")}</button>
+                <button class="btn btn-default btn-sm" id="grm-cf-cancel">${__("Cancel")}</button>
+              </div>
+            </div>
+        `);
+        $w.find("#grm-cf-save").on("click", () => this.save_form(is_edit ? row.name : null));
+        $w.find("#grm-cf-cancel").on("click", () => {
+            this.adding = false;
+            this.editing = null;
+            $w.empty();
+        });
+    }
+
+    read_form() {
+        const $w = this.$body.find("#grm-step5-form-wrap");
+        const trim = (id) => ($w.find(`#${id}`).val() || "").trim();
+        return {
+            category_name: trim("grm-cf-category_name"),
+            label: trim("grm-cf-label"),
+            abbreviation: trim("grm-cf-abbreviation"),
+            assigned_department: trim("grm-cf-assigned_department") || null,
+            assigned_appeal_department: trim("grm-cf-assigned_appeal_department") || null,
+            assigned_escalation_department: trim("grm-cf-assigned_escalation_department") || null,
+            administrative_level: trim("grm-cf-administrative_level") || null,
+            confidentiality_level: trim("grm-cf-confidentiality_level") || "Public",
+            redirection_protocol: trim("grm-cf-redirection_protocol") || "0",
+        };
+    }
+
+    async save_form(existing_name) {
+        const v = this.read_form();
+        if (!existing_name && !v.category_name) {
+            frappe.show_alert({ message: __("Category Name is required."), indicator: "red" });
+            return;
+        }
+        if (!v.label) {
+            frappe.show_alert({ message: __("Display Label is required."), indicator: "red" });
+            return;
+        }
+        if (!v.abbreviation) {
+            frappe.show_alert({ message: __("Abbreviation is required."), indicator: "red" });
+            return;
+        }
+        if (!v.assigned_department) {
+            frappe.show_alert({ message: __("Assigned Department is required."), indicator: "red" });
+            return;
+        }
+        if (!existing_name) {
+            const dup = this.rows.find(
+                (x) => (x.category_name || "").toLowerCase() === v.category_name.toLowerCase(),
+            );
+            if (dup) {
+                frappe.show_alert({ message: __("Category '{0}' already exists for this project.", [v.category_name]), indicator: "red" });
+                return;
+            }
+        }
+        try {
+            if (existing_name) {
+                const doc = await frappe.db.get_doc("GRM Issue Category", existing_name);
+                doc.label = v.label;
+                doc.abbreviation = v.abbreviation;
+                doc.assigned_department = v.assigned_department;
+                doc.assigned_appeal_department = v.assigned_appeal_department;
+                doc.assigned_escalation_department = v.assigned_escalation_department;
+                doc.administrative_level = v.administrative_level;
+                doc.confidentiality_level = v.confidentiality_level;
+                doc.redirection_protocol = v.redirection_protocol;
+                await frappe.call({ method: "frappe.client.save", args: { doc } });
+                frappe.show_alert({ message: __("Category updated."), indicator: "green" });
+            } else {
+                const payload = {
+                    doctype: "GRM Issue Category",
+                    category_name: v.category_name,
+                    label: v.label,
+                    abbreviation: v.abbreviation,
+                    assigned_department: v.assigned_department,
+                    confidentiality_level: v.confidentiality_level,
+                    redirection_protocol: v.redirection_protocol,
+                    grm_project_link: [{ project: this.project.name }],
+                };
+                if (v.assigned_appeal_department) payload.assigned_appeal_department = v.assigned_appeal_department;
+                if (v.assigned_escalation_department) payload.assigned_escalation_department = v.assigned_escalation_department;
+                if (v.administrative_level) payload.administrative_level = v.administrative_level;
+                await frappe.db.insert(payload);
+                frappe.show_alert({ message: __("Category created."), indicator: "green" });
+            }
+            this.editing = null;
+            this.adding = false;
+            this.$body.find("#grm-step5-form-wrap").empty();
+            await this.load_and_render_table();
+        } catch (e) {
+            // frappe surfaces the error
+        }
+    }
+
+    confirm_delete(name) {
+        frappe.confirm(
+            __("Delete category {0}? This will remove it from this project's setup.", [name]),
+            async () => {
+                try {
+                    await frappe.db.delete_doc("GRM Issue Category", name);
+                    frappe.show_alert({ message: __("Category deleted."), indicator: "green" });
+                    if (this.editing === name) this.editing = null;
+                    await this.load_and_render_table();
+                } catch (e) {
+                    frappe.show_alert({ message: __("Could not delete category — it may still be referenced by issues."), indicator: "red" });
+                }
+            },
+        );
+    }
+
+    async save() {
+        return true;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 6 — Issue Types
+// ---------------------------------------------------------------------------
+class GRMWizardStep6IssueTypes {
+    constructor($body, project, wizard) {
+        this.$body = $body;
+        this.project = project;
+        this.wizard = wizard;
+        this.rows = [];
+        this.editing = null;
+        this.adding = false;
+        this.render();
+    }
+
+    async render() {
+        if (!this.project) {
+            this.$body.html(`
+                <div class="grm-wizard-placeholder">
+                  <p class="text-muted">${__("Save Step 1 first to create the project.")}</p>
+                </div>
+            `);
+            return;
+        }
+        this.$body.html(`
+            <div class="grm-step6" style="max-width: 720px;">
+              <div class="grm-step6-intro" style="margin-bottom: 16px;">
+                <p>${__("Issue Types complement categories — they describe the broader nature of a complaint (e.g. \"Service Quality\", \"Compensation\", \"Environmental\").")}</p>
+                <p class="text-muted small">${__("Types are project-scoped. Pick a small, stable list — citizens see these on intake forms.")}</p>
+              </div>
+              <div id="grm-step6-table-wrap"></div>
+              <div id="grm-step6-form-wrap" style="margin-top: 12px;"></div>
+              <div style="margin-top: 12px;">
+                <button class="btn btn-default btn-sm" id="grm-step6-add">+ ${__("Add Type")}</button>
+              </div>
+            </div>
+        `);
+        this.$body.find("#grm-step6-add").on("click", () => this.start_add());
+        await this.load_and_render_table();
+    }
+
+    async load_and_render_table() {
+        try {
+            this.rows = await frappe.db.get_list("GRM Issue Type", {
+                filters: [["GRM Project Link", "project", "=", this.project.name]],
+                fields: ["name", "type_name"],
+                limit: 0,
+                order_by: "type_name asc",
+            });
+        } catch (e) {
+            this.rows = [];
+        }
+        this.render_table();
+    }
+
+    render_table() {
+        const $w = this.$body.find("#grm-step6-table-wrap").empty();
+        if (!this.rows.length) {
+            $w.html(`<p class="text-muted">${__("No issue types yet — click \"Add Type\" to create the first one.")}</p>`);
+            return;
+        }
+        const head = `
+            <thead>
+              <tr>
+                <th>${__("Type Name")}</th>
+                <th style="width:140px;">${__("Actions")}</th>
+              </tr>
+            </thead>
+        `;
+        const body_rows = this.rows.map((r) => {
+            const editing = this.editing === r.name;
+            if (editing) {
+                return `
+                  <tr data-name="${frappe.utils.escape_html(r.name)}">
+                    <td><input type="text" class="form-control input-xs grm-e-type_name" value="${frappe.utils.escape_html(r.type_name || "")}"></td>
+                    <td>
+                      <button class="btn btn-xs btn-primary grm-save-edit-type" data-name="${frappe.utils.escape_html(r.name)}">${__("Save")}</button>
+                      <button class="btn btn-xs btn-default grm-cancel-edit-type">${__("Cancel")}</button>
+                    </td>
+                  </tr>
+                `;
+            }
+            return `
+              <tr data-name="${frappe.utils.escape_html(r.name)}">
+                <td>${frappe.utils.escape_html(r.type_name || "")}</td>
+                <td>
+                  <button class="btn btn-xs btn-default grm-edit-type" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
+                  <button class="btn btn-xs btn-danger grm-delete-type" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+                </td>
+              </tr>
+            `;
+        }).join("");
+        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+
+        $w.find("button.grm-edit-type").on("click", (ev) => {
+            this.editing = $(ev.currentTarget).data("name");
+            this.render_table();
+        });
+        $w.find("button.grm-cancel-edit-type").on("click", () => {
+            this.editing = null;
+            this.render_table();
+        });
+        $w.find("button.grm-save-edit-type").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.save_edit(name);
+        });
+        $w.find("button.grm-delete-type").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.confirm_delete(name);
+        });
+    }
+
+    start_add() {
+        this.adding = true;
+        this.editing = null;
+        const $w = this.$body.find("#grm-step6-form-wrap").empty();
+        $w.html(`
+            <div class="grm-step6-add card" style="border:1px solid var(--border-color, #d1d8dd); padding:12px; border-radius:6px;">
+              <h5 style="margin-top:0;">${__("New Issue Type")}</h5>
+              <div class="form-group">
+                <label class="control-label reqd">${__("Type Name")}</label>
+                <input type="text" class="form-control" id="grm-n-type_name">
+              </div>
+              <div style="margin-top:8px;">
+                <button class="btn btn-primary btn-sm" id="grm-n-save-type">${__("Save Type")}</button>
+                <button class="btn btn-default btn-sm" id="grm-n-cancel-type">${__("Cancel")}</button>
+              </div>
+            </div>
+        `);
+        $w.find("#grm-n-save-type").on("click", () => this.save_new());
+        $w.find("#grm-n-cancel-type").on("click", () => {
+            this.adding = false;
+            $w.empty();
+        });
+    }
+
+    async save_new() {
+        const $w = this.$body.find("#grm-step6-form-wrap");
+        const type_name = ($w.find("#grm-n-type_name").val() || "").trim();
+        if (!type_name) {
+            frappe.show_alert({ message: __("Type Name is required."), indicator: "red" });
+            return;
+        }
+        const dup = this.rows.find(
+            (x) => (x.type_name || "").toLowerCase() === type_name.toLowerCase(),
+        );
+        if (dup) {
+            frappe.show_alert({ message: __("Type '{0}' already exists for this project.", [type_name]), indicator: "red" });
+            return;
+        }
+        try {
+            await frappe.db.insert({
+                doctype: "GRM Issue Type",
+                type_name,
+                grm_project_link: [{ project: this.project.name }],
+            });
+            frappe.show_alert({ message: __("Type created."), indicator: "green" });
+            this.adding = false;
+            $w.empty();
+            await this.load_and_render_table();
+        } catch (e) {
+            // frappe surfaces the error
+        }
+    }
+
+    async save_edit(name) {
+        const $row = this.$body.find(`#grm-step6-table-wrap tr[data-name="${CSS.escape(name)}"]`);
+        const type_name = ($row.find(".grm-e-type_name").val() || "").trim();
+        const orig = this.rows.find((x) => x.name === name);
+        if (!orig) return;
+        if (!type_name) {
+            frappe.show_alert({ message: __("Type Name is required."), indicator: "red" });
+            return;
+        }
+        const dup = this.rows.find(
+            (x) => x.name !== name && (x.type_name || "").toLowerCase() === type_name.toLowerCase(),
+        );
+        if (dup) {
+            frappe.show_alert({ message: __("Type '{0}' already exists for this project.", [type_name]), indicator: "red" });
+            return;
+        }
+        try {
+            const doc = await frappe.db.get_doc("GRM Issue Type", name);
+            doc.type_name = type_name;
+            await frappe.call({ method: "frappe.client.save", args: { doc } });
+            frappe.show_alert({ message: __("Type updated."), indicator: "green" });
+            this.editing = null;
+            await this.load_and_render_table();
+        } catch (e) {
+            // frappe surfaces the error
+        }
+    }
+
+    confirm_delete(name) {
+        frappe.confirm(
+            __("Delete issue type {0}? This will remove it from this project's setup.", [name]),
+            async () => {
+                try {
+                    await frappe.db.delete_doc("GRM Issue Type", name);
+                    frappe.show_alert({ message: __("Type deleted."), indicator: "green" });
+                    if (this.editing === name) this.editing = null;
+                    await this.load_and_render_table();
+                } catch (e) {
+                    frappe.show_alert({ message: __("Could not delete type — it may still be referenced by issues."), indicator: "red" });
+                }
+            },
+        );
+    }
+
+    async save() {
+        return true;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 7 — Issue Statuses
+// ---------------------------------------------------------------------------
+class GRMWizardStep7IssueStatuses {
+    constructor($body, project, wizard) {
+        this.$body = $body;
+        this.project = project;
+        this.wizard = wizard;
+        this.rows = [];
+        this.editing = null;
+        this.adding = false;
+        this.render();
+    }
+
+    async render() {
+        if (!this.project) {
+            this.$body.html(`
+                <div class="grm-wizard-placeholder">
+                  <p class="text-muted">${__("Save Step 1 first to create the project.")}</p>
+                </div>
+            `);
+            return;
+        }
+        this.$body.html(`
+            <div class="grm-step7" style="max-width: 960px;">
+              <div class="grm-step7-intro" style="margin-bottom: 16px;">
+                <p>${__("Issue Statuses define the lifecycle of a case — from intake to closure. Mark exactly one status as the Initial status (the entry point) and at least one as Final (resolution / closure).")}</p>
+                <p class="text-muted small">${__("Common pattern: \"New\" (initial, open) → \"In Progress\" (open) → \"Resolved\" (final, open) → \"Closed\" (final). Use \"Rejected\" for cases dismissed during review.")}</p>
+              </div>
+              <div id="grm-step7-table-wrap"></div>
+              <div id="grm-step7-form-wrap" style="margin-top: 12px;"></div>
+              <div style="margin-top: 12px;">
+                <button class="btn btn-default btn-sm" id="grm-step7-add">+ ${__("Add Status")}</button>
+              </div>
+            </div>
+        `);
+        this.$body.find("#grm-step7-add").on("click", () => this.start_add());
+        await this.load_and_render_table();
+    }
+
+    async load_and_render_table() {
+        try {
+            this.rows = await frappe.db.get_list("GRM Issue Status", {
+                filters: [["GRM Project Link", "project", "=", this.project.name]],
+                fields: ["name", "status_name", "initial_status", "open_status", "final_status", "rejected_status"],
+                limit: 0,
+                order_by: "status_name asc",
+            });
+        } catch (e) {
+            this.rows = [];
+        }
+        this.render_table();
+    }
+
+    render_table() {
+        const $w = this.$body.find("#grm-step7-table-wrap").empty();
+        if (!this.rows.length) {
+            $w.html(`<p class="text-muted">${__("No statuses yet — click \"Add Status\" to create the first one.")}</p>`);
+            return;
+        }
+        const head = `
+            <thead>
+              <tr>
+                <th>${__("Status Name")}</th>
+                <th style="width:80px;">${__("Initial?")}</th>
+                <th style="width:80px;">${__("Open?")}</th>
+                <th style="width:80px;">${__("Final?")}</th>
+                <th style="width:90px;">${__("Rejected?")}</th>
+                <th style="width:140px;">${__("Actions")}</th>
+              </tr>
+            </thead>
+        `;
+        const body_rows = this.rows.map((r) => `
+            <tr data-name="${frappe.utils.escape_html(r.name)}">
+              <td>${frappe.utils.escape_html(r.status_name || "")}</td>
+              <td>${r.initial_status ? __("Yes") : __("No")}</td>
+              <td>${r.open_status ? __("Yes") : __("No")}</td>
+              <td>${r.final_status ? __("Yes") : __("No")}</td>
+              <td>${r.rejected_status ? __("Yes") : __("No")}</td>
+              <td>
+                <button class="btn btn-xs btn-default grm-edit-status" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
+                <button class="btn btn-xs btn-danger grm-delete-status" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+              </td>
+            </tr>
+        `).join("");
+        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+
+        $w.find("button.grm-edit-status").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.start_edit(name);
+        });
+        $w.find("button.grm-delete-status").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.confirm_delete(name);
+        });
+    }
+
+    start_add() {
+        this.adding = true;
+        this.editing = null;
+        this.render_form(null);
+    }
+
+    start_edit(name) {
+        const row = this.rows.find((x) => x.name === name);
+        if (!row) return;
+        this.editing = name;
+        this.adding = false;
+        this.render_form(row);
+    }
+
+    render_form(row) {
+        const is_edit = !!row;
+        const r = row || {};
+        const $w = this.$body.find("#grm-step7-form-wrap").empty();
+        $w.html(`
+            <div class="grm-step7-form card" style="border:1px solid var(--border-color, #d1d8dd); padding:12px; border-radius:6px;">
+              <h5 style="margin-top:0;">${is_edit ? __("Edit Status") : __("New Status")}</h5>
+              <div class="form-group">
+                <label class="control-label reqd">${__("Status Name")}</label>
+                <input type="text" class="form-control" id="grm-sf-status_name" value="${frappe.utils.escape_html(r.status_name || "")}">
+              </div>
+              <div class="row">
+                <div class="col-md-3">
+                  <label class="checkbox"><input type="checkbox" id="grm-sf-initial_status" ${r.initial_status ? "checked" : ""}> ${__("Initial Status")}</label>
+                </div>
+                <div class="col-md-3">
+                  <label class="checkbox"><input type="checkbox" id="grm-sf-open_status" ${r.open_status ? "checked" : ""}> ${__("Open Status")}</label>
+                </div>
+                <div class="col-md-3">
+                  <label class="checkbox"><input type="checkbox" id="grm-sf-final_status" ${r.final_status ? "checked" : ""}> ${__("Final Status")}</label>
+                </div>
+                <div class="col-md-3">
+                  <label class="checkbox"><input type="checkbox" id="grm-sf-rejected_status" ${r.rejected_status ? "checked" : ""}> ${__("Rejected Status")}</label>
+                </div>
+              </div>
+              <div style="margin-top:12px;">
+                <button class="btn btn-primary btn-sm" id="grm-sf-save">${__("Save Status")}</button>
+                <button class="btn btn-default btn-sm" id="grm-sf-cancel">${__("Cancel")}</button>
+              </div>
+            </div>
+        `);
+        $w.find("#grm-sf-save").on("click", () => this.save_form(is_edit ? row.name : null));
+        $w.find("#grm-sf-cancel").on("click", () => {
+            this.adding = false;
+            this.editing = null;
+            $w.empty();
+        });
+    }
+
+    read_form() {
+        const $w = this.$body.find("#grm-step7-form-wrap");
+        const checked = (id) => $w.find(`#${id}`).is(":checked") ? 1 : 0;
+        return {
+            status_name: ($w.find("#grm-sf-status_name").val() || "").trim(),
+            initial_status: checked("grm-sf-initial_status"),
+            open_status: checked("grm-sf-open_status"),
+            final_status: checked("grm-sf-final_status"),
+            rejected_status: checked("grm-sf-rejected_status"),
+        };
+    }
+
+    async save_form(existing_name) {
+        const v = this.read_form();
+        if (!v.status_name) {
+            frappe.show_alert({ message: __("Status Name is required."), indicator: "red" });
+            return;
+        }
+        const dup = this.rows.find(
+            (x) => x.name !== existing_name && (x.status_name || "").toLowerCase() === v.status_name.toLowerCase(),
+        );
+        if (dup) {
+            frappe.show_alert({ message: __("Status '{0}' already exists for this project.", [v.status_name]), indicator: "red" });
+            return;
+        }
+        // Soft warning: if marking initial and another row already is initial, advise the user.
+        if (v.initial_status) {
+            const other_initial = this.rows.find((x) => x.name !== existing_name && x.initial_status);
+            if (other_initial) {
+                frappe.show_alert({
+                    message: __("Heads up: '{0}' is already marked Initial — only one should be the entry point.", [other_initial.status_name || other_initial.name]),
+                    indicator: "blue",
+                });
+            }
+        }
+        try {
+            if (existing_name) {
+                const doc = await frappe.db.get_doc("GRM Issue Status", existing_name);
+                doc.status_name = v.status_name;
+                doc.initial_status = v.initial_status;
+                doc.open_status = v.open_status;
+                doc.final_status = v.final_status;
+                doc.rejected_status = v.rejected_status;
+                await frappe.call({ method: "frappe.client.save", args: { doc } });
+                frappe.show_alert({ message: __("Status updated."), indicator: "green" });
+            } else {
+                await frappe.db.insert({
+                    doctype: "GRM Issue Status",
+                    status_name: v.status_name,
+                    initial_status: v.initial_status,
+                    open_status: v.open_status,
+                    final_status: v.final_status,
+                    rejected_status: v.rejected_status,
+                    grm_project_link: [{ project: this.project.name }],
+                });
+                frappe.show_alert({ message: __("Status created."), indicator: "green" });
+            }
+            this.editing = null;
+            this.adding = false;
+            this.$body.find("#grm-step7-form-wrap").empty();
+            await this.load_and_render_table();
+        } catch (e) {
+            // frappe surfaces the error
+        }
+    }
+
+    confirm_delete(name) {
+        frappe.confirm(
+            __("Delete status {0}? This will remove it from this project's setup.", [name]),
+            async () => {
+                try {
+                    await frappe.db.delete_doc("GRM Issue Status", name);
+                    frappe.show_alert({ message: __("Status deleted."), indicator: "green" });
+                    if (this.editing === name) this.editing = null;
+                    await this.load_and_render_table();
+                } catch (e) {
+                    frappe.show_alert({ message: __("Could not delete status — it may still be referenced by issues."), indicator: "red" });
+                }
+            },
+        );
+    }
+
+    async save() {
+        return true;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 8 — Departments
+// ---------------------------------------------------------------------------
+class GRMWizardStep8Departments {
+    constructor($body, project, wizard) {
+        this.$body = $body;
+        this.project = project;
+        this.wizard = wizard;
+        this.rows = [];
+        this.users = [];
+        this.editing = null;
+        this.adding = false;
+        this.render();
+    }
+
+    async render() {
+        if (!this.project) {
+            this.$body.html(`
+                <div class="grm-wizard-placeholder">
+                  <p class="text-muted">${__("Save Step 1 first to create the project.")}</p>
+                </div>
+            `);
+            return;
+        }
+        this.$body.html(`
+            <div class="grm-step8" style="max-width: 960px;">
+              <div class="grm-step8-intro" style="margin-bottom: 16px;">
+                <p>${__("Departments are the organizational units that handle issues — typical examples: Customer Service, Engineering, Compliance, Field Operations.")}</p>
+                <p class="text-muted small">${__("Each department can have a head — a user who oversees issues routed there. Step 5 (Categories) assigns issues to one of these departments by default.")}</p>
+              </div>
+              <div id="grm-step8-table-wrap"></div>
+              <div id="grm-step8-form-wrap" style="margin-top: 12px;"></div>
+              <div style="margin-top: 12px;">
+                <button class="btn btn-default btn-sm" id="grm-step8-add">+ ${__("Add Department")}</button>
+              </div>
+            </div>
+        `);
+        this.$body.find("#grm-step8-add").on("click", () => this.start_add());
+        await this.load_users();
+        await this.load_and_render_table();
+    }
+
+    async load_users() {
+        try {
+            this.users = await frappe.db.get_list("User", {
+                fields: ["name", "full_name"],
+                filters: { enabled: 1 },
+                limit: 100,
+                order_by: "full_name asc",
+            });
+        } catch (e) {
+            this.users = [];
+        }
+    }
+
+    async load_and_render_table() {
+        try {
+            this.rows = await frappe.db.get_list("GRM Issue Department", {
+                filters: [["GRM Project Link", "project", "=", this.project.name]],
+                fields: ["name", "department_name", "head"],
+                limit: 0,
+                order_by: "department_name asc",
+            });
+        } catch (e) {
+            this.rows = [];
+        }
+        this.render_table();
+    }
+
+    render_table() {
+        const $w = this.$body.find("#grm-step8-table-wrap").empty();
+        if (!this.rows.length) {
+            $w.html(`<p class="text-muted">${__("No departments yet — click \"Add Department\" to create the first one.")}</p>`);
+            return;
+        }
+        const user_label = (u) => {
+            const found = this.users.find((x) => x.name === u);
+            return found ? (found.full_name ? `${found.full_name} (${found.name})` : found.name) : (u || "");
+        };
+        const head = `
+            <thead>
+              <tr>
+                <th>${__("Department")}</th>
+                <th>${__("Head")}</th>
+                <th style="width:140px;">${__("Actions")}</th>
+              </tr>
+            </thead>
+        `;
+        const body_rows = this.rows.map((r) => `
+            <tr data-name="${frappe.utils.escape_html(r.name)}">
+              <td>${frappe.utils.escape_html(r.department_name || "")}</td>
+              <td>${frappe.utils.escape_html(user_label(r.head))}</td>
+              <td>
+                <button class="btn btn-xs btn-default grm-edit-dept" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
+                <button class="btn btn-xs btn-danger grm-delete-dept" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+              </td>
+            </tr>
+        `).join("");
+        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+
+        $w.find("button.grm-edit-dept").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.start_edit(name);
+        });
+        $w.find("button.grm-delete-dept").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.confirm_delete(name);
+        });
+    }
+
+    user_options(selected) {
+        const opts = [`<option value="">${__("(none)")}</option>`];
+        // Always include the currently-selected user even if they're not in the limit-100 list
+        let saw_selected = false;
+        for (const u of this.users) {
+            const sel = u.name === selected ? " selected" : "";
+            if (u.name === selected) saw_selected = true;
+            const display = u.full_name ? `${u.full_name} (${u.name})` : u.name;
+            opts.push(`<option value="${frappe.utils.escape_html(u.name)}"${sel}>${frappe.utils.escape_html(display)}</option>`);
+        }
+        if (selected && !saw_selected) {
+            opts.push(`<option value="${frappe.utils.escape_html(selected)}" selected>${frappe.utils.escape_html(selected)}</option>`);
+        }
+        return opts.join("");
+    }
+
+    start_add() {
+        this.adding = true;
+        this.editing = null;
+        this.render_form(null);
+    }
+
+    start_edit(name) {
+        const row = this.rows.find((x) => x.name === name);
+        if (!row) return;
+        this.editing = name;
+        this.adding = false;
+        this.render_form(row);
+    }
+
+    render_form(row) {
+        const is_edit = !!row;
+        const r = row || {};
+        const $w = this.$body.find("#grm-step8-form-wrap").empty();
+        $w.html(`
+            <div class="grm-step8-form card" style="border:1px solid var(--border-color, #d1d8dd); padding:12px; border-radius:6px;">
+              <h5 style="margin-top:0;">${is_edit ? __("Edit Department") : __("New Department")}</h5>
+              <div class="row">
+                <div class="col-md-6">
+                  <label class="control-label reqd">${__("Department Name")}</label>
+                  <input type="text" class="form-control" id="grm-df-department_name" value="${frappe.utils.escape_html(r.department_name || "")}">
+                </div>
+                <div class="col-md-6">
+                  <label class="control-label">${__("Head")}</label>
+                  <select class="form-control" id="grm-df-head">
+                    ${this.user_options(r.head)}
+                  </select>
+                  <small class="text-muted">${__("Showing up to 100 enabled users.")}</small>
+                </div>
+              </div>
+              <div style="margin-top:12px;">
+                <button class="btn btn-primary btn-sm" id="grm-df-save">${__("Save Department")}</button>
+                <button class="btn btn-default btn-sm" id="grm-df-cancel">${__("Cancel")}</button>
+              </div>
+            </div>
+        `);
+        $w.find("#grm-df-save").on("click", () => this.save_form(is_edit ? row.name : null));
+        $w.find("#grm-df-cancel").on("click", () => {
+            this.adding = false;
+            this.editing = null;
+            $w.empty();
+        });
+    }
+
+    read_form() {
+        const $w = this.$body.find("#grm-step8-form-wrap");
+        return {
+            department_name: ($w.find("#grm-df-department_name").val() || "").trim(),
+            head: ($w.find("#grm-df-head").val() || "").trim() || null,
+        };
+    }
+
+    async save_form(existing_name) {
+        const v = this.read_form();
+        if (!v.department_name) {
+            frappe.show_alert({ message: __("Department Name is required."), indicator: "red" });
+            return;
+        }
+        const dup = this.rows.find(
+            (x) => x.name !== existing_name && (x.department_name || "").toLowerCase() === v.department_name.toLowerCase(),
+        );
+        if (dup) {
+            frappe.show_alert({ message: __("Department '{0}' already exists for this project.", [v.department_name]), indicator: "red" });
+            return;
+        }
+        try {
+            if (existing_name) {
+                const doc = await frappe.db.get_doc("GRM Issue Department", existing_name);
+                doc.department_name = v.department_name;
+                doc.head = v.head;
+                await frappe.call({ method: "frappe.client.save", args: { doc } });
+                frappe.show_alert({ message: __("Department updated."), indicator: "green" });
+            } else {
+                const payload = {
+                    doctype: "GRM Issue Department",
+                    department_name: v.department_name,
+                    grm_project_link: [{ project: this.project.name }],
+                };
+                if (v.head) payload.head = v.head;
+                await frappe.db.insert(payload);
+                frappe.show_alert({ message: __("Department created."), indicator: "green" });
+            }
+            this.editing = null;
+            this.adding = false;
+            this.$body.find("#grm-step8-form-wrap").empty();
+            await this.load_and_render_table();
+        } catch (e) {
+            // frappe surfaces the error
+        }
+    }
+
+    confirm_delete(name) {
+        frappe.confirm(
+            __("Delete department {0}? This will remove it from this project's setup.", [name]),
+            async () => {
+                try {
+                    await frappe.db.delete_doc("GRM Issue Department", name);
+                    frappe.show_alert({ message: __("Department deleted."), indicator: "green" });
+                    if (this.editing === name) this.editing = null;
+                    await this.load_and_render_table();
+                } catch (e) {
+                    frappe.show_alert({ message: __("Could not delete department — it may still be referenced by categories or issues."), indicator: "red" });
+                }
+            },
+        );
+    }
+
+    async save() {
+        return true;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 10 — Citizen Lookups (Age Groups + Citizen Groups)
+// ---------------------------------------------------------------------------
+class GRMWizardStep10CitizenLookups {
+    constructor($body, project, wizard) {
+        this.$body = $body;
+        this.project = project;
+        this.wizard = wizard;
+        this.age_rows = [];
+        this.group_rows = [];
+        this.editing_age = null;
+        this.editing_group = null;
+        this.adding_age = false;
+        this.adding_group = false;
+        this.render();
+    }
+
+    async render() {
+        if (!this.project) {
+            this.$body.html(`
+                <div class="grm-wizard-placeholder">
+                  <p class="text-muted">${__("Save Step 1 first to create the project.")}</p>
+                </div>
+            `);
+            return;
+        }
+        this.$body.html(`
+            <div class="grm-step10" style="max-width: 960px;">
+              <div class="grm-step10-intro" style="margin-bottom: 16px;">
+                <p>${__("Citizen Lookups are the demographic dropdowns shown on intake forms. They help disaggregate complaint data for reporting.")}</p>
+                <p class="text-muted small">${__("Age Groups: e.g. \"0-17\", \"18-24\", \"25-44\", \"45-64\", \"65+\". Citizen Groups: tags like \"Indigenous\", \"Smallholder Farmer\", \"Female-headed Household\". Group Type 1 vs 2 lets you split groups into two parallel lists if your form needs it.")}</p>
+              </div>
+
+              <div class="grm-step10-section" style="margin-bottom: 24px;">
+                <h4>${__("Age Groups")}</h4>
+                <div id="grm-step10-age-table-wrap"></div>
+                <div id="grm-step10-age-form-wrap" style="margin-top: 12px;"></div>
+                <div style="margin-top: 12px;">
+                  <button class="btn btn-default btn-sm" id="grm-step10-age-add">+ ${__("Add Age Group")}</button>
+                </div>
+              </div>
+
+              <div class="grm-step10-section">
+                <h4>${__("Citizen Groups")}</h4>
+                <div id="grm-step10-group-table-wrap"></div>
+                <div id="grm-step10-group-form-wrap" style="margin-top: 12px;"></div>
+                <div style="margin-top: 12px;">
+                  <button class="btn btn-default btn-sm" id="grm-step10-group-add">+ ${__("Add Citizen Group")}</button>
+                </div>
+              </div>
+            </div>
+        `);
+        this.$body.find("#grm-step10-age-add").on("click", () => this.start_add_age());
+        this.$body.find("#grm-step10-group-add").on("click", () => this.start_add_group());
+        await this.load_age_groups();
+        await this.load_citizen_groups();
+    }
+
+    // ---- Age Groups ----
+    async load_age_groups() {
+        try {
+            this.age_rows = await frappe.db.get_list("GRM Issue Age Group", {
+                filters: [["GRM Project Link", "project", "=", this.project.name]],
+                fields: ["name", "age_group"],
+                limit: 0,
+                order_by: "age_group asc",
+            });
+        } catch (e) {
+            this.age_rows = [];
+        }
+        this.render_age_table();
+    }
+
+    render_age_table() {
+        const $w = this.$body.find("#grm-step10-age-table-wrap").empty();
+        if (!this.age_rows.length) {
+            $w.html(`<p class="text-muted">${__("No age groups yet — click \"Add Age Group\" to create the first one.")}</p>`);
+            return;
+        }
+        const head = `
+            <thead>
+              <tr>
+                <th>${__("Age Group")}</th>
+                <th style="width:140px;">${__("Actions")}</th>
+              </tr>
+            </thead>
+        `;
+        const body_rows = this.age_rows.map((r) => {
+            const editing = this.editing_age === r.name;
+            if (editing) {
+                return `
+                  <tr data-name="${frappe.utils.escape_html(r.name)}">
+                    <td><input type="text" class="form-control input-xs grm-e-age_group" value="${frappe.utils.escape_html(r.age_group || "")}"></td>
+                    <td>
+                      <button class="btn btn-xs btn-primary grm-save-edit-age" data-name="${frappe.utils.escape_html(r.name)}">${__("Save")}</button>
+                      <button class="btn btn-xs btn-default grm-cancel-edit-age">${__("Cancel")}</button>
+                    </td>
+                  </tr>
+                `;
+            }
+            return `
+              <tr data-name="${frappe.utils.escape_html(r.name)}">
+                <td>${frappe.utils.escape_html(r.age_group || "")}</td>
+                <td>
+                  <button class="btn btn-xs btn-default grm-edit-age" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
+                  <button class="btn btn-xs btn-danger grm-delete-age" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+                </td>
+              </tr>
+            `;
+        }).join("");
+        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+
+        $w.find("button.grm-edit-age").on("click", (ev) => {
+            this.editing_age = $(ev.currentTarget).data("name");
+            this.render_age_table();
+        });
+        $w.find("button.grm-cancel-edit-age").on("click", () => {
+            this.editing_age = null;
+            this.render_age_table();
+        });
+        $w.find("button.grm-save-edit-age").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.save_edit_age(name);
+        });
+        $w.find("button.grm-delete-age").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.confirm_delete_age(name);
+        });
+    }
+
+    start_add_age() {
+        this.adding_age = true;
+        this.editing_age = null;
+        const $w = this.$body.find("#grm-step10-age-form-wrap").empty();
+        $w.html(`
+            <div class="grm-step10-age-add card" style="border:1px solid var(--border-color, #d1d8dd); padding:12px; border-radius:6px;">
+              <h5 style="margin-top:0;">${__("New Age Group")}</h5>
+              <div class="form-group">
+                <label class="control-label reqd">${__("Age Group")}</label>
+                <input type="text" class="form-control" id="grm-n-age_group" placeholder="${__("e.g. 18-24")}">
+              </div>
+              <div style="margin-top:8px;">
+                <button class="btn btn-primary btn-sm" id="grm-n-save-age">${__("Save")}</button>
+                <button class="btn btn-default btn-sm" id="grm-n-cancel-age">${__("Cancel")}</button>
+              </div>
+            </div>
+        `);
+        $w.find("#grm-n-save-age").on("click", () => this.save_new_age());
+        $w.find("#grm-n-cancel-age").on("click", () => {
+            this.adding_age = false;
+            $w.empty();
+        });
+    }
+
+    async save_new_age() {
+        const $w = this.$body.find("#grm-step10-age-form-wrap");
+        const age_group = ($w.find("#grm-n-age_group").val() || "").trim();
+        if (!age_group) {
+            frappe.show_alert({ message: __("Age Group is required."), indicator: "red" });
+            return;
+        }
+        const dup = this.age_rows.find(
+            (x) => (x.age_group || "").toLowerCase() === age_group.toLowerCase(),
+        );
+        if (dup) {
+            frappe.show_alert({ message: __("Age Group '{0}' already exists for this project.", [age_group]), indicator: "red" });
+            return;
+        }
+        try {
+            await frappe.db.insert({
+                doctype: "GRM Issue Age Group",
+                age_group,
+                grm_project_link: [{ project: this.project.name }],
+            });
+            frappe.show_alert({ message: __("Age Group created."), indicator: "green" });
+            this.adding_age = false;
+            $w.empty();
+            await this.load_age_groups();
+        } catch (e) {
+            // frappe surfaces the error
+        }
+    }
+
+    async save_edit_age(name) {
+        const $row = this.$body.find(`#grm-step10-age-table-wrap tr[data-name="${CSS.escape(name)}"]`);
+        const age_group = ($row.find(".grm-e-age_group").val() || "").trim();
+        if (!age_group) {
+            frappe.show_alert({ message: __("Age Group is required."), indicator: "red" });
+            return;
+        }
+        const dup = this.age_rows.find(
+            (x) => x.name !== name && (x.age_group || "").toLowerCase() === age_group.toLowerCase(),
+        );
+        if (dup) {
+            frappe.show_alert({ message: __("Age Group '{0}' already exists for this project.", [age_group]), indicator: "red" });
+            return;
+        }
+        try {
+            const doc = await frappe.db.get_doc("GRM Issue Age Group", name);
+            doc.age_group = age_group;
+            await frappe.call({ method: "frappe.client.save", args: { doc } });
+            frappe.show_alert({ message: __("Age Group updated."), indicator: "green" });
+            this.editing_age = null;
+            await this.load_age_groups();
+        } catch (e) {
+            // frappe surfaces the error
+        }
+    }
+
+    confirm_delete_age(name) {
+        frappe.confirm(
+            __("Delete age group {0}? This will remove it from this project's setup.", [name]),
+            async () => {
+                try {
+                    await frappe.db.delete_doc("GRM Issue Age Group", name);
+                    frappe.show_alert({ message: __("Age Group deleted."), indicator: "green" });
+                    if (this.editing_age === name) this.editing_age = null;
+                    await this.load_age_groups();
+                } catch (e) {
+                    frappe.show_alert({ message: __("Could not delete age group — it may still be referenced by issues."), indicator: "red" });
+                }
+            },
+        );
+    }
+
+    // ---- Citizen Groups ----
+    async load_citizen_groups() {
+        try {
+            this.group_rows = await frappe.db.get_list("GRM Issue Citizen Group", {
+                filters: [["GRM Project Link", "project", "=", this.project.name]],
+                fields: ["name", "group_name", "group_type"],
+                limit: 0,
+                order_by: "group_name asc",
+            });
+        } catch (e) {
+            this.group_rows = [];
+        }
+        this.render_group_table();
+    }
+
+    render_group_table() {
+        const $w = this.$body.find("#grm-step10-group-table-wrap").empty();
+        if (!this.group_rows.length) {
+            $w.html(`<p class="text-muted">${__("No citizen groups yet — click \"Add Citizen Group\" to create the first one.")}</p>`);
+            return;
+        }
+        const head = `
+            <thead>
+              <tr>
+                <th>${__("Name")}</th>
+                <th style="width:120px;">${__("Type")}</th>
+                <th style="width:140px;">${__("Actions")}</th>
+              </tr>
+            </thead>
+        `;
+        const body_rows = this.group_rows.map((r) => `
+            <tr data-name="${frappe.utils.escape_html(r.name)}">
+              <td>${frappe.utils.escape_html(r.group_name || "")}</td>
+              <td>${frappe.utils.escape_html(r.group_type || "")}</td>
+              <td>
+                <button class="btn btn-xs btn-default grm-edit-group" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
+                <button class="btn btn-xs btn-danger grm-delete-group" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+              </td>
+            </tr>
+        `).join("");
+        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+
+        $w.find("button.grm-edit-group").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.start_edit_group(name);
+        });
+        $w.find("button.grm-delete-group").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.confirm_delete_group(name);
+        });
+    }
+
+    start_add_group() {
+        this.adding_group = true;
+        this.editing_group = null;
+        this.render_group_form(null);
+    }
+
+    start_edit_group(name) {
+        const row = this.group_rows.find((x) => x.name === name);
+        if (!row) return;
+        this.editing_group = name;
+        this.adding_group = false;
+        this.render_group_form(row);
+    }
+
+    render_group_form(row) {
+        const is_edit = !!row;
+        const r = row || {};
+        const gt = r.group_type != null ? String(r.group_type) : "1";
+        const $w = this.$body.find("#grm-step10-group-form-wrap").empty();
+        $w.html(`
+            <div class="grm-step10-group-form card" style="border:1px solid var(--border-color, #d1d8dd); padding:12px; border-radius:6px;">
+              <h5 style="margin-top:0;">${is_edit ? __("Edit Citizen Group") : __("New Citizen Group")}</h5>
+              <div class="row">
+                <div class="col-md-7">
+                  <label class="control-label reqd">${__("Group Name")}</label>
+                  <input type="text" class="form-control" id="grm-gf-group_name" value="${frappe.utils.escape_html(r.group_name || "")}">
+                </div>
+                <div class="col-md-5">
+                  <label class="control-label reqd">${__("Group Type")}</label>
+                  <select class="form-control" id="grm-gf-group_type">
+                    <option value="1" ${gt === "1" ? "selected" : ""}>${__("1")}</option>
+                    <option value="2" ${gt === "2" ? "selected" : ""}>${__("2")}</option>
+                  </select>
+                  <small class="text-muted">${__("Group Type 1 / 2 separates two parallel demographic dimensions on the intake form.")}</small>
+                </div>
+              </div>
+              <div style="margin-top:12px;">
+                <button class="btn btn-primary btn-sm" id="grm-gf-save">${__("Save Group")}</button>
+                <button class="btn btn-default btn-sm" id="grm-gf-cancel">${__("Cancel")}</button>
+              </div>
+            </div>
+        `);
+        $w.find("#grm-gf-save").on("click", () => this.save_group_form(is_edit ? row.name : null));
+        $w.find("#grm-gf-cancel").on("click", () => {
+            this.adding_group = false;
+            this.editing_group = null;
+            $w.empty();
+        });
+    }
+
+    async save_group_form(existing_name) {
+        const $w = this.$body.find("#grm-step10-group-form-wrap");
+        const group_name = ($w.find("#grm-gf-group_name").val() || "").trim();
+        const group_type = ($w.find("#grm-gf-group_type").val() || "").trim() || "1";
+        if (!group_name) {
+            frappe.show_alert({ message: __("Group Name is required."), indicator: "red" });
+            return;
+        }
+        const dup = this.group_rows.find(
+            (x) => x.name !== existing_name && (x.group_name || "").toLowerCase() === group_name.toLowerCase(),
+        );
+        if (dup) {
+            frappe.show_alert({ message: __("Citizen Group '{0}' already exists for this project.", [group_name]), indicator: "red" });
+            return;
+        }
+        try {
+            if (existing_name) {
+                const doc = await frappe.db.get_doc("GRM Issue Citizen Group", existing_name);
+                doc.group_name = group_name;
+                doc.group_type = group_type;
+                await frappe.call({ method: "frappe.client.save", args: { doc } });
+                frappe.show_alert({ message: __("Citizen Group updated."), indicator: "green" });
+            } else {
+                await frappe.db.insert({
+                    doctype: "GRM Issue Citizen Group",
+                    group_name,
+                    group_type,
+                    grm_project_link: [{ project: this.project.name }],
+                });
+                frappe.show_alert({ message: __("Citizen Group created."), indicator: "green" });
+            }
+            this.editing_group = null;
+            this.adding_group = false;
+            $w.empty();
+            await this.load_citizen_groups();
+        } catch (e) {
+            // frappe surfaces the error
+        }
+    }
+
+    confirm_delete_group(name) {
+        frappe.confirm(
+            __("Delete citizen group {0}? This will remove it from this project's setup.", [name]),
+            async () => {
+                try {
+                    await frappe.db.delete_doc("GRM Issue Citizen Group", name);
+                    frappe.show_alert({ message: __("Citizen Group deleted."), indicator: "green" });
+                    if (this.editing_group === name) this.editing_group = null;
+                    await this.load_citizen_groups();
+                } catch (e) {
+                    frappe.show_alert({ message: __("Could not delete citizen group — it may still be referenced by issues."), indicator: "red" });
+                }
+            },
+        );
+    }
+
+    async save() {
+        return true;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 11 — Notification Templates
+// ---------------------------------------------------------------------------
+class GRMWizardStep11NotificationTemplates {
+    constructor($body, project, wizard) {
+        this.$body = $body;
+        this.project = project;
+        this.wizard = wizard;
+        this.rows = [];
+        this.email_templates = [];
+        this.editing = null;
+        this.adding = false;
+        this.render();
+    }
+
+    async render() {
+        if (!this.project) {
+            this.$body.html(`
+                <div class="grm-wizard-placeholder">
+                  <p class="text-muted">${__("Save Step 1 first to create the project.")}</p>
+                </div>
+            `);
+            return;
+        }
+        this.$body.html(`
+            <div class="grm-step11" style="max-width: 1100px;">
+              <div class="grm-step11-intro" style="margin-bottom: 16px;">
+                <p>${__("Notification Templates control the messages sent to citizens at each stage of an issue's lifecycle (receipt, acknowledgment, status updates, escalation, SLA reminders).")}</p>
+                <p class="text-muted small">${__("Each template can drive an email (linked Email Template) and / or an SMS (Jinja2 message body). Use {{ tracking_code }}, {{ status }}, {{ subject }}, etc. as placeholders.")}</p>
+              </div>
+              <div id="grm-step11-table-wrap"></div>
+              <div id="grm-step11-form-wrap" style="margin-top: 12px;"></div>
+              <div style="margin-top: 12px;">
+                <button class="btn btn-default btn-sm" id="grm-step11-add">+ ${__("Add Template")}</button>
+              </div>
+            </div>
+        `);
+        this.$body.find("#grm-step11-add").on("click", () => this.start_add());
+        await this.load_email_templates();
+        await this.load_and_render_table();
+    }
+
+    async load_email_templates() {
+        try {
+            this.email_templates = await frappe.db.get_list("Email Template", {
+                fields: ["name"],
+                limit: 50,
+                order_by: "name asc",
+            });
+        } catch (e) {
+            this.email_templates = [];
+        }
+    }
+
+    async load_and_render_table() {
+        try {
+            this.rows = await frappe.db.get_list("GRM Notification Template", {
+                filters: { project: this.project.name },
+                fields: ["name", "template_name", "template_type", "active"],
+                limit: 0,
+                order_by: "template_type asc",
+            });
+        } catch (e) {
+            this.rows = [];
+        }
+        this.render_table();
+    }
+
+    render_table() {
+        const $w = this.$body.find("#grm-step11-table-wrap").empty();
+        if (!this.rows.length) {
+            $w.html(`<p class="text-muted">${__("No notification templates yet — click \"Add Template\" to create the first one.")}</p>`);
+            return;
+        }
+        const head = `
+            <thead>
+              <tr>
+                <th>${__("Name")}</th>
+                <th style="width:170px;">${__("Type")}</th>
+                <th style="width:90px;">${__("Active")}</th>
+                <th style="width:140px;">${__("Actions")}</th>
+              </tr>
+            </thead>
+        `;
+        const body_rows = this.rows.map((r) => `
+            <tr data-name="${frappe.utils.escape_html(r.name)}">
+              <td>${frappe.utils.escape_html(r.template_name || r.name)}</td>
+              <td>${frappe.utils.escape_html(r.template_type || "")}</td>
+              <td>${r.active ? __("Yes") : __("No")}</td>
+              <td>
+                <button class="btn btn-xs btn-default grm-edit-tpl" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
+                <button class="btn btn-xs btn-danger grm-delete-tpl" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+              </td>
+            </tr>
+        `).join("");
+        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+
+        $w.find("button.grm-edit-tpl").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.start_edit(name);
+        });
+        $w.find("button.grm-delete-tpl").on("click", (ev) => {
+            const name = $(ev.currentTarget).data("name");
+            this.confirm_delete(name);
+        });
+    }
+
+    type_options(selected) {
+        const types = [
+            "Receipt",
+            "Acknowledgment",
+            "In Progress",
+            "Resolved",
+            "Closed",
+            "Escalated",
+            "SLA Reminder",
+        ];
+        const opts = [`<option value="">${__("(select)")}</option>`];
+        for (const t of types) {
+            const sel = t === selected ? " selected" : "";
+            opts.push(`<option value="${frappe.utils.escape_html(t)}"${sel}>${frappe.utils.escape_html(t)}</option>`);
+        }
+        return opts.join("");
+    }
+
+    email_template_options(selected) {
+        const opts = [`<option value="">${__("(none)")}</option>`];
+        let saw_selected = false;
+        for (const t of this.email_templates) {
+            const sel = t.name === selected ? " selected" : "";
+            if (t.name === selected) saw_selected = true;
+            opts.push(`<option value="${frappe.utils.escape_html(t.name)}"${sel}>${frappe.utils.escape_html(t.name)}</option>`);
+        }
+        if (selected && !saw_selected) {
+            opts.push(`<option value="${frappe.utils.escape_html(selected)}" selected>${frappe.utils.escape_html(selected)}</option>`);
+        }
+        return opts.join("");
+    }
+
+    start_add() {
+        this.adding = true;
+        this.editing = null;
+        this.render_form(null);
+    }
+
+    async start_edit(name) {
+        try {
+            const doc = await frappe.db.get_doc("GRM Notification Template", name);
+            this.editing = name;
+            this.adding = false;
+            this.render_form(doc);
+        } catch (e) {
+            frappe.show_alert({ message: __("Could not load template."), indicator: "red" });
+        }
+    }
+
+    render_form(row) {
+        const is_edit = !!row;
+        const r = row || {};
+        const active = is_edit ? !!r.active : true;
+        const enable_sms = !!r.enable_sms;
+        const $w = this.$body.find("#grm-step11-form-wrap").empty();
+        $w.html(`
+            <div class="grm-step11-form card" style="border:1px solid var(--border-color, #d1d8dd); padding:12px; border-radius:6px;">
+              <h5 style="margin-top:0;">${is_edit ? __("Edit Template") : __("New Template")}</h5>
+              <div class="row">
+                <div class="col-md-6">
+                  <label class="control-label reqd">${__("Template Name")}</label>
+                  <input type="text" class="form-control" id="grm-tf-template_name" value="${frappe.utils.escape_html(r.template_name || "")}" ${is_edit ? "disabled" : ""}>
+                  ${is_edit ? `<small class="text-muted">${__("Template name is the record id and can't be changed.")}</small>` : ""}
+                </div>
+                <div class="col-md-6">
+                  <label class="control-label reqd">${__("Template Type")}</label>
+                  <select class="form-control" id="grm-tf-template_type">
+                    ${this.type_options(r.template_type)}
+                  </select>
+                </div>
+              </div>
+              <div class="row" style="margin-top:8px;">
+                <div class="col-md-6">
+                  <label class="control-label">${__("Email Template")}</label>
+                  <select class="form-control" id="grm-tf-email_template">
+                    ${this.email_template_options(r.email_template)}
+                  </select>
+                  <small class="text-muted">${__("Showing up to 50 Email Templates.")}</small>
+                </div>
+                <div class="col-md-6">
+                  <label class="control-label">${__("Active")}</label>
+                  <div><label class="checkbox"><input type="checkbox" id="grm-tf-active" ${active ? "checked" : ""}> ${__("Template Active")}</label></div>
+                </div>
+              </div>
+              <div class="form-group" style="margin-top:8px;">
+                <label class="checkbox">
+                  <input type="checkbox" id="grm-tf-enable_sms" ${enable_sms ? "checked" : ""}>
+                  ${__("Enable SMS")}
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="control-label">${__("SMS Message")}</label>
+                <textarea class="form-control" id="grm-tf-sms_message" rows="4" placeholder="${__("e.g. Issue {{ tracking_code }} is now {{ status }}.")}">${frappe.utils.escape_html(r.sms_message || "")}</textarea>
+                <small class="text-muted">${__("Supports Jinja2: {{ tracking_code }}, {{ status }}, {{ subject }}, {{ complainant_name }}, {{ created_date }}, etc.")}</small>
+              </div>
+              <div style="margin-top:12px;">
+                <button class="btn btn-primary btn-sm" id="grm-tf-save">${__("Save Template")}</button>
+                <button class="btn btn-default btn-sm" id="grm-tf-cancel">${__("Cancel")}</button>
+              </div>
+            </div>
+        `);
+        $w.find("#grm-tf-save").on("click", () => this.save_form(is_edit ? row.name : null));
+        $w.find("#grm-tf-cancel").on("click", () => {
+            this.adding = false;
+            this.editing = null;
+            $w.empty();
+        });
+    }
+
+    read_form() {
+        const $w = this.$body.find("#grm-step11-form-wrap");
+        const trim = (id) => ($w.find(`#${id}`).val() || "").trim();
+        const checked = (id) => $w.find(`#${id}`).is(":checked") ? 1 : 0;
+        return {
+            template_name: trim("grm-tf-template_name"),
+            template_type: trim("grm-tf-template_type"),
+            email_template: trim("grm-tf-email_template") || null,
+            enable_sms: checked("grm-tf-enable_sms"),
+            sms_message: trim("grm-tf-sms_message"),
+            active: checked("grm-tf-active"),
+        };
+    }
+
+    async save_form(existing_name) {
+        const v = this.read_form();
+        if (!existing_name && !v.template_name) {
+            frappe.show_alert({ message: __("Template Name is required."), indicator: "red" });
+            return;
+        }
+        if (!v.template_type) {
+            frappe.show_alert({ message: __("Template Type is required."), indicator: "red" });
+            return;
+        }
+        if (!existing_name) {
+            const dup = this.rows.find(
+                (x) => (x.template_name || "").toLowerCase() === v.template_name.toLowerCase(),
+            );
+            if (dup) {
+                frappe.show_alert({ message: __("Template '{0}' already exists for this project.", [v.template_name]), indicator: "red" });
+                return;
+            }
+        }
+        try {
+            if (existing_name) {
+                // Use the doc round-trip so the project field doesn't get unset by partial saves.
+                const doc = await frappe.db.get_doc("GRM Notification Template", existing_name);
+                doc.template_type = v.template_type;
+                doc.email_template = v.email_template;
+                doc.enable_sms = v.enable_sms;
+                doc.sms_message = v.sms_message;
+                doc.active = v.active;
+                await frappe.call({ method: "frappe.client.save", args: { doc } });
+                frappe.show_alert({ message: __("Template updated."), indicator: "green" });
+            } else {
+                const payload = {
+                    doctype: "GRM Notification Template",
+                    template_name: v.template_name,
+                    template_type: v.template_type,
+                    enable_sms: v.enable_sms,
+                    sms_message: v.sms_message,
+                    active: v.active,
+                    project: this.project.name,
+                };
+                if (v.email_template) payload.email_template = v.email_template;
+                await frappe.db.insert(payload);
+                frappe.show_alert({ message: __("Template created."), indicator: "green" });
+            }
+            this.editing = null;
+            this.adding = false;
+            this.$body.find("#grm-step11-form-wrap").empty();
+            await this.load_and_render_table();
+        } catch (e) {
+            // frappe surfaces the error
+        }
+    }
+
+    confirm_delete(name) {
+        frappe.confirm(
+            __("Delete notification template {0}?", [name]),
+            async () => {
+                try {
+                    await frappe.db.delete_doc("GRM Notification Template", name);
+                    frappe.show_alert({ message: __("Template deleted."), indicator: "green" });
+                    if (this.editing === name) this.editing = null;
+                    await this.load_and_render_table();
+                } catch (e) {
+                    frappe.show_alert({ message: __("Could not delete template."), indicator: "red" });
+                }
+            },
+        );
+    }
+
+    async save() {
+        return true;
     }
 }
