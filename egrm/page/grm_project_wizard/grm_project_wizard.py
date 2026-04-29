@@ -2,6 +2,23 @@
 
 import frappe
 
+ALLOWED_PAGE_ROLES = {
+    "System Manager",
+    "GRM Platform Administrator",
+    "GRM Supervise",
+}
+
+
+def _gate() -> None:
+    """Raise PermissionError unless caller has at least one allowed role.
+
+    The page-level role list in ``grm_project_wizard.json`` only gates the
+    desk UI; whitelisted endpoints must enforce the same role check, or any
+    authenticated user could call them via RPC.
+    """
+    if not (set(frappe.get_roles(frappe.session.user)) & ALLOWED_PAGE_ROLES):
+        frappe.throw(frappe._("Not permitted"), frappe.PermissionError)
+
 
 @frappe.whitelist()
 def activate_project(project: str) -> dict:
@@ -11,6 +28,7 @@ def activate_project(project: str) -> dict:
       - At least one GRM Administrative Level Type defined for the project.
       - At least one GRM Project Role defined and active for the project.
     """
+    _gate()
     if not project:
         frappe.throw(frappe._("project argument is required"))
 
