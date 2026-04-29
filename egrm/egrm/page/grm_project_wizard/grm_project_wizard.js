@@ -158,7 +158,7 @@ class GRMProjectWizard {
         }
         try {
             await frappe.call({
-                method: "egrm.page.grm_project_wizard.grm_project_wizard.activate_project",
+                method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.activate_project",
                 args: { project: this.project.name },
             });
             frappe.show_alert({ message: __("Project activated"), indicator: "green" });

@@ -12,7 +12,7 @@ frappe.pages["grm-users"].on_page_load = function (wrapper) {
     new GRMUsersPage(page);
 };
 
-const SERVER = "egrm.page.grm_users.grm_users";
+const SERVER = "egrm.egrm.page.grm_users.grm_users";
 const ACTIVATION_INDICATOR = {
     Activated: "green",
     "Pending Activation": "blue",
