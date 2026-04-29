@@ -648,7 +648,7 @@ class GRMWizardStep3AdminLevels {
     }
 
     async save_edit(name) {
-        const $row = this.$body.find(`#grm-step3-table-wrap tr[data-name="${name}"]`);
+        const $row = this.$body.find(`#grm-step3-table-wrap tr[data-name="${CSS.escape(name)}"]`);
         const orig = this.rows.find((x) => x.name === name);
         if (!orig) return;
         const level_name = ($row.find("#grm-e-level_name").val() || "").trim();
@@ -1223,8 +1223,8 @@ class GRMWizardStep9SLAs {
             <tr data-name="${frappe.utils.escape_html(r.name)}">
               <td>${frappe.utils.escape_html(r.level_name || "")}</td>
               <td>${r.level_order != null ? r.level_order : ""}</td>
-              <td><input type="number" min="0" class="form-control input-xs grm-s9-ack" value="${r.acknowledgment_days != null ? r.acknowledgment_days : 0}"></td>
-              <td><input type="number" min="1" class="form-control input-xs grm-s9-res" value="${r.resolution_days != null ? r.resolution_days : 1}"></td>
+              <td><input type="number" min="0" class="form-control input-xs grm-s9-ack" value="${r.acknowledgment_days != null ? r.acknowledgment_days : 7}"></td>
+              <td><input type="number" min="1" class="form-control input-xs grm-s9-res" value="${r.resolution_days != null ? r.resolution_days : 30}"></td>
               <td><input type="checkbox" class="grm-s9-auto" ${r.auto_escalate ? "checked" : ""}></td>
             </tr>
         `).join("");
