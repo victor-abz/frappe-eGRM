@@ -1352,7 +1352,7 @@ class GRMWizardStep5IssueCategories {
               <div id="grm-step5-table-wrap"></div>
               <div id="grm-step5-form-wrap" style="margin-top: 12px;"></div>
               <div style="margin-top: 12px;">
-                <button class="btn btn-default btn-sm" id="grm-step5-add">+ ${__("Add Category")}</button>
+                <button class="btn btn-default btn-sm" id="grm-step5-add" disabled>+ ${__("Add Category")}</button>
               </div>
             </div>
         `);
@@ -2141,6 +2141,20 @@ class GRMWizardStep7IssueStatuses {
     }
 
     async save() {
+        if (this.rows && this.rows.length > 0) {
+            const has_initial = this.rows.some(r => r.initial_status);
+            const has_final = this.rows.some(r => r.final_status);
+            if (!has_initial || !has_final) {
+                const missing = [];
+                if (!has_initial) missing.push(__("an Initial status"));
+                if (!has_final) missing.push(__("a Final status"));
+                frappe.show_alert({
+                    message: __("Please define {0} before continuing.", [missing.join(__(" and "))]),
+                    indicator: "red",
+                });
+                return false;
+            }
+        }
         return true;
     }
 }
@@ -3024,10 +3038,21 @@ class GRMWizardStep11NotificationTemplates {
                 return;
             }
         }
+        const dup_type = this.rows.find(
+            (r) => r.template_type === v.template_type && r.name !== existing_name,
+        );
+        if (dup_type) {
+            frappe.show_alert({
+                message: __("A template of type \"{0}\" already exists for this project.", [v.template_type]),
+                indicator: "red",
+            });
+            return;
+        }
         try {
             if (existing_name) {
                 // Use the doc round-trip so the project field doesn't get unset by partial saves.
                 const doc = await frappe.db.get_doc("GRM Notification Template", existing_name);
+                doc.project = this.project.name;
                 doc.template_type = v.template_type;
                 doc.email_template = v.email_template;
                 doc.enable_sms = v.enable_sms;
