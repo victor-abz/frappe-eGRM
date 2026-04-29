@@ -77,32 +77,73 @@ def list_assignments(project: str | None = None) -> list[dict]:
         limit=0,
     )
 
-    # Enrich with display labels (one round-trip per related doc; the
-    # numbers we expect are small, so this stays simple and readable).
+    # Enrich with display labels via batched lookups (one query per related
+    # doctype instead of N+1).
+    user_ids = {r["user"] for r in rows if r.get("user")}
+    role_ids = {r["role"] for r in rows if r.get("role")}
+    dept_ids = {r["department"] for r in rows if r.get("department")}
+    region_ids = {
+        r["administrative_region"] for r in rows if r.get("administrative_region")
+    }
+
+    user_map = (
+        {
+            u["name"]: u["full_name"]
+            for u in frappe.get_all(
+                "User",
+                filters={"name": ["in", list(user_ids)]},
+                fields=["name", "full_name"],
+            )
+        }
+        if user_ids
+        else {}
+    )
+    role_map = (
+        {
+            r["name"]: r["role_name"]
+            for r in frappe.get_all(
+                "GRM Project Role",
+                filters={"name": ["in", list(role_ids)]},
+                fields=["name", "role_name"],
+            )
+        }
+        if role_ids
+        else {}
+    )
+    dept_map = (
+        {
+            d["name"]: d["department_name"]
+            for d in frappe.get_all(
+                "GRM Issue Department",
+                filters={"name": ["in", list(dept_ids)]},
+                fields=["name", "department_name"],
+            )
+        }
+        if dept_ids
+        else {}
+    )
+    region_map = (
+        {
+            a["name"]: a["region_name"]
+            for a in frappe.get_all(
+                "GRM Administrative Region",
+                filters={"name": ["in", list(region_ids)]},
+                fields=["name", "region_name"],
+            )
+        }
+        if region_ids
+        else {}
+    )
+
     for row in rows:
-        row["user_full_name"] = (
-            frappe.db.get_value("User", row["user"], "full_name") or row["user"]
-        )
+        row["user_full_name"] = user_map.get(row["user"], row["user"])
         if row.get("role"):
-            row["role_name"] = (
-                frappe.db.get_value("GRM Project Role", row["role"], "role_name")
-                or row["role"]
-            )
+            row["role_name"] = role_map.get(row["role"], row["role"])
         if row.get("department"):
-            row["department_name"] = (
-                frappe.db.get_value(
-                    "GRM Issue Department", row["department"], "department_name"
-                )
-                or row["department"]
-            )
+            row["department_name"] = dept_map.get(row["department"], row["department"])
         if row.get("administrative_region"):
-            row["region_name"] = (
-                frappe.db.get_value(
-                    "GRM Administrative Region",
-                    row["administrative_region"],
-                    "region_name",
-                )
-                or row["administrative_region"]
+            row["region_name"] = region_map.get(
+                row["administrative_region"], row["administrative_region"]
             )
     return rows
 
@@ -127,8 +168,7 @@ def list_project_lookups(project: str) -> dict:
     - Departments: filtered via the ``GRM Project Link`` child table on
       ``GRM Issue Department``. We use a parameterized SQL query because
       ``frappe.get_all`` does not natively support child-table filters.
-    - Regions: filtered by ``project`` if the column exists (defensive
-      guard for schemas without that field).
+    - Regions: filtered by ``project`` (required field on the doctype).
     """
     _gate()
     if not project:
@@ -156,12 +196,9 @@ def list_project_lookups(project: str) -> dict:
         as_dict=True,
     )
 
-    region_filters: dict[str, Any] = {}
-    if frappe.db.has_column("GRM Administrative Region", "project"):
-        region_filters["project"] = project
     regions = frappe.get_all(
         "GRM Administrative Region",
-        filters=region_filters,
+        filters={"project": project},
         fields=["name", "region_name"],
         order_by="region_name asc",
         limit=200,

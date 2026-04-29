@@ -32,6 +32,8 @@ class GRMUsersPage {
         this.selected_project = "all";
         this.form_state = this.empty_form_state();
         this.user_search_timer = null;
+        this.user_search_seq = 0;
+        this.submitting = false;
 
         this.render_shell();
         this.boot();
@@ -544,7 +546,10 @@ class GRMUsersPage {
     // User typeahead
     // ---------------------------------------------------------------
     async user_search(txt) {
+        const seq = ++this.user_search_seq;
         const results = (await this.call("search_users", { txt })) || [];
+        if (seq !== this.user_search_seq) return; // stale response — discard
+
         const $box = $("#grm-user-results");
         if (!results.length) {
             $box.html(
@@ -590,6 +595,8 @@ class GRMUsersPage {
     // Submit
     // ---------------------------------------------------------------
     async submit_form() {
+        if (this.submitting) return;
+
         // Validate
         if (!this.form_state.user) {
             frappe.show_alert({ message: __("Please pick a user."), indicator: "red" });
@@ -617,6 +624,8 @@ class GRMUsersPage {
             is_active: this.form_state.is_active ? 1 : 0,
         };
 
+        this.submitting = true;
+        const $btn = $("#grm-form-submit").prop("disabled", true);
         try {
             if (this.editing_name) {
                 await this.call("update_assignment", {
@@ -638,6 +647,9 @@ class GRMUsersPage {
             await this.reload_assignments();
         } catch (e) {
             // frappe.call already surfaced the error
+        } finally {
+            this.submitting = false;
+            $btn.prop("disabled", false);
         }
     }
 
