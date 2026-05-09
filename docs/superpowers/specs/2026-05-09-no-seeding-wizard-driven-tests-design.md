@@ -63,7 +63,7 @@ Slot names are stable; emails contain the project slug.
 ## Step 9 walkthrough (per project)
 
 ```
-for project in [RW-WB, KE-EAC, BJ-WCS]:
+for project in [RW-WB, KE-EAC, STJ-HOSP]:
     1. Run wizard Steps 1-8 (existing flow, unchanged)
     2. Navigate to Step 9 via Playwright
     3. Build CSV from PROJECT_USER_TEMPLATE (5 rows, project-scoped emails)
@@ -91,33 +91,34 @@ for project in [RW-WB, KE-EAC, BJ-WCS]:
 
 ## `wizard_state.json` schema (additions)
 
-Additive only; existing keys untouched.
+The existing file is a JSON array of project records (`list[dict]`). The refactor adds a `users` key to each record. No keys are renamed or removed.
 
 ```json
-{
-  "projects": {
-    "RW-WB": {
-      "...existing fields...": "...",
-      "users": {
-        "default_password": "RW-WB@2026",
-        "created_at": "2026-05-09T14:32:11Z",
-        "by_role": {
-          "project_admin":  {"email": "project-admin-rw-wb@egrm.test",  "activation_code": "A1B2C3D4"},
-          "field_officer":  {"email": "field-officer-rw-wb@egrm.test",  "activation_code": "E5F6G7H8"},
-          "triage_officer": {"email": "triage-officer-rw-wb@egrm.test", "activation_code": "I9J0K1L2"},
-          "resolver":       {"email": "resolver-rw-wb@egrm.test",       "activation_code": "M3N4O5P6"},
-          "grm_officer":    {"email": "grm-officer-rw-wb@egrm.test",    "activation_code": "Q7R8S9T0"}
-        },
-        "step9_evidence": {
-          "csv_sha1": "ab12cd34...",
-          "preview_screenshot": "screenshots/wizard_steps/wizard_step_09_RW-WB.png",
-          "after_screenshot":   "screenshots/wizard_steps/wizard_step_09_RW-WB_after.png",
-          "bulk_create_response": {"created": 5, "errors": []}
-        }
+[
+  {
+    "code": "RW-WB",
+    "project_name": "Rwanda Water Board",
+    "levels": { "...existing...": "..." },
+    "regions": { "...existing...": "..." },
+    "users": {
+      "default_password": "RW-WB@2026",
+      "created_at": "2026-05-09T14:32:11Z",
+      "by_role": {
+        "project_admin":  {"email": "project-admin-rw-wb@egrm.test",  "activation_code": "A1B2C3D4"},
+        "field_officer":  {"email": "field-officer-rw-wb@egrm.test",  "activation_code": "E5F6G7H8"},
+        "triage_officer": {"email": "triage-officer-rw-wb@egrm.test", "activation_code": "I9J0K1L2"},
+        "resolver":       {"email": "resolver-rw-wb@egrm.test",       "activation_code": "M3N4O5P6"},
+        "grm_officer":    {"email": "grm-officer-rw-wb@egrm.test",    "activation_code": "Q7R8S9T0"}
+      },
+      "step9_evidence": {
+        "csv_sha1": "ab12cd34...",
+        "preview_screenshot": "screenshots/wizard_steps/wizard_step_09_RW-WB.png",
+        "after_screenshot":   "screenshots/wizard_steps/wizard_step_09_RW-WB_after.png",
+        "bulk_create_response": {"created": 5, "errors": []}
       }
     }
   }
-}
+]
 ```
 
 **Atomicity:** Write happens once per project after Step 9 succeeds (`tmp + os.replace`), so a Step 11 failure on project 3 does not invalidate projects 1 and 2 for downstream suites.
