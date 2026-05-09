@@ -22,10 +22,23 @@ website_route_rules = [
     {"from_route": "/grm-portal/<path:app_path>", "to_route": "grm-portal"},
 ]
 
+# 302 redirects from the canonical citizen-facing pretty URLs (see
+# 00-test-plan.md, UI-09..UI-12) to the actual `/grm-portal/<route>`
+# paths the React SPA's own router knows about. Without these,
+# /grievance-dashboard etc. render Frappe's 404 page even though the
+# SPA is installed and the corresponding sections exist.
+website_redirects = [
+    {"source": "/grievance-dashboard", "target": "/grm-portal/dashboard"},
+    {"source": "/grievance",           "target": "/grm-portal/submit"},
+    {"source": "/track-complaint",     "target": "/grm-portal/track"},
+    {"source": "/grievance-reports",   "target": "/grm-portal/reports"},
+]
+
 # Ensure Website Settings points to the portal on (re)install and migrations
 after_install = "egrm.install.after_install"
 after_migrate = [
     "egrm.install.set_default_home_page",
+    "egrm.install.set_default_desk_app",
     "egrm.install.seed_desktop_icons",
 ]
 
@@ -35,10 +48,44 @@ app_logo_url = "/assets/egrm/images/egrm-logo.svg"
 # Client-side duty filter — hides phase-group cards in the eGRM workspace
 # whose duty the user doesn't hold (v16 Workspace Link has no
 # display_depends_on, so JSON-level gating doesn't work).
-app_include_js = "egrm_workspace_filter.bundle.js"
+#
+# `egrm_app_route` is the JS companion to `app_route_passthrough.py`:
+# server-side we rewrite `/app/<rest>` → `/desk/<rest>` without a 301
+# so the URL bar keeps `/app/...`; client-side we teach
+# `frappe.router.strip_prefix` to peel `app/` exactly like `desk/` so
+# the SPA's route parser doesn't mis-route `/app/grm-project-wizard` as
+# the page named "app".
+app_include_js = [
+    "egrm_workspace_filter.bundle.js",
+    "egrm_app_route.bundle.js",
+]
 
 # Boot session hook — inject frappe.boot.egrm with per-user duty payload
 boot_session = "egrm.utils.boot.boot_session"
+
+# Auto-JSON-decode form_dict child-table values on /api/resource/* POSTs so
+# that Frappe's `create_doc` v1 endpoint accepts JSON-stringified scalars
+# (e.g. ``grm_project_link='[{"project":"RW-WB"}]'``) the same way it
+# accepts pure-JSON request bodies. Without this, form-encoded child
+# tables raise ``TypeError: 'str' object does not support item assignment``
+# in BaseDocument._init_child when the document layer tries to extend.
+before_request = [
+    "egrm.utils.rest_form_decode.normalize_resource_form_dict",
+    # Suppress the framework's `/app/* -> /desk/*` 301 so the browser
+    # URL stays at `/app/<workspace>` after login (the AQE UI-0
+    # Playwright assertion waits for `**/app**`).
+    "egrm.utils.app_route_passthrough.app_route_passthrough",
+]
+
+# Expose `frappe.boot.get_bootinfo` as a whitelisted endpoint so the
+# AC-5 (ARCH-CONTRACT) test — and any external tooling that wants to
+# verify the boot payload shape — can call it via /api/method/. The
+# wrapper at `egrm.api.boot.get_bootinfo` is a thin pass-through that
+# preserves Frappe's existing `boot_session` hook chain (which is where
+# our `egrm.utils.boot.boot_session` injects `bootinfo.egrm`).
+override_whitelisted_methods = {
+    "frappe.boot.get_bootinfo": "egrm.api.boot.get_bootinfo",
+}
 
 # Allow guest access
 has_website_permission = {
@@ -48,15 +95,22 @@ has_website_permission = {
 # Role home pages (post-duty-role migration: legacy 4 roles are gone;
 # duty-roles all land on the unified eGRM workspace; platform admins land
 # on the Platform workspace).
+#
+# Use `app/<workspace>` so the browser ends up at the canonical
+# `/app/<workspace>` URL the AQE UI-0 Playwright assertion expects
+# (`wait_for_url("**/app**")`). Frappe ships a built-in
+# `/app/* -> /desk/*` 301; we suppress it via the
+# `egrm.utils.app_route_passthrough.app_route_passthrough` before_request
+# hook so the URL stays as /app/.
 role_home_page = {
-    "System Manager": "egrm",
-    "GRM Platform Administrator": "platform",
-    "GRM Intake": "egrm",
-    "GRM Review": "egrm",
-    "GRM Assignment": "egrm",
-    "GRM Investigate & Resolve": "egrm",
-    "GRM Feedback": "egrm",
-    "GRM Supervise": "egrm",
+    "System Manager": "app/egrm",
+    "GRM Platform Administrator": "app/egrm",
+    "GRM Intake": "app/egrm",
+    "GRM Review": "app/egrm",
+    "GRM Assignment": "app/egrm",
+    "GRM Investigate & Resolve": "app/egrm",
+    "GRM Feedback": "app/egrm",
+    "GRM Supervise": "app/egrm",
 }
 
 # Notification Configuration

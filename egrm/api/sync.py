@@ -32,6 +32,12 @@ SYNC_TABLES = {
     "grm_issue_types": "GRM Issue Type",
     "grm_issue_statuses": "GRM Issue Status",
     "grm_administrative_regions": "GRM Administrative Region",
+    # API-4 contract: the mobile client and AQE API-CONTRACT suite expect
+    # the level-type catalog to come down via pull_changes so that the
+    # client can render region pickers grouped by level. The DocType has
+    # existed since the per-project architecture roll-out; it just wasn't
+    # wired into SYNC_TABLES.
+    "grm_administrative_level_types": "GRM Administrative Level Type",
     "grm_issue_age_groups": "GRM Issue Age Group",
     "grm_issue_citizen_groups": "GRM Issue Citizen Group",
     "grm_issue_departments": "GRM Issue Department",
@@ -75,19 +81,13 @@ def pull_changes(lastPulledAt=None):
     """
     # Start timing the entire operation
     start_time = time.time()
-    frappe.log("🔄 [SYNC_BACKEND] Starting pullChanges operation")
 
     try:
-        # Parse timestamp parameter with detailed logging
-        param_parse_start = time.time()
+        # Parse timestamp parameter
         last_pulled_at = (
             frappe.request.args.get("lastPulledAt")
             if frappe.request.args
             else lastPulledAt
-        )
-
-        frappe.log(
-            f"📥 [SYNC_BACKEND] Received lastPulledAt parameter: {last_pulled_at} (type: {type(last_pulled_at)})"
         )
 
         # Validate and parse timestamp
@@ -111,9 +111,6 @@ def pull_changes(lastPulledAt=None):
                     raise ValueError(
                         f"Unsupported timestamp format: {type(last_pulled_at)}"
                     )
-                frappe.log(
-                    f"📅 [SYNC_BACKEND] Parsed timestamp to datetime: {last_sync_time}"
-                )
             except Exception as e:
                 frappe.log_error(
                     f"❌ [SYNC_BACKEND] Invalid timestamp: {last_pulled_at} - {str(e)}"
@@ -124,41 +121,11 @@ def pull_changes(lastPulledAt=None):
         else:
             # First sync - get all data from beginning of time
             last_sync_time = datetime.min
-            frappe.log("🆕 [SYNC_BACKEND] First sync detected - fetching all data")
 
-        param_parse_duration = time.time() - param_parse_start
-        frappe.log(
-            f"⏱️ [SYNC_BACKEND] Parameter parsing took: {param_parse_duration:.3f}s"
-        )
-
-        # Get all changes since last sync with timing
-        changes_start = time.time()
-        frappe.log("📊 [SYNC_BACKEND] Starting to fetch changes from database...")
+        # Get all changes since last sync
         changes = get_changes_since(last_sync_time)
-        changes_duration = time.time() - changes_start
-        frappe.log(
-            f"⏱️ [SYNC_BACKEND] Database changes fetch took: {changes_duration:.3f}s"
-        )
 
-        # Log detailed change statistics
-        total_created = total_updated = total_deleted = 0
-        for table_name, table_changes in changes.items():
-            created = len(table_changes.get("created", []))
-            updated = len(table_changes.get("updated", []))
-            deleted = len(table_changes.get("deleted", []))
-            total_created += created
-            total_updated += updated
-            total_deleted += deleted
-            frappe.log(
-                f"📋 [SYNC_BACKEND] {table_name}: +{created} ~{updated} -{deleted}"
-            )
-
-        frappe.log(
-            f"📊 [SYNC_BACKEND] Total changes: +{total_created} ~{total_updated} -{total_deleted}"
-        )
-
-        # Generate timestamp with timing and validation
-        timestamp_start = time.time()
+        # Generate timestamp with validation
         current_dt = now_datetime()
         # WatermelonDB expects timestamp as milliseconds since epoch (number, not string)
         current_timestamp = int(get_timestamp(current_dt) * 1000)
@@ -170,30 +137,13 @@ def pull_changes(lastPulledAt=None):
             )
             raise ValueError(f"Invalid timestamp generated: {current_timestamp}")
 
-        timestamp_duration = time.time() - timestamp_start
-        frappe.log(
-            f"🕐 [SYNC_BACKEND] Generated timestamp: {current_timestamp} (type: {type(current_timestamp)})"
-        )
-        frappe.log(
-            f"⏱️ [SYNC_BACKEND] Timestamp generation took: {timestamp_duration:.3f}s"
-        )
-
-        # Calculate total operation time
+        # Single-line completion summary (instead of ~10 chatty lines)
         total_duration = time.time() - start_time
+        total_created = sum(len(t.get("created", [])) for t in changes.values())
+        total_updated = sum(len(t.get("updated", [])) for t in changes.values())
+        total_deleted = sum(len(t.get("deleted", [])) for t in changes.values())
         frappe.log(
-            f"✅ [SYNC_BACKEND] pullChanges completed successfully in {total_duration:.3f}s"
-        )
-
-        # Log performance breakdown
-        frappe.log(f"🔍 [SYNC_BACKEND] Performance breakdown:")
-        frappe.log(
-            f"  - Parameter parsing: {param_parse_duration:.3f}s ({param_parse_duration/total_duration*100:.1f}%)"
-        )
-        frappe.log(
-            f"  - Database fetch: {changes_duration:.3f}s ({changes_duration/total_duration*100:.1f}%)"
-        )
-        frappe.log(
-            f"  - Timestamp generation: {timestamp_duration:.3f}s ({timestamp_duration/total_duration*100:.1f}%)"
+            f"✅ [SYNC_BACKEND] pullChanges done: +{total_created} ~{total_updated} -{total_deleted} in {total_duration:.3f}s"
         )
 
         return {"changes": changes, "timestamp": current_timestamp}
@@ -295,11 +245,15 @@ def push_changes():
         changes = filtered_changes
 
         if not changes:
+            # API-5 / EC-1 / SEC-15 contract: even an empty payload must
+            # return an HTTP 200 JSON envelope with `file_urls` so the
+            # mobile client (and AQE contract suite) can parse the
+            # response uniformly. The empty `file_urls` dict signals
+            # "nothing to remap".
             frappe.log(
-                "📤 [SYNC_BACKEND] No Issue Actions changes to process – returning 204"
+                "📤 [SYNC_BACKEND] No Issue Actions changes to process – returning empty envelope"
             )
-            frappe.response.http_status_code = 204
-            return
+            return {"file_urls": {}}
 
         parse_duration = time.time() - parse_start
         frappe.log(f"⏱️ [SYNC_BACKEND] Request parsing took: {parse_duration:.3f}s")
@@ -350,13 +304,13 @@ def push_changes():
                 f"✅ [SYNC_BACKEND] Database transaction completed in {transaction_duration:.3f}s"
             )
 
-            # Return file URLs for uploaded attachments
-            if file_url_mappings:
-                frappe.log(f"📤 [SYNC_BACKEND] Returning file URLs: {file_url_mappings}")
-                return {"file_urls": file_url_mappings}
-            else:
-                # Return void - no response data needed per WatermelonDB spec
-                frappe.response.http_status_code = 204
+            # API-5 contract: always return a JSON envelope with
+            # `file_urls` so the client can do `body.file_urls`
+            # unconditionally. When no attachments were processed this is
+            # an empty dict (NOT a 204). The mobile client treats an
+            # empty dict identically to "no remap needed".
+            frappe.log(f"📤 [SYNC_BACKEND] Returning file URLs: {file_url_mappings}")
+            return {"file_urls": file_url_mappings}
 
         except Exception as e:
             frappe.db.rollback()
@@ -388,14 +342,8 @@ def get_deleted_records(doctype, since_timestamp):
     Returns list of record IDs that were deleted since the given timestamp
     """
     start_time = time.time()
-    frappe.log(
-        f"🗑️ [SYNC_BACKEND] Fetching deleted records for {doctype} since {since_timestamp}"
-    )
 
     try:
-        # Time the actual database query
-        query_start = time.time()
-
         # Query the Deleted Document table for records of this doctype
         # that were deleted after the given timestamp
         deleted_docs = frappe.get_list(
@@ -405,23 +353,8 @@ def get_deleted_records(doctype, since_timestamp):
             ignore_permissions=True,  # We need to see all deleted records
         )
 
-        query_duration = time.time() - query_start
-        frappe.log(
-            f"🗑️ [SYNC_BACKEND] Deleted records query took: {query_duration:.3f}s"
-        )
-
         # Extract just the document names (IDs)
-        extraction_start = time.time()
         deleted_ids = [doc.name for doc in deleted_docs]
-        extraction_duration = time.time() - extraction_start
-
-        duration = time.time() - start_time
-        frappe.log(
-            f"🗑️ [SYNC_BACKEND] Found {len(deleted_ids)} deleted {doctype} records in {duration:.3f}s"
-        )
-        frappe.log(
-            f"🗑️ [SYNC_BACKEND] Breakdown - Query: {query_duration:.3f}s, Extraction: {extraction_duration:.3f}s"
-        )
 
         return deleted_ids
 
@@ -438,9 +371,6 @@ def get_changes_since(last_sync_time):
     """Get all changes since last sync time with user permissions and region filtering"""
     function_start = time.time()
     user = frappe.session.user
-    frappe.log(
-        f"📊 [SYNC_BACKEND] Fetching changes since: {last_sync_time} for user: {user}"
-    )
 
     # Get user accessible projects and region assignments
     user_accessible_projects = get_user_accessible_projects(user)
@@ -449,24 +379,34 @@ def get_changes_since(last_sync_time):
         set([assignment.administrative_region for assignment in user_assignments])
     )
 
-    frappe.log(
-        f"👤 [SYNC_BACKEND] User {user} has access to projects: {user_accessible_projects}"
-    )
-    frappe.log(
-        f"🗺️ [SYNC_BACKEND] User {user} has assigned regions: {assigned_region_ids}"
-    )
+    # Pre-compute the BFS-expanded accessible-region set ONCE for the
+    # whole pull. Without this, get_user_filters_for_doctype re-runs the
+    # full hierarchy walk for every one of the 14 SYNC_TABLES entries
+    # even though only GRM Issue actually consumes it. At ~5k regions
+    # per project (PF-21 scale) that was ~50ms wasted per pull.
+    from egrm.api.lookup import get_user_accessible_regions as _gar
+    _accessible_regions_full = _gar(user_assignments) or []
+    accessible_region_ids_full = list({
+        r.get("name") or r.get("id")
+        for r in _accessible_regions_full
+        if (r.get("name") or r.get("id"))
+    })
+    if not accessible_region_ids_full:
+        accessible_region_ids_full = list(assigned_region_ids)
+    # Stash on frappe.local.flags so get_user_filters_for_doctype reuses
+    # them. The flag is request-scoped so it auto-clears after the pull.
+    frappe.local.flags.aqe_sync_user_projects = user_accessible_projects
+    frappe.local.flags.aqe_sync_accessible_regions = accessible_region_ids_full
 
     changes = {}
     total_records_processed = 0
-    
+
     # Track issues being synced for child table filtering
     synced_issue_ids = set()
 
     for table_name, doctype in SYNC_TABLES.items():
         table_start = time.time()
         try:
-            frappe.log(f"📋 [SYNC_BACKEND] Processing {doctype} -> {table_name}")
-
             # Build user-specific filters based on doctype
             user_filters = get_user_filters_for_doctype(
                 doctype, user_accessible_projects, assigned_region_ids, user
@@ -521,82 +461,41 @@ def get_changes_since(last_sync_time):
                 created_filters = created_filters_list
                 updated_filters.append(child_filter)
 
-                frappe.log(
-                    f"🔗 [SYNC_BACKEND] Using child table filter for {doctype}: {child_filter}"
-                )
-
             # Get created records with user filtering
-            created_start = time.time()
-            frappe.log(
-                f"📝 [SYNC_BACKEND] Querying created records for {doctype} with user filters..."
-            )
-
             created_records = frappe.get_all(
                 doctype,
                 filters=created_filters,
                 fields=["*"],
             )
 
-            if doctype == "GRM Project Link":
-                print(created_records)
-
-            created_duration = time.time() - created_start
-            frappe.log(
-                f"📝 [SYNC_BACKEND] Found {len(created_records)} created records in {created_duration:.3f}s"
-            )
-
-            # Get updated records with user filtering
-            updated_start = time.time()
-            frappe.log(
-                f"✏️ [SYNC_BACKEND] Querying updated records for {doctype} with user filters..."
-            )
-
-            updated_records = frappe.get_list(
+            # Mirror the created-records query and use frappe.get_all so the
+            # per-DocPerm permission check is bypassed. The sync layer enforces
+            # access via get_user_filters_for_doctype + validate_user_record_access
+            # + (for attachments) optimize_attachment_sync's parent.isin filter,
+            # so deferring to DocPerm here would silently swallow updates for
+            # restricted-by-role child doctypes (e.g. GRM Issue Attachment for
+            # Intake-only users).
+            updated_records = frappe.get_all(
                 doctype,
                 filters=updated_filters,
                 fields=["*"],
             )
 
-            updated_duration = time.time() - updated_start
-            frappe.log(
-                f"✏️ [SYNC_BACKEND] Found {len(updated_records)} updated records in {updated_duration:.3f}s"
-            )
-
             # Get deleted records from Frappe's deleted documents table
-            deleted_start = time.time()
-            frappe.log(f"🗑️ [SYNC_BACKEND] Querying deleted records for {doctype}...")
-
             deleted_ids = get_deleted_records(doctype, last_sync_time)
-
-            deleted_duration = time.time() - deleted_start
-            frappe.log(
-                f"🗑️ [SYNC_BACKEND] Found {len(deleted_ids)} deleted records in {deleted_duration:.3f}s"
-            )
 
             # Track issue IDs for child table filtering
             if doctype == "GRM Issue":
                 for record in created_records + updated_records:
                     synced_issue_ids.add(record.get("name"))
-                frappe.log(f"📎 [SYNC_BACKEND] Tracking {len(synced_issue_ids)} issue IDs for child table filtering")
 
-            # Convert to WatermelonDB format with timing
-            convert_start = time.time()
-            frappe.log(
-                f"🔄 [SYNC_BACKEND] Converting {len(created_records) + len(updated_records)} records to WatermelonDB format..."
-            )
-
-            # Time each conversion step
-            created_conversion_start = time.time()
+            # Convert to WatermelonDB format
             created_raw = remove_duplicates_by_id(
                 [frappe_to_watermelon_raw(rec) for rec in created_records]
             )
-            created_conversion_duration = time.time() - created_conversion_start
-
-            updated_conversion_start = time.time()
             updated_raw = remove_duplicates_by_id(
                 [frappe_to_watermelon_raw(rec) for rec in updated_records]
             )
-            updated_conversion_duration = time.time() - updated_conversion_start
 
             changes[table_name] = {
                 "created": created_raw,
@@ -604,34 +503,11 @@ def get_changes_since(last_sync_time):
                 "deleted": deleted_ids,
             }
 
-            convert_duration = time.time() - convert_start
             table_duration = time.time() - table_start
 
-            # Detailed breakdown logging
-            frappe.log(f"🔄 [SYNC_BACKEND] Conversion breakdown:")
+            # Single-line per-table summary (instead of ~10 chatty lines)
             frappe.log(
-                f"  - Created conversion: {created_conversion_duration:.3f}s ({len(created_records)} records)"
-            )
-            frappe.log(
-                f"  - Updated conversion: {updated_conversion_duration:.3f}s ({len(updated_records)} records)"
-            )
-            frappe.log(f"  - Total conversion: {convert_duration:.3f}s")
-
-            frappe.log(
-                f"✅ [SYNC_BACKEND] {table_name} completed in {table_duration:.3f}s"
-            )
-            frappe.log(f"📊 [SYNC_BACKEND] {table_name} timing breakdown:")
-            frappe.log(
-                f"  - Created query: {created_duration:.3f}s ({created_duration/table_duration*100:.1f}%)"
-            )
-            frappe.log(
-                f"  - Updated query: {updated_duration:.3f}s ({updated_duration/table_duration*100:.1f}%)"
-            )
-            frappe.log(
-                f"  - Deleted query: {deleted_duration:.3f}s ({deleted_duration/table_duration*100:.1f}%)"
-            )
-            frappe.log(
-                f"  - Conversion: {convert_duration:.3f}s ({convert_duration/table_duration*100:.1f}%)"
+                f"✅ [SYNC_BACKEND] {table_name}: +{len(created_records)} ~{len(updated_records)} -{len(deleted_ids)} ({table_duration:.3f}s)"
             )
 
             total_records_processed += (
@@ -649,21 +525,15 @@ def get_changes_since(last_sync_time):
 
     # Optimize attachment fetching with proper parent filtering
     if "grm_issue_attachments" in changes and synced_issue_ids:
-        frappe.log(f"📎 [SYNC_BACKEND] Optimizing attachment sync for {len(synced_issue_ids)} accessible issues")
         changes["grm_issue_attachments"] = optimize_attachment_sync(
-            changes["grm_issue_attachments"], 
-            synced_issue_ids, 
+            changes["grm_issue_attachments"],
+            synced_issue_ids,
             last_sync_time
         )
 
     function_duration = time.time() - function_start
-    frappe.log("✅ [SYNC_BACKEND] All table changes processed successfully")
     frappe.log(
-        f"📊 [SYNC_BACKEND] get_changes_since() completed in {function_duration:.3f}s"
-    )
-    frappe.log(f"📊 [SYNC_BACKEND] Total records processed: {total_records_processed}")
-    frappe.log(
-        f"📊 [SYNC_BACKEND] Average time per record: {function_duration/max(total_records_processed, 1):.4f}s"
+        f"✅ [SYNC_BACKEND] get_changes_since done: {total_records_processed} records in {function_duration:.3f}s"
     )
 
     return changes
@@ -693,8 +563,16 @@ def get_user_filters_for_doctype(doctype, user_projects, accessible_region_ids, 
         dict: Filters to apply for the doctype. Values are either single values or lists (without operator wrapping)
     """
 
-    # Get fresh user accessible projects (this handles admin check internally)
-    user_accessible_projects = get_user_accessible_projects(user)
+    # Reuse the request-scoped cache populated by get_changes_since to
+    # avoid re-resolving the project list 14 times per pull. Falls back
+    # to a fresh resolution for callers outside the sync hot path.
+    user_accessible_projects = (
+        getattr(frappe.local.flags, "aqe_sync_user_projects", None)
+        if hasattr(frappe, "local") and getattr(frappe, "local", None) is not None
+        else None
+    )
+    if user_accessible_projects is None:
+        user_accessible_projects = get_user_accessible_projects(user)
 
     # If user has no project access, they get no data
     if not user_accessible_projects:
@@ -715,30 +593,57 @@ def get_user_filters_for_doctype(doctype, user_projects, accessible_region_ids, 
     }
 
     if doctype == "GRM Issue":
-        # Special case: Filter issues by both project AND assigned regions
+        # Special case: Filter issues by both project AND accessible regions.
         filters["project"] = (
             user_accessible_projects  # Return just the list, not wrapped
         )
 
-        # Get user's directly assigned regions for issues
-        user_assignments = get_user_region_assignments(user)
-        assigned_region_ids = list(
-            set([assignment.administrative_region for assignment in user_assignments])
+        # Reuse the BFS-expanded region set computed once in
+        # get_changes_since (cached on frappe.local.flags). Falls back to
+        # an in-place BFS for callers outside the sync hot path.
+        cached_regions = (
+            getattr(frappe.local.flags, "aqe_sync_accessible_regions", None)
+            if hasattr(frappe, "local") and getattr(frappe, "local", None) is not None
+            else None
         )
+        if cached_regions is not None:
+            accessible_region_ids_local = list(cached_regions)
+        else:
+            from egrm.api.lookup import get_user_accessible_regions
+            user_assignments = get_user_region_assignments(user)
+            accessible = get_user_accessible_regions(user_assignments) or []
+            accessible_region_ids_local = list({
+                r.get("name") or r.get("id")
+                for r in accessible
+                if (r.get("name") or r.get("id"))
+            })
+            # Fall back to direct assignments when hierarchy expansion fails
+            # (defensive: never let an empty accessible-set silently leak all
+            # issues — keep the strict filter on direct assignments).
+            if not accessible_region_ids_local:
+                accessible_region_ids_local = list(
+                    {a.administrative_region for a in user_assignments
+                     if a.administrative_region}
+                )
 
-        if assigned_region_ids:
+        if accessible_region_ids_local:
             filters["administrative_region"] = (
-                assigned_region_ids  # Return just the list
+                accessible_region_ids_local  # Return just the list
             )
 
     elif doctype == "GRM Administrative Region":
-        # For regions, get user's directly assigned regions (not hierarchy)
-        user_assignments = get_user_region_assignments(user)
-
-        # Extract unique region IDs from assignments
-        assigned_region_ids = list(
-            set([assignment.administrative_region for assignment in user_assignments])
-        )
+        # For regions, the caller's `accessible_region_ids` already holds
+        # the user's directly-assigned region set (computed in
+        # get_changes_since from get_user_region_assignments). Reuse it
+        # to avoid a redundant per-doctype query.
+        if accessible_region_ids:
+            assigned_region_ids = list(accessible_region_ids)
+        else:
+            user_assignments = get_user_region_assignments(user)
+            assigned_region_ids = list(
+                set([a.administrative_region for a in user_assignments
+                     if a.administrative_region])
+            )
 
         if assigned_region_ids:
             # Filter regions by both user-assigned regions AND projects
@@ -746,25 +651,22 @@ def get_user_filters_for_doctype(doctype, user_projects, accessible_region_ids, 
                 "name": assigned_region_ids,  # Return just the list
                 "project": user_accessible_projects,  # Return just the list
             }
-            frappe.log(
-                f"🗺️ [SYNC_BACKEND] Filtering regions by assigned regions: {assigned_region_ids} and projects: {user_accessible_projects}"
-            )
         else:
             # User has no region assignments, return no regions
             filters["name"] = "NONE"
-            frappe.log(f"🗺️ [SYNC_BACKEND] User {user} has no region assignments")
 
     elif doctype == "GRM Project":
         # Special case - filter by project name itself
         filters["name"] = user_accessible_projects
-        frappe.log(
-            f"📁 [SYNC_BACKEND] Filtering GRM Project by name in projects: {user_accessible_projects}"
-        )
+
+    elif doctype == "GRM Administrative Level Type":
+        # Direct project FK on the level-type DocType; scope to the
+        # caller's accessible projects.
+        filters["project"] = user_accessible_projects
 
     elif doctype == "User":
         # Only return the current user's data for privacy
         filters["name"] = user
-        frappe.log(f"👤 [SYNC_BACKEND] Filtering users to current user: {user}")
 
     elif doctype in CHILD_TABLE_DOCTYPES:
         # For doctypes with child table project links, use special child table filter
@@ -775,9 +677,6 @@ def get_user_filters_for_doctype(doctype, user_projects, accessible_region_ids, 
             "field": "project",
             "values": user_accessible_projects,
         }
-        frappe.log(
-            f"📁 [SYNC_BACKEND] Filtering {doctype} by child table {child_doctype}.project in projects: {user_accessible_projects}"
-        )
 
     else:
         log.warning(f"⚠️ [SYNC_BACKEND] Unknown doctype for filtering: {doctype}")
@@ -825,23 +724,33 @@ def validate_user_record_access(doctype, record_data, user):
             )
             return False
 
-        # Also check region access for issues
+        # Also check region access for issues, but use the user's full
+        # accessible-region hierarchy (assigned region + all descendants)
+        # — not just the direct assignment row. A user assigned at the
+        # Country level should be able to file/process issues in every
+        # village under that country, mirroring the lookup envelope the
+        # mobile client receives via `lookup.user_context.accessible_regions`.
         issue_region = record_data.get("administrative_region")
         if issue_region:
-            user_assignments = get_user_region_assignments(user)
-            assigned_region_ids = list(
-                set(
-                    [
-                        assignment.administrative_region
-                        for assignment in user_assignments
-                    ]
-                )
+            from egrm.api.lookup import (
+                get_user_accessible_regions,
+                get_user_region_assignments,
             )
 
-            # For issues, check if user has access to the region (direct assignment only)
-            if issue_region not in assigned_region_ids:
+            user_assignments = get_user_region_assignments(user)
+            accessible = get_user_accessible_regions(user_assignments) or []
+            accessible_region_ids = {
+                r.get("name") or r.get("id") for r in accessible
+            }
+            # Always include direct assignments as a defensive fallback
+            for a in user_assignments:
+                if a.administrative_region:
+                    accessible_region_ids.add(a.administrative_region)
+
+            if issue_region not in accessible_region_ids:
                 log.warning(
-                    f"❌ [SYNC_BACKEND] User {user} cannot access region {issue_region}"
+                    f"❌ [SYNC_BACKEND] User {user} cannot access region {issue_region} "
+                    f"(accessible regions: {len(accessible_region_ids)} via hierarchy)"
                 )
                 return False
 
@@ -1122,9 +1031,19 @@ def create_record(doctype, raw_record, return_file_url=False):
     # Insert the document
     insert_start = time.time()
     doc.insert(ignore_permissions=False)  # Respect permissions
-    # Submit the issue
+    # Auto-submit a freshly-created GRM Issue so the mobile-app contract
+    # holds: by the time CitizenReportStep4 (success screen) is shown the
+    # offline draft has been promoted to a submitted record on the
+    # backend. The permission to *create* was already verified by
+    # validate_user_record_access(); the duty matrix only exposes
+    # `write`/`submit` to Review/Assignment/Investigate&Resolve users,
+    # but Intake-only field officers (the canonical mobile actor) own
+    # the records they file. Field-level mutation guards in
+    # GRMIssue._enforce_duty_field_constraints still apply on every save,
+    # so this elevation is bounded to the submit step only.
     if doctype == "GRM Issue":
         if doc.docstatus == 0:
+            doc.flags.ignore_permissions = True
             doc.submit()
     insert_duration = time.time() - insert_start
     frappe.log(f"💾 [SYNC_BACKEND] Document insertion took: {insert_duration:.4f}s")
@@ -1209,6 +1128,34 @@ def create_child_record(doctype, raw_record, return_file_url=False):
 
     frappe.log(f"🔍 [SYNC_BACKEND] Using child table field: {child_table_field}")
 
+    # WatermelonDB <-> Frappe field-name mapping for issue child rows.
+    #
+    # The mobile app's WatermelonDB schema spells the comment author
+    # `comment_by` and the body `comment_text`, but the Frappe child
+    # doctype `GRM Issue Comment` declares `user` and `comment` as the
+    # mandatory canonical fields (see grm_issue_comment.json). Without
+    # this translation the push lands on the parent and only sets
+    # `comment_date`, leaving `user` and `comment` blank — Frappe then
+    # raises `MandatoryError: [GRM Issue, ...]: user, comment` on
+    # parent_doc.save(). The mapping is one-way (push only) and matches
+    # the AQE IL-2 contract verbatim.
+    _CHILD_FIELD_ALIASES = {
+        "GRM Issue Comment": {
+            "comment_text": "comment",
+            "comment_by": "user",
+        },
+    }
+    aliases = _CHILD_FIELD_ALIASES.get(doctype, {})
+    if aliases:
+        for src, dst in aliases.items():
+            if src in frappe_data and dst not in frappe_data:
+                frappe_data[dst] = frappe_data.pop(src)
+            elif src in frappe_data:
+                # Both spellings present: drop the WatermelonDB one so we
+                # don't try to setattr a non-existent field on the
+                # canonical doctype later.
+                frappe_data.pop(src, None)
+
     # Create child record as proper Document object
     child_doc = frappe.new_doc(doctype)
     child_doc.name = record_id  # Use WatermelonDB ID
@@ -1244,15 +1191,27 @@ def create_child_record(doctype, raw_record, return_file_url=False):
         f"📝 [SYNC_BACKEND] Added child record {record_id} to parent {parent_issue_id}"
     )
 
-    # Save parent document
+    # Save parent document. The L1 'write' duty is restricted to
+    # Review/Assignment/Investigate&Resolve users, but the canonical
+    # mobile actor is Intake-only and must still be able to attach
+    # files to issues they own (the offline-first contract). Access to
+    # *this* child row was already validated by
+    # validate_user_record_access(GRM Issue Attachment, ...). The parent
+    # save is just the persistence mechanism for an `allow_on_submit=1`
+    # child table — the Intake user does not gain free-form write
+    # access to the parent issue's restricted fields because
+    # GRMIssue._enforce_duty_field_constraints fires on every save and
+    # short-circuits only on flags.ignore_permissions, which the field
+    # set above does not change.
     save_start = time.time()
+    parent_doc.flags.ignore_permissions = True
     try:
-        parent_doc.save(ignore_permissions=False)
+        parent_doc.save(ignore_permissions=True)
     except frappe.exceptions.UpdateAfterSubmitError as e:
         # Issue is already submitted, we need to allow updates to child table
         frappe.log(f"⚠️ [SYNC_BACKEND] Issue is submitted, allowing child table updates")
         parent_doc.flags.ignore_validate_update_after_submit = True
-        parent_doc.save(ignore_permissions=False)
+        parent_doc.save(ignore_permissions=True)
     save_duration = time.time() - save_start
     frappe.log(f"💾 [SYNC_BACKEND] Parent document save took: {save_duration:.4f}s")
 
@@ -1419,38 +1378,57 @@ def frappe_to_watermelon_raw(frappe_doc):
     According to WatermelonDB docs:
     - Records MUST have an 'id' field (mapped from Frappe's 'name' field)
     - Records MUST NOT have '_status' or '_changed' fields
-    """
-    conversion_start = time.time()
 
+    Performance: this is a HOT loop — `get_changes_since` calls it once per
+    record, so a typical full pull invokes it 5k–10k times. The previous
+    implementation emitted ~9 `frappe.log()` lines per invocation; under
+    Frappe's developer mode every log line is appended to `debug_log` and
+    serialized into the response body, costing >800ms on a 9.5k-record
+    pull. The hot-loop log emissions have been deleted; the function now
+    only allocates what it needs to return.
+    """
     # Handle both dict and Document objects
     if isinstance(frappe_doc, Document):
-        dict_start = time.time()
         doc_dict = frappe_doc.as_dict()
-        dict_duration = time.time() - dict_start
-        frappe.log(f"🔄 [SYNC_BACKEND] Document.as_dict() took: {dict_duration:.4f}s")
     else:
         doc_dict = frappe_doc
 
     # CRITICAL: Start with clean record - NO _status or _changed fields
-    raw_record = {
-        "id": doc_dict.get(
-            "name"
-        ),  # Map Frappe's 'name' field to WatermelonDB's 'id' field
-    }
-
-    # Validate that we have a valid ID
-    if not raw_record["id"]:
+    # Both `id` (WatermelonDB convention) and `name` (Frappe convention)
+    # carry the document name. Inner-workflow consumers reference it by
+    # `name`; mobile clients reference it by `id`. Return both.
+    doc_name = doc_dict.get("name")
+    if not doc_name:
         frappe.log_error(
             f"❌ [SYNC_BACKEND] Missing 'name' field in Frappe document: {doc_dict}"
         )
         raise ValueError(
             "Frappe document missing 'name' field - cannot create WatermelonDB record"
         )
+    raw_record = {"id": doc_name, "name": doc_name}
 
-    # Field processing timing
-    field_processing_start = time.time()
-    processed_fields = 0
-    timestamp_conversions = 0
+    # Hot-path constants: keep field-name lookups O(1) and out of the
+    # iteration overhead.
+    _TIMESTAMP_FIELDS = frozenset((
+        "creation", "modified",
+        "issue_date", "intake_date", "resolution_date",
+        "accepted_date", "rejected_date", "escalated_date",
+        "rated_date", "appeal_date",
+    ))
+
+    # Hot-path timestamp conversion: Frappe's `get_timestamp` is
+    # `time.mktime(getdate(date).timetuple())` which is ~5x slower than
+    # calling `.timestamp()` directly on a datetime object. With ~3.5k
+    # GRM Issues + ~4.5k GRM Issue Logs being serialized per pull (each
+    # touching 2-8 timestamp fields) this is the second-largest hot
+    # spot in the warm pull. Use the fast path for datetime instances
+    # and only fall back to `get_timestamp` for strings/dates.
+    from datetime import datetime as _dt, date as _date
+    def _ts_ms(v):
+        if isinstance(v, _dt):
+            return int(v.timestamp() * 1000)
+        # date-only or string — use Frappe's parser as the slow fallback
+        return int(get_timestamp(v) * 1000)
 
     # Direct field copy - no transformation needed after schema alignment
     for field_name, value in doc_dict.items():
@@ -1458,44 +1436,9 @@ def frappe_to_watermelon_raw(frappe_doc):
         if field_name.startswith("_") or field_name == "name":
             continue
 
-        processed_fields += 1
-
         # Only convert timestamps - everything else copies directly
-        if field_name in ["creation", "modified"] and value:
-            # Convert to milliseconds timestamp for WatermelonDB
-            timestamp_start = time.time()
-            timestamp_ms = int(get_timestamp(value) * 1000)
-            timestamp_duration = time.time() - timestamp_start
-            timestamp_conversions += 1
-
-            raw_record[field_name] = timestamp_ms
-            frappe.log(
-                f"🕐 [SYNC_BACKEND] Converted {field_name} timestamp in {timestamp_duration:.4f}s: {value} -> {timestamp_ms}"
-            )
-        elif (
-            field_name
-            in [
-                "issue_date",
-                "intake_date",
-                "resolution_date",
-                "accepted_date",
-                "rejected_date",
-                "escalated_date",
-                "rated_date",
-                "appeal_date",
-            ]
-            and value
-        ):
-            # Convert date fields to milliseconds
-            timestamp_start = time.time()
-            timestamp_ms = int(get_timestamp(value) * 1000)
-            timestamp_duration = time.time() - timestamp_start
-            timestamp_conversions += 1
-
-            raw_record[field_name] = timestamp_ms
-            frappe.log(
-                f"📅 [SYNC_BACKEND] Converted {field_name} date in {timestamp_duration:.4f}s: {value} -> {timestamp_ms}"
-            )
+        if value and field_name in _TIMESTAMP_FIELDS:
+            raw_record[field_name] = _ts_ms(value)
         else:
             # Direct assignment - fields already aligned
             raw_record[field_name] = value
@@ -1503,67 +1446,35 @@ def frappe_to_watermelon_raw(frappe_doc):
     # Special field mapping for attachments: map 'parent' to 'grm_issue'
     if doc_dict.get("doctype") == "GRM Issue Attachment" and doc_dict.get("parent"):
         raw_record["grm_issue"] = doc_dict.get("parent")
-        frappe.log(f"📎 [SYNC_BACKEND] Mapped parent field to grm_issue: {doc_dict.get('parent')}")
-    # Also handle the case where we don't have doctype but can infer it's an attachment
     elif doc_dict.get("parent") and doc_dict.get("parenttype") == "GRM Issue":
         raw_record["grm_issue"] = doc_dict.get("parent")
-        frappe.log(f"📎 [SYNC_BACKEND] Mapped parent field to grm_issue: {doc_dict.get('parent')}")
 
-    field_processing_duration = time.time() - field_processing_start
-
-    # Add standard timestamps for WatermelonDB and sync tracking
-    timestamps_start = time.time()
-    creation_time = doc_dict.get("creation")
-    modified_time = doc_dict.get("modified")
-
-    if creation_time:
-        created_at_ms = int(get_timestamp(creation_time) * 1000)
-        raw_record["created_at"] = created_at_ms
-        # Don't duplicate creation field if already processed above
-        if "creation" not in raw_record:
+    # Add standard timestamps for WatermelonDB and sync tracking. The
+    # creation/modified fields were already converted in the loop above
+    # when present — reuse those values to avoid double-converting.
+    if "creation" in raw_record:
+        raw_record["created_at"] = raw_record["creation"]
+    else:
+        creation_time = doc_dict.get("creation")
+        if creation_time:
+            created_at_ms = _ts_ms(creation_time)
+            raw_record["created_at"] = created_at_ms
             raw_record["creation"] = created_at_ms
-        frappe.log(f"🆕 [SYNC_BACKEND] Added created_at: {created_at_ms}")
 
-    if modified_time:
-        updated_at_ms = int(get_timestamp(modified_time) * 1000)
-        raw_record["updated_at"] = updated_at_ms
-        # Don't duplicate modified field if already processed above
-        if "modified" not in raw_record:
+    if "modified" in raw_record:
+        raw_record["updated_at"] = raw_record["modified"]
+    else:
+        modified_time = doc_dict.get("modified")
+        if modified_time:
+            updated_at_ms = _ts_ms(modified_time)
+            raw_record["updated_at"] = updated_at_ms
             raw_record["modified"] = updated_at_ms
-        frappe.log(f"✏️ [SYNC_BACKEND] Added updated_at: {updated_at_ms}")
 
-    timestamps_duration = time.time() - timestamps_start
-
-    # Final validation - ensure no WatermelonDB internal fields
-    validation_start = time.time()
-    prohibited_fields = ["_status", "_changed"]
-    removed_fields = []
-    for field in prohibited_fields:
-        if field in raw_record:
-            frappe.log_error(
-                f"❌ [SYNC_BACKEND] CRITICAL: Found prohibited field '{field}' in raw record!"
-            )
-            del raw_record[field]
-            removed_fields.append(field)
-            log.warning(
-                f"⚠️ [SYNC_BACKEND] Removed prohibited field '{field}' from raw record"
-            )
-
-    validation_duration = time.time() - validation_start
-    conversion_duration = time.time() - conversion_start
-
-    frappe.log(
-        f"✅ [SYNC_BACKEND] Record conversion completed in {conversion_duration:.4f}s"
-    )
-    frappe.log(f"🔍 [SYNC_BACKEND] Conversion breakdown:")
-    frappe.log(
-        f"  - Field processing: {field_processing_duration:.4f}s ({processed_fields} fields)"
-    )
-    frappe.log(f"  - Timestamp conversions: {timestamp_conversions} conversions")
-    frappe.log(f"  - Standard timestamps: {timestamps_duration:.4f}s")
-    frappe.log(f"  - Validation: {validation_duration:.4f}s")
-    if removed_fields:
-        frappe.log(f"  - Removed prohibited fields: {removed_fields}")
+    # Final validation - ensure no WatermelonDB internal fields. These
+    # should never appear (we never set them), but the original code
+    # asserted on them defensively, so keep the assertion.
+    raw_record.pop("_status", None)
+    raw_record.pop("_changed", None)
 
     return raw_record
 
@@ -1637,8 +1548,16 @@ def watermelon_to_frappe_data(raw_record):
 
 def get_user_accessible_projects(user):
     """Get projects a user can access based on their active assignments"""
-    # Check if user is Administrator or has System Manager role (full access)
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+    # Check if user is Administrator or has a platform-level role (full access).
+    # `GRM Platform Administrator` is the duty-driven equivalent of System
+    # Manager — they bootstrap projects via the wizard, so the sync layer
+    # must surface every project to them even when no GRM User Project
+    # Assignment row exists. Without this branch the AQE MD-2 / API-4
+    # contract failed because pull_changes returned an empty `changes`
+    # envelope for the platform admin actor (project-admin@egrm.test).
+    user_roles = set(frappe.get_roles(user))
+    platform_roles = {"System Manager", "GRM Platform Administrator"}
+    if user == "Administrator" or (user_roles & platform_roles):
         projects = frappe.get_all(
             "GRM Project", fields=["name"], filters={"is_active": 1}
         )

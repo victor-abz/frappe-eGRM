@@ -5,8 +5,76 @@ from frappe import _
 from frappe.utils import get_datetime, now_datetime
 
 from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
+from egrm.egrm.doctype.grm_user_project_assignment.grm_user_project_assignment import (
+    GOVERNMENT_WORKER_DUTIES,
+    _government_worker_role_names_for_project,
+    _project_role_duties,
+)
 
 log = logging.getLogger(__name__)
+
+
+def _find_pending_assignment_name(user_name: str) -> str | None:
+    """Return the assignment name for any active gov-worker assignment of
+    ``user_name`` whose status is not yet ``Activated``. Duty-driven: a
+    gov-worker is anyone whose Project Role carries Intake or Investigate
+    & Resolve."""
+    rows = frappe.get_all(
+        "GRM User Project Assignment",
+        filters={
+            "user": user_name,
+            "is_active": 1,
+            "activation_status": ["!=", "Activated"],
+        },
+        fields=["name", "role"],
+    )
+    for row in rows:
+        duties = set(_project_role_duties(row.role))
+        if duties & GOVERNMENT_WORKER_DUTIES:
+            return row.name
+    return None
+
+
+def _find_eligible_assignment_for_resend(user_name: str) -> str | None:
+    """Like ``_find_pending_assignment_name`` but also accepts ``Expired``
+    and ``Draft`` so we can re-issue a code."""
+    rows = frappe.get_all(
+        "GRM User Project Assignment",
+        filters={
+            "user": user_name,
+            "is_active": 1,
+            "activation_status": ["in", ["Draft", "Pending Activation", "Expired"]],
+        },
+        fields=["name", "role"],
+    )
+    for row in rows:
+        duties = set(_project_role_duties(row.role))
+        if duties & GOVERNMENT_WORKER_DUTIES:
+            return row.name
+    return None
+
+
+def _find_any_gov_worker_assignment(user_name: str) -> dict | None:
+    """Return the first government-worker assignment for the user (any status)."""
+    rows = frappe.get_all(
+        "GRM User Project Assignment",
+        filters={"user": user_name},
+        fields=[
+            "name",
+            "role",
+            "activation_status",
+            "activation_expires_on",
+            "activated_on",
+            "code_sent_on",
+            "activation_attempts",
+            "position_title",
+        ],
+    )
+    for row in rows:
+        duties = set(_project_role_duties(row.role))
+        if duties & GOVERNMENT_WORKER_DUTIES:
+            return row
+    return None
 
 
 @frappe.whitelist(allow_guest=True)
@@ -41,25 +109,9 @@ def activate_government_worker(email, activation_code, new_password=None):
                 "errors": ["User not found"],
             }
 
-        # Find government worker assignment
-        assignment = frappe.db.get_value(
-            "GRM User Project Assignment",
-            {
-                "user": user_name,
-                "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
-                "activation_status": ["!=", "Activated"],
-            },
-            [
-                "name",
-                "activation_status",
-                "activation_code",
-                "activation_expires_on",
-                "activation_attempts",
-            ],
-            as_dict=True,
-        )
-
-        if not assignment:
+        # Find government worker assignment via duty-driven lookup.
+        assignment_name = _find_pending_assignment_name(user_name)
+        if not assignment_name:
             log.warning(f"No pending activation found for user: {email}")
             return {
                 "success": False,
@@ -67,8 +119,11 @@ def activate_government_worker(email, activation_code, new_password=None):
                 "errors": ["Assignment not found"],
             }
 
-        # Get the assignment document
-        assignment_doc = frappe.get_doc("GRM User Project Assignment", assignment.name)
+        # Get the assignment document. The activation code itself is the
+        # auth token here (callable as Guest), so the save inside
+        # activate_worker must bypass the doctype's role-based permissions.
+        assignment_doc = frappe.get_doc("GRM User Project Assignment", assignment_name)
+        assignment_doc.flags.ignore_permissions = True
 
         # Validate and activate
         try:
@@ -133,17 +188,8 @@ def resend_activation_code(email):
                 "errors": ["User not found"],
             }
 
-        # Find government worker assignment
-        assignment_name = frappe.db.get_value(
-            "GRM User Project Assignment",
-            {
-                "user": user_name,
-                "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
-                "activation_status": ["in", ["Draft", "Pending Activation", "Expired"]],
-            },
-            "name",
-        )
-
+        # Find government worker assignment via duty-driven lookup.
+        assignment_name = _find_eligible_assignment_for_resend(user_name)
         if not assignment_name:
             log.warning(f"No eligible assignment found for resend: {email}")
             return {
@@ -152,8 +198,10 @@ def resend_activation_code(email):
                 "errors": ["Assignment not found"],
             }
 
-        # Get the assignment document and resend code
+        # Get the assignment document and resend code. Guest call path —
+        # bypass role-based perms; the email lookup is the implicit auth.
         assignment_doc = frappe.get_doc("GRM User Project Assignment", assignment_name)
+        assignment_doc.flags.ignore_permissions = True
 
         try:
             result = assignment_doc.resend_activation_code()
@@ -218,24 +266,8 @@ def check_activation_status(email):
                 "errors": ["User not found"],
             }
 
-        # Find government worker assignment
-        assignment_data = frappe.db.get_value(
-            "GRM User Project Assignment",
-            {
-                "user": user_name,
-                "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
-            },
-            [
-                "activation_status",
-                "activation_expires_on",
-                "activated_on",
-                "code_sent_on",
-                "activation_attempts",
-                "position_title",
-            ],
-            as_dict=True,
-        )
-
+        # Find government worker assignment via duty-driven lookup.
+        assignment_data = _find_any_gov_worker_assignment(user_name)
         if not assignment_data:
             return {
                 "success": False,
@@ -337,10 +369,20 @@ def bulk_send_activation_codes(project_code, filters=None):
                 "errors": ["Permission denied"],
             }
 
-        # Build filters
+        # Build filters — duty-driven gov-worker scoping (Intake or Investigate
+        # & Resolve duty on this project's Project Roles).
+        government_worker_roles = _government_worker_role_names_for_project(
+            project_code
+        )
+        if not government_worker_roles:
+            return {
+                "success": False,
+                "message": _("No government worker roles configured for this project"),
+                "errors": ["No matching project roles"],
+            }
         assignment_filters = {
             "project": project_code,
-            "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
+            "role": ["in", government_worker_roles],
             "activation_status": ["in", ["Draft", "Expired"]],
         }
 

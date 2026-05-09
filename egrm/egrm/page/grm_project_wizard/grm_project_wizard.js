@@ -13,10 +13,10 @@ const STEP_TITLES = [
     "Uptake Notes",
     "Administrative Levels",
     "Project Roles",
+    "Departments",
     "Issue Categories & Routing",
     "Issue Types",
     "Issue Statuses",
-    "Departments",
     "SLAs",
     "Citizen Lookups",
     "Notification Templates",
@@ -64,6 +64,19 @@ class GRMProjectWizard {
                 frappe.show_alert({ message: __("Project not found"), indicator: "red" });
             }
         }
+        // ---- AQE test-only override -------------------------------------
+        // The AQE UI-SCREENSHOTS suite captures one PNG per wizard step
+        // for fidelity review. It needs a *deterministic* way to land on
+        // any step without driving the full multi-RPC click flow. When
+        // the URL carries `?aqe_force_step=N` we honour it (clamped to
+        // [1, TOTAL_STEPS]) without persisting it back to the project's
+        // `current_setup_step`. This is purely a renderer override —
+        // unrelated to the production "save & continue" flow.
+        const forced = parseInt(frappe.utils.get_url_arg("aqe_force_step"), 10);
+        if (Number.isFinite(forced) && forced >= 1 && forced <= TOTAL_STEPS) {
+            this.current_step = forced;
+            this._aqe_forced = true;
+        }
         this.render_step();
     }
 
@@ -88,10 +101,10 @@ class GRMProjectWizard {
             2: GRMWizardStep2UptakeNotes,
             3: GRMWizardStep3AdminLevels,
             4: GRMWizardStep4ProjectRoles,
-            5: GRMWizardStep5IssueCategories,
-            6: GRMWizardStep6IssueTypes,
-            7: GRMWizardStep7IssueStatuses,
-            8: GRMWizardStep8Departments,
+            5: GRMWizardStep8Departments,
+            6: GRMWizardStep5IssueCategories,
+            7: GRMWizardStep6IssueTypes,
+            8: GRMWizardStep7IssueStatuses,
             9: GRMWizardStep9SLAs,
             10: GRMWizardStep10CitizenLookups,
             11: GRMWizardStep11NotificationTemplates,
@@ -436,17 +449,22 @@ class GRMWizardStep12Activate {
             // ignore
         }
         try {
-            // Count distinct GRM Issue Categories linked to this project via GRM Project Link child table
-            const r = await frappe.call({
-                method: "frappe.client.get_count",
-                args: {
-                    doctype: "GRM Project Link",
-                    filters: { project, parenttype: "GRM Issue Category" },
-                    debug: 0,
-                },
+            // Count distinct GRM Issue Categories linked to this project.
+            //
+            // We query the PARENT doctype (`GRM Issue Category`) with a
+            // filter on its `grm_project_link` child table — the same
+            // pattern used everywhere else in this wizard (search for
+            // `[["GRM Project Link", "project", "=", ...]]`). Querying the
+            // child `GRM Project Link` directly via `frappe.client.get_count`
+            // raises "Insufficient Permission" for non-System-Manager
+            // users because Frappe's child-table permission machinery
+            // (has_child_permission) defers to the parent's `valid
+            // parentfields`, and `get_count` doesn't pass a parent_doctype
+            // — so the platform-admin actor was unable to land on
+            // wizard Step 12 (Activate) until this rewrite.
+            counts.categories = await frappe.db.count("GRM Issue Category", {
+                filters: [["GRM Project Link", "project", "=", project]],
             });
-            // get_count returns a total of links (one per category in normal use)
-            counts.categories = (r && r.message) ? r.message : 0;
         } catch (e) {
             try {
                 counts.categories = await frappe.db.count("GRM Issue Category");
@@ -476,18 +494,48 @@ class GRMWizardStep12Activate {
     render_action() {
         const p = this.project;
         const $a = this.$body.find("#grm-step12-action").empty();
-        if (p.is_setup_complete) {
-            $a.html(`
+
+        // Pre-flight checkbox row — XD-FIDELITY: xd-links Step 11 specifies
+        // the activation pre-flight as Frappe-style Yes/No checkboxes
+        // (same UX as permission rows). Render the confirmation toggles
+        // unconditionally so the screen reads consistently whether the
+        // project is already active or pending.
+        const already = !!p.is_setup_complete;
+        $a.html(`
+            <div class="grm-activate-preflight" style="border:1px solid var(--border-color, #d1d8dd); border-radius:6px; padding:16px; margin-bottom:16px;">
+              <h4 style="margin-top:0;">${__("Activation pre-flight")}</h4>
+              <div class="form-group" style="margin-bottom:8px;">
+                <label class="checkbox">
+                  <input type="checkbox" id="grm-act-confirm" ${already ? "checked disabled" : ""}>
+                  ${__("I confirm the project setup is complete")}
+                </label>
+              </div>
+              <div class="form-group" style="margin-bottom:8px;">
+                <label class="checkbox">
+                  <input type="checkbox" id="grm-act-notify" ${already ? "checked disabled" : ""}>
+                  ${__("Notify project administrators on activation")}
+                </label>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="checkbox">
+                  <input type="checkbox" id="grm-act-publish" ${already ? "checked disabled" : ""}>
+                  ${__("Publish project to citizen portal")}
+                </label>
+              </div>
+            </div>
+        `);
+
+        if (already) {
+            $a.append(`
                 <div class="alert alert-success" style="margin-bottom:0;">
                   <strong>${__("Project is already active.")}</strong>
                   <a href="/app/grm-project/${encodeURIComponent(p.name)}" class="ml-2">${__("Open project record")}</a>
                 </div>
             `);
-            // Also tell the wizard footer not to suggest activation
             $("#grm-next").prop("disabled", true).text(__("Already Active"));
         } else {
-            $a.html(`
-                <p>${__("Pre-flight: review the summary above. Click \"Activate Project\" to mark setup complete and switch to the Platform workspace.")}</p>
+            $a.append(`
+                <p>${__("Tick the confirmation above, then click \"Activate Project\" to mark setup complete and switch to the Platform workspace.")}</p>
             `);
         }
     }
@@ -502,6 +550,14 @@ class GRMWizardStep12Activate {
         if (this.project.is_setup_complete) {
             // Don't re-activate; treat as no-op success but block the activation call.
             frappe.show_alert({ message: __("Project already active."), indicator: "blue" });
+            return false;
+        }
+        const confirmed = this.$body.find("#grm-act-confirm").is(":checked");
+        if (!confirmed) {
+            frappe.show_alert({
+                message: __("Tick \"I confirm the project setup is complete\" to activate."),
+                indicator: "orange",
+            });
             return false;
         }
         return true;
@@ -1346,7 +1402,7 @@ class GRMWizardStep5IssueCategories {
             <div class="grm-step5" style="max-width: 1100px;">
               <div class="grm-step5-intro" style="margin-bottom: 16px;">
                 <p>${__("Issue Categories define the kinds of grievances this project handles, plus the default routing (which department picks them up, escalation paths, and confidentiality).")}</p>
-                <p class="text-muted small">${__("Each category must be assigned to one of this project's departments. If you haven't created departments yet, set them up in Step 8 first.")}</p>
+                <p class="text-muted small">${__("Each category must be assigned to one of this project's departments. If you haven't created departments yet, set them up in Step 5 first.")}</p>
               </div>
               <div id="grm-step5-notice"></div>
               <div id="grm-step5-table-wrap"></div>
@@ -1367,7 +1423,7 @@ class GRMWizardStep5IssueCategories {
         if (!this.departments.length) {
             $n.html(`
                 <div class="alert alert-warning" style="margin-bottom:12px;">
-                  ${__("No departments defined yet — go to Step 8 first to add departments, then return to this step.")}
+                  ${__("No departments defined yet — go to Step 5 first to add departments, then return to this step.")}
                 </div>
             `);
             this.$body.find("#grm-step5-add").prop("disabled", true);
@@ -1493,7 +1549,7 @@ class GRMWizardStep5IssueCategories {
 
     start_add() {
         if (!this.departments.length) {
-            frappe.show_alert({ message: __("Add a department in Step 8 first."), indicator: "red" });
+            frappe.show_alert({ message: __("Add a department in Step 5 first."), indicator: "red" });
             return;
         }
         this.adding = true;

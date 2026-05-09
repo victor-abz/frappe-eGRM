@@ -1,57 +1,295 @@
+/* GRM Project Wizard — palette aligned with grm-portal/tailwind.config.js
+   primary-500 #24c38b, primary-600 #1da672, accent #2490EF,
+   bg #F8F8F8, text #171717, border #EDEDED, muted #7C7C7C */
+
 .grm-wizard {
-    max-width: 960px;
+    max-width: 1080px;
     margin: 0 auto;
-    padding: 24px 16px;
+    padding: 32px 24px 48px;
+    color: #171717;
+    background: linear-gradient(180deg, #f8fbfa 0%, #f8f8f8 100%);
+    min-height: calc(100vh - 80px);
 }
 
 .grm-wizard-header {
-    margin-bottom: 24px;
+    margin-bottom: 28px;
 }
 
+/* ---- Numbered stepper ---- */
 .grm-wizard-stepper {
     display: flex;
-    gap: 4px;
-    margin-bottom: 16px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 20px;
+    padding: 16px 18px;
+    background: #ffffff;
+    border: 1px solid #EDEDED;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .grm-wizard-stepper .grm-step {
     flex: 1;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--gray-200, #e2e8f0);
+    height: 36px;
+    min-width: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #F1F5F4;
+    color: #7C7C7C;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    border: 1px solid #EDEDED;
+    transition: all 0.18s ease-in-out;
+    position: relative;
+}
+
+.grm-wizard-stepper .grm-step + .grm-step {
+    margin-left: 6px;
 }
 
 .grm-wizard-stepper .grm-step.active {
-    background: var(--primary, #4f46e5);
+    background: linear-gradient(135deg, #24c38b 0%, #1da672 100%);
+    color: #ffffff;
+    border-color: #1da672;
+    box-shadow: 0 4px 14px rgba(36, 195, 139, 0.35);
+    transform: translateY(-1px);
 }
 
 .grm-wizard-stepper .grm-step.done {
-    background: var(--green-500, #10b981);
+    background: #e1f2eb;
+    color: #136949;
+    border-color: #b3e8d1;
 }
 
+.grm-wizard-stepper .grm-step.done::after {
+    content: "✓";
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #1da672;
+    color: #ffffff;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    border: 2px solid #ffffff;
+}
+
+.grm-wizard-stepper .grm-step.pending {
+    background: #ffffff;
+    color: #B0B0B0;
+}
+
+/* ---- Title ---- */
 .grm-wizard-title {
-    font-size: 22px;
-    font-weight: 600;
+    font-size: 26px;
+    font-weight: 700;
     margin: 0;
+    color: #171717;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
 }
 
+.grm-wizard-title::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 22px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #24c38b 0%, #1da672 100%);
+    transform: translateY(2px);
+}
+
+/* ---- Body / form area ---- */
 .grm-wizard-body {
-    min-height: 300px;
-    padding: 16px;
-    background: var(--card-bg, #fff);
-    border: 1px solid var(--gray-200, #e2e8f0);
-    border-radius: 8px;
+    min-height: 360px;
+    padding: 28px 28px 24px;
+    background: #ffffff;
+    border: 1px solid #EDEDED;
+    border-radius: 14px;
     margin-bottom: 24px;
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.04),
+        0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.grm-wizard-body .frappe-control {
+    margin-bottom: 14px;
+}
+
+.grm-wizard-body .control-label {
+    color: #4A4A4A;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.grm-wizard-body input.form-control,
+.grm-wizard-body select.form-control,
+.grm-wizard-body textarea.form-control,
+.grm-wizard-body .input-with-feedback {
+    border: 1px solid #EDEDED;
+    border-radius: 8px;
+    background: #FBFCFC;
+    color: #171717;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.grm-wizard-body input.form-control:focus,
+.grm-wizard-body select.form-control:focus,
+.grm-wizard-body textarea.form-control:focus,
+.grm-wizard-body .input-with-feedback:focus {
+    border-color: #24c38b;
+    box-shadow: 0 0 0 3px rgba(36, 195, 139, 0.18);
+    outline: none;
 }
 
 .grm-wizard-placeholder {
     text-align: center;
-    padding: 48px 16px;
+    padding: 56px 16px;
+    color: #7C7C7C;
 }
 
+.grm-wizard-placeholder h4,
+.grm-wizard-placeholder h3 {
+    color: #171717;
+}
+
+/* ---- Footer / actions ---- */
 .grm-wizard-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 16px;
+    padding: 12px 4px 0;
+}
+
+.grm-wizard-footer .btn {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 10px 22px;
+    transition: all 0.15s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.grm-wizard-footer #grm-prev,
+.grm-wizard-footer .btn-default {
+    background: #ffffff;
+    color: #4A4A4A;
+    border-color: #EDEDED;
+}
+
+.grm-wizard-footer #grm-prev:hover,
+.grm-wizard-footer .btn-default:hover {
+    background: #F8F8F8;
+    border-color: #2490EF;
+    color: #2490EF;
+}
+
+.grm-wizard-footer #grm-next,
+.grm-wizard-footer .btn-primary {
+    background: linear-gradient(135deg, #24c38b 0%, #1da672 100%);
+    color: #ffffff;
+    border-color: #1da672;
+    box-shadow: 0 4px 14px rgba(36, 195, 139, 0.32);
+}
+
+.grm-wizard-footer #grm-next:hover,
+.grm-wizard-footer .btn-primary:hover {
+    background: linear-gradient(135deg, #1da672 0%, #17855b 100%);
+    box-shadow: 0 6px 20px rgba(29, 166, 114, 0.42);
+    transform: translateY(-1px);
+}
+
+#grm-step-status {
+    color: #7C7C7C;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ---- Tables / repeating sections inside steps ---- */
+.grm-wizard-body table {
+    border: 1px solid #EDEDED;
+    border-radius: 10px;
+    overflow: hidden;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.grm-wizard-body table thead th {
+    background: #F8F8F8;
+    color: #4A4A4A;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #EDEDED;
+    padding: 10px 12px;
+}
+
+.grm-wizard-body table tbody td {
+    border-bottom: 1px solid #F2F2F2;
+    padding: 10px 12px;
+    color: #171717;
+}
+
+.grm-wizard-body table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.grm-wizard-body table tbody tr:hover {
+    background: #F8FCFA;
+}
+
+/* ---- Inline action buttons inside steps ---- */
+.grm-wizard-body .btn-xs,
+.grm-wizard-body .btn-sm {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.grm-wizard-body .btn-success {
+    background: #24c38b;
+    border-color: #1da672;
+}
+
+.grm-wizard-body .btn-danger {
+    background: #ef6a78;
+    border-color: #ef6a78;
+}
+
+.grm-wizard-body .btn-info,
+.grm-wizard-body .btn-link {
+    color: #2490EF;
+}
+
+/* ---- Activation step accent ---- */
+.grm-wizard .activation-card {
+    background: linear-gradient(135deg, #edfaf4 0%, #ffffff 100%);
+    border: 1px solid #b3e8d1;
+    border-radius: 12px;
+    padding: 24px;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .grm-wizard {
+        padding: 16px 12px 32px;
+    }
+    .grm-wizard-stepper .grm-step {
+        height: 30px;
+        min-width: 30px;
+        font-size: 11px;
+    }
+    .grm-wizard-title {
+        font-size: 20px;
+    }
 }

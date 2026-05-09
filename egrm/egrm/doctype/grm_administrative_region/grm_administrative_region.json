@@ -34,7 +34,8 @@
    "fieldname": "parent_region",
    "fieldtype": "Link",
    "label": "Parent Region",
-   "options": "GRM Administrative Region"
+   "options": "GRM Administrative Region",
+   "search_index": 1
   },
   {
    "fieldname": "location",
@@ -47,7 +48,8 @@
    "in_list_view": 1,
    "label": "Project",
    "options": "GRM Project",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_1",

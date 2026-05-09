@@ -489,53 +489,73 @@ def get_user_region_assignments(user):
 
 
 def get_user_accessible_regions(user_assignments):
-    """
-    Get all regions accessible to user (including hierarchical children)
-    Automatically handles multiple projects and administrative levels
+    """Resolve every region accessible to the user across all assignments.
+
+    Performance: this used to recurse via ``frappe.get_doc`` per region
+    (N+1 in both directions — root walk + child walk). The bulk-seed at
+    PF-0 puts ~500 regions under one cell of the RW-WB project, which
+    blew the PF-2 budget by ~4x. We now hit each project ONCE with a
+    single ``frappe.get_all`` and walk the tree in memory.
 
     Args:
-        user_assignments (list): User's region assignments
+        user_assignments: list of GRM User Project Assignment dicts.
 
     Returns:
-        list: List of accessible regions with enhanced data
+        list[dict]: enhanced region records, deduped & sorted.
     """
     try:
-        accessible_regions = []
-        processed_regions = set()  # Avoid duplicates
+        if not user_assignments:
+            return []
 
-        # Get unique projects from assignments
-        user_projects = list(
-            set([assignment.project for assignment in user_assignments])
-        )
-        frappe.log(f"Processing regions for projects: {user_projects}")
+        # Group assignments by project so we only fetch each project's
+        # region table once, then assemble the descendant set in memory.
+        assignments_by_project: dict[str, list] = {}
+        for a in user_assignments:
+            if not a.administrative_region or not a.project:
+                continue
+            assignments_by_project.setdefault(a.project, []).append(a)
 
-        for assignment in user_assignments:
-            assigned_region_id = assignment.administrative_region
-            project_id = assignment.project
+        accessible: list[dict] = []
+        processed: set[str] = set()
 
-            # Get the assigned region and all its children
-            region_hierarchy = get_region_hierarchy(assigned_region_id, project_id)
+        for project_id, project_assignments in assignments_by_project.items():
+            project_regions = frappe.get_all(
+                "GRM Administrative Region",
+                fields=[
+                    "name", "region_name", "administrative_level",
+                    "parent_region", "project", "location", "path",
+                ],
+                filters={"project": project_id},
+            )
+            if not project_regions:
+                continue
+            by_parent: dict[str | None, list[dict]] = {}
+            for r in project_regions:
+                by_parent.setdefault(r.get("parent_region"), []).append(r)
+            by_name: dict[str, dict] = {r["name"]: r for r in project_regions}
 
-            for region in region_hierarchy:
-                # Avoid duplicates
-                if region["name"] in processed_regions:
+            for assignment in project_assignments:
+                root_id = assignment.administrative_region
+                if root_id not in by_name:
                     continue
+                # BFS walk of the in-memory adjacency map.
+                stack = [by_name[root_id]]
+                while stack:
+                    region = stack.pop()
+                    if region["name"] in processed:
+                        continue
+                    processed.add(region["name"])
+                    accessible.append(enhance_region_data(region, assignment))
+                    stack.extend(by_parent.get(region["name"], []))
 
-                # Enhance region data
-                enhanced_region = enhance_region_data(region, assignment)
-                accessible_regions.append(enhanced_region)
-                processed_regions.add(region["name"])
-
-        # Sort regions by project, administrative level, and name for better UX
-        accessible_regions.sort(
+        accessible.sort(
             key=lambda x: (
-                x.get("project", ""),
-                x.get("administrative_level", ""),
-                x.get("region_name", ""),
+                x.get("project") or "",
+                x.get("administrative_level") or "",
+                x.get("region_name") or "",
             )
         )
-
-        return accessible_regions
+        return accessible
 
     except Exception as e:
         print(frappe.get_traceback())
@@ -846,6 +866,110 @@ def get_user_context():
         # Get user's roles and permissions
         roles = frappe.get_roles(user)
 
+        # ----------------------------------------------------------------
+        # Batch-fetch lookups (PF-2 hot path).
+        #
+        # Previously every assignment row triggered three single-row
+        # `frappe.db.get_value` calls (project + department + region).
+        # With three project assignments and the bulk-seeded RW-WB hierarchy
+        # this was ~9 round-trips on top of the recursive region walk.
+        # Collapse them into one batched `frappe.get_all` per doctype so
+        # the whole call holds steady under the p50/p95 budget.
+        # ----------------------------------------------------------------
+        project_ids = {a.project for a in assignments if a.project}
+        dept_ids = {a.department for a in assignments if a.department}
+        region_ids = {
+            a.administrative_region for a in assignments
+            if a.administrative_region
+        }
+
+        platform_role_set = {"System Manager", "GRM Platform Administrator"}
+        is_platform_admin = bool(set(roles) & platform_role_set)
+
+        # Platform admins implicitly see every project; pull them all so the
+        # accessible_projects list is complete for the AQE MP-1 contract.
+        if is_platform_admin:
+            all_project_rows = frappe.get_all(
+                "GRM Project",
+                fields=["name", "title", "project_code", "is_active"],
+            )
+            project_lookup = {
+                p["name"]: p for p in all_project_rows
+            }
+        else:
+            if project_ids:
+                project_lookup = {
+                    p["name"]: p for p in frappe.get_all(
+                        "GRM Project",
+                        fields=["name", "title", "project_code", "is_active"],
+                        filters={"name": ["in", list(project_ids)]},
+                    )
+                }
+            else:
+                project_lookup = {}
+
+        dept_lookup = {
+            d["name"]: d for d in (
+                frappe.get_all(
+                    "GRM Issue Department",
+                    fields=["name", "department_name"],
+                    filters={"name": ["in", list(dept_ids)]},
+                ) if dept_ids else []
+            )
+        }
+        region_lookup = {
+            r["name"]: r for r in (
+                frappe.get_all(
+                    "GRM Administrative Region",
+                    fields=["name", "region_name"],
+                    filters={"name": ["in", list(region_ids)]},
+                ) if region_ids else []
+            )
+        }
+
+        # Build the accessible_projects payload from the batched lookup.
+        # Order: every platform project first (when admin), then any
+        # assignment-only projects we somehow missed (defensive — keeps
+        # the contract identical to the prior implementation).
+        seen_projects: set[str] = set()
+        accessible_projects: list[dict] = []
+
+        def _emit_project(p):
+            if not p or p["name"] in seen_projects:
+                return
+            seen_projects.add(p["name"])
+            accessible_projects.append({
+                "id": p["name"],
+                "name": p["name"],
+                "project_name": p.get("title"),
+                "project_code": p.get("project_code"),
+                "active": int(bool(p.get("is_active"))),
+            })
+
+        if is_platform_admin:
+            for p in project_lookup.values():
+                _emit_project(p)
+        for a in assignments:
+            if a.project:
+                _emit_project(project_lookup.get(a.project))
+
+        # has_permission() for `user` does not vary by `role` (it consults
+        # the full role bag via the session/user). The previous code
+        # called it 4×len(roles) times. Compute once.
+        perm_create = frappe.has_permission("GRM Issue", "create", user=user)
+        perm_write = frappe.has_permission("GRM Issue", "write", user=user)
+        perm_delete = frappe.has_permission("GRM Issue", "delete", user=user)
+        perm_assign = frappe.has_permission("GRM Issue", "assign", user=user)
+        per_role_perms = {
+            role: {
+                "create_issue": perm_create,
+                "update_issue": perm_write,
+                "delete_issue": perm_delete,
+                "assign_issue": perm_assign,
+            }
+            for role in roles
+        }
+
         # Build comprehensive user context
         user_context = {
             "status": "success",
@@ -861,48 +985,36 @@ def get_user_context():
                         "id": assignment.name,
                         "project": {
                             "id": assignment.project,
-                            "name": frappe.get_value(
-                                "GRM Project", assignment.project, "title"
+                            "name": (
+                                project_lookup.get(assignment.project, {})
+                                .get("title")
+                                if assignment.project else None
                             ),
                         },
                         "role": assignment.role,
                         "department": {
                             "id": assignment.department,
-                            "name": frappe.get_value(
-                                "GRM Issue Department",
-                                assignment.department,
-                                "department_name",
+                            "name": (
+                                dept_lookup.get(assignment.department, {})
+                                .get("department_name")
+                                if assignment.department else None
                             ),
                         },
                         "region": {
                             "id": assignment.administrative_region,
-                            "name": frappe.get_value(
-                                "GRM Administrative Region",
-                                assignment.administrative_region,
-                                "region_name",
+                            "name": (
+                                region_lookup.get(
+                                    assignment.administrative_region, {}
+                                ).get("region_name")
+                                if assignment.administrative_region else None
                             ),
                         },
                     }
                     for assignment in assignments
                 ],
                 "accessible_regions": accessible_regions,
-                "permissions": {
-                    role: {
-                        "create_issue": frappe.has_permission(
-                            "GRM Issue", "create", user=user
-                        ),
-                        "update_issue": frappe.has_permission(
-                            "GRM Issue", "write", user=user
-                        ),
-                        "delete_issue": frappe.has_permission(
-                            "GRM Issue", "delete", user=user
-                        ),
-                        "assign_issue": frappe.has_permission(
-                            "GRM Issue", "assign", user=user
-                        ),
-                    }
-                    for role in roles
-                },
+                "accessible_projects": accessible_projects,
+                "permissions": per_role_perms,
             },
         }
 
@@ -915,3 +1027,15 @@ def get_user_context():
         print(frappe.get_traceback())
         frappe.log_error(f"Error getting user context: {str(e)}")
         return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist()
+def user_context():
+    """Stable public alias for `get_user_context`.
+
+    The mobile client (and AQE MD-1 / API-3 contract tests) call
+    `/api/method/egrm.api.lookup.user_context`. The legacy implementation
+    lives at `get_user_context`; this thin alias keeps both names callable
+    without duplicating logic.
+    """
+    return get_user_context()

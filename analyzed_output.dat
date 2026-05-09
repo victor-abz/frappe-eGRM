@@ -41,6 +41,14 @@
       "module": "egrm"
     },
     {
+      "name": "EGRM Settings",
+      "backend_file": "egrm/egrm/doctype/egrm_settings/egrm_settings.py",
+      "frontend_file": null,
+      "meta_file": "egrm/egrm/doctype/egrm_settings/egrm_settings.json",
+      "test_file": null,
+      "module": "egrm"
+    },
+    {
       "name": "GRM Issue Log",
       "backend_file": "egrm/egrm/doctype/grm_issue_log/grm_issue_log.py",
       "frontend_file": null,
@@ -57,6 +65,14 @@
       "module": "egrm"
     },
     {
+      "name": "GRM Project Role Duty",
+      "backend_file": "egrm/egrm/doctype/grm_project_role_duty/grm_project_role_duty.py",
+      "frontend_file": null,
+      "meta_file": "egrm/egrm/doctype/grm_project_role_duty/grm_project_role_duty.json",
+      "test_file": null,
+      "module": "egrm"
+    },
+    {
       "name": "GRM Issue Type",
       "backend_file": "egrm/egrm/doctype/grm_issue_type/grm_issue_type.py",
       "frontend_file": "egrm/egrm/doctype/grm_issue_type/grm_issue_type.js",
@@ -69,6 +85,14 @@
       "backend_file": "egrm/egrm/doctype/grm_project_link/grm_project_link.py",
       "frontend_file": null,
       "meta_file": "egrm/egrm/doctype/grm_project_link/grm_project_link.json",
+      "test_file": null,
+      "module": "egrm"
+    },
+    {
+      "name": "GRM Notification Template",
+      "backend_file": "egrm/egrm/doctype/grm_notification_template/grm_notification_template.py",
+      "frontend_file": "egrm/egrm/doctype/grm_notification_template/grm_notification_template.js",
+      "meta_file": "egrm/egrm/doctype/grm_notification_template/grm_notification_template.json",
       "test_file": null,
       "module": "egrm"
     },
@@ -121,6 +145,22 @@
       "module": "egrm"
     },
     {
+      "name": "GRM Project Role",
+      "backend_file": "egrm/egrm/doctype/grm_project_role/grm_project_role.py",
+      "frontend_file": null,
+      "meta_file": "egrm/egrm/doctype/grm_project_role/grm_project_role.json",
+      "test_file": null,
+      "module": "egrm"
+    },
+    {
+      "name": "GRM Duty",
+      "backend_file": "egrm/egrm/doctype/grm_duty/grm_duty.py",
+      "frontend_file": null,
+      "meta_file": "egrm/egrm/doctype/grm_duty/grm_duty.json",
+      "test_file": null,
+      "module": "egrm"
+    },
+    {
       "name": "Android App Version",
       "backend_file": "egrm/egrm/doctype/android_app_version/android_app_version.py",
       "frontend_file": "egrm/egrm/doctype/android_app_version/android_app_version.js",
@@ -145,6 +185,268 @@
   ],
   "symbol_refs": {
     "doctypes": {
+      "Custom DocPerm": {
+        "fields": {
+          "create": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 62,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 56,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "delete": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 63,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 57,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "export": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 65,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 59,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "flags": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 67,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 61,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "insert": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 68,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 62,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "parent": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 53,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 47,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "parentfield": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 55,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 49,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "parenttype": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 54,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 48,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "permlevel": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 57,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 51,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "read": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 58,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 52,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "report": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 64,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 58,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "role": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 56,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 50,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "share": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 66,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 60,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ],
+          "write": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_page_read_to_platform_admin.py",
+              "line": 61,
+              "var": "perm",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/grant_role_read_to_platform_admin.py",
+              "line": 55,
+              "var": "perm",
+              "kind": "attr"
+            }
+          ]
+        }
+      },
+      "EGRM Settings": {
+        "fields": {
+          "enable_public_dashboard": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/egrm_settings/egrm_settings.py",
+              "line": 14,
+              "var": "settings",
+              "kind": "attr"
+            }
+          ],
+          "enable_public_reports": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/egrm_settings/egrm_settings.py",
+              "line": 15,
+              "var": "settings",
+              "kind": "attr"
+            }
+          ]
+        }
+      },
+      "Email Template": {
+        "fields": {
+          "get": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 678,
+              "var": "email_template",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 678,
+              "var": "email_template",
+              "kind": "attr"
+            }
+          ],
+          "response": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 678,
+              "var": "email_template",
+              "kind": "get"
+            }
+          ],
+          "response_html": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 678,
+              "var": "email_template",
+              "kind": "get"
+            }
+          ],
+          "subject": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 676,
+              "var": "email_template",
+              "kind": "attr"
+            }
+          ]
+        }
+      },
       "GRM Administrative Level Type": {
         "fields": {
           "insert": [
@@ -246,13 +548,13 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 333,
+              "line": 345,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 487,
+              "line": 511,
               "var": "region_doc",
               "kind": "attr"
             }
@@ -260,7 +562,7 @@
           "as_dict": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/lookup.py",
-              "line": 575,
+              "line": 595,
               "var": "parent_region",
               "kind": "attr"
             }
@@ -276,13 +578,13 @@
           "insert": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 338,
+              "line": 350,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 492,
+              "line": 516,
               "var": "region_doc",
               "kind": "attr"
             }
@@ -316,31 +618,31 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 340,
+              "line": 352,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 341,
+              "line": 353,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 345,
+              "line": 357,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 494,
+              "line": 518,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 498,
+              "line": 522,
               "var": "region_doc",
               "kind": "attr"
             }
@@ -392,31 +694,31 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/lookup.py",
-              "line": 679,
+              "line": 699,
               "var": "current_region",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/lookup.py",
-              "line": 680,
+              "line": 700,
               "var": "current_region",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/lookup.py",
-              "line": 683,
+              "line": 703,
               "var": "current_region",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 335,
+              "line": 347,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 488,
+              "line": 512,
               "var": "region_doc",
               "kind": "attr"
             }
@@ -436,13 +738,13 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 336,
+              "line": 348,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 490,
+              "line": 514,
               "var": "region_doc",
               "kind": "attr"
             }
@@ -498,19 +800,19 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/lookup.py",
-              "line": 573,
+              "line": 593,
               "var": "parent_region",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 334,
+              "line": 346,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 489,
+              "line": 513,
               "var": "region_doc",
               "kind": "attr"
             }
@@ -538,13 +840,13 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 332,
+              "line": 344,
               "var": "region_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 486,
+              "line": 510,
               "var": "region_doc",
               "kind": "attr"
             }
@@ -553,6 +855,34 @@
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_administrative_region/grm_administrative_region.py",
               "line": 432,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ]
+        }
+      },
+      "GRM Duty": {
+        "fields": {
+          "flags": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/seed_duty_catalog.py",
+              "line": 28,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "insert": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/seed_duty_catalog.py",
+              "line": 29,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "update": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/seed_duty_catalog.py",
+              "line": 27,
               "var": "doc",
               "kind": "attr"
             }
@@ -598,25 +928,25 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 132,
+              "line": 135,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 134,
+              "line": 137,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 771,
+              "line": 809,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 773,
+              "line": 811,
               "var": "issue",
               "kind": "attr"
             }
@@ -706,43 +1036,49 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 358,
+              "line": 376,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 440,
+              "line": 460,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 513,
+              "line": 535,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 581,
+              "line": 605,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 642,
+              "line": 673,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 655,
+              "line": 691,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 920,
+              "line": 958,
+              "var": "issue",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 1046,
               "var": "issue",
               "kind": "attr"
             }
@@ -750,43 +1086,43 @@
           "as_dict": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 212,
+              "line": 215,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 271,
+              "line": 289,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 370,
+              "line": 390,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 452,
+              "line": 474,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 525,
+              "line": 549,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 593,
+              "line": 619,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 667,
+              "line": 705,
               "var": "issue",
               "kind": "attr"
             }
@@ -836,13 +1172,13 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 418,
+              "line": 438,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 419,
+              "line": 439,
               "var": "issue",
               "kind": "attr"
             }
@@ -850,7 +1186,7 @@
           "attachments": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 149,
+              "line": 152,
               "var": "issue",
               "kind": "attr"
             }
@@ -894,25 +1230,25 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 118,
+              "line": 121,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 119,
+              "line": 122,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 763,
+              "line": 801,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 764,
+              "line": 802,
               "var": "issue",
               "kind": "attr"
             }
@@ -920,13 +1256,13 @@
           "category_details": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 120,
+              "line": 123,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 765,
+              "line": 803,
               "var": "issue",
               "kind": "attr"
             }
@@ -934,7 +1270,15 @@
           "comments": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 167,
+              "line": 170,
+              "var": "issue",
+              "kind": "attr"
+            }
+          ],
+          "create": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 264,
               "var": "issue",
               "kind": "attr"
             }
@@ -973,6 +1317,14 @@
               "kind": "attr"
             }
           ],
+          "docstatus": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 1063,
+              "var": "issue",
+              "kind": "attr"
+            }
+          ],
           "escalate_flag": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/server_scripts/issue_actions.py",
@@ -988,21 +1340,31 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 636,
+              "line": 662,
               "var": "issue",
               "kind": "attr"
             }
           ],
-          "escalation_reasons": [
+          "escalated_by": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 640,
+              "line": 664,
               "var": "issue",
               "kind": "attr"
-            },
+            }
+          ],
+          "escalated_date": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 641,
+              "line": 663,
+              "var": "issue",
+              "kind": "attr"
+            }
+          ],
+          "escalation_reason": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 666,
               "var": "issue",
               "kind": "attr"
             }
@@ -1010,8 +1372,26 @@
           "flags": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/sync.py",
-              "line": 1244,
+              "line": 1168,
               "var": "parent_doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/sync.py",
+              "line": 1174,
+              "var": "parent_doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 1064,
+              "var": "issue",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 1065,
+              "var": "issue",
               "kind": "attr"
             }
           ],
@@ -1040,13 +1420,13 @@
           "issue_type": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 127,
+              "line": 130,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 128,
+              "line": 131,
               "var": "issue",
               "kind": "attr"
             }
@@ -1054,7 +1434,7 @@
           "logs": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 158,
+              "line": 161,
               "var": "issue",
               "kind": "attr"
             }
@@ -1092,25 +1472,25 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 146,
+              "line": 149,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 154,
+              "line": 157,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 163,
+              "line": 166,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 270,
+              "line": 288,
               "var": "issue",
               "kind": "attr"
             }
@@ -1166,7 +1546,7 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 568,
+              "line": 592,
               "var": "issue",
               "kind": "attr"
             }
@@ -1196,13 +1576,13 @@
           "region_details": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 136,
+              "line": 139,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 775,
+              "line": 813,
               "var": "issue",
               "kind": "attr"
             }
@@ -1234,7 +1614,7 @@
           "research_result": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 507,
+              "line": 529,
               "var": "issue",
               "kind": "attr"
             }
@@ -1274,13 +1654,13 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 505,
+              "line": 527,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 575,
+              "line": 599,
               "var": "issue",
               "kind": "attr"
             }
@@ -1377,14 +1757,26 @@
               "kind": "attr"
             },
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/scheduled_jobs/sla_monitor.py",
+              "line": 66,
+              "var": "issue",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/sync.py",
-              "line": 1240,
+              "line": 1101,
               "var": "parent_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/sync.py",
-              "line": 1245,
+              "line": 1170,
+              "var": "parent_doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/sync.py",
+              "line": 1175,
               "var": "parent_doc",
               "kind": "attr"
             },
@@ -1396,67 +1788,81 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 354,
-              "var": "issue",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
               "line": 367,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 436,
+              "line": 387,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 449,
+              "line": 456,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 510,
+              "line": 471,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 522,
+              "line": 532,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 578,
+              "line": 546,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 590,
+              "line": 602,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 652,
+              "line": 616,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 664,
+              "line": 688,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 931,
+              "line": 702,
+              "var": "issue",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 971,
+              "var": "issue",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 1066,
+              "var": "issue",
+              "kind": "attr"
+            }
+          ],
+          "send_notification": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/scheduled_jobs/sla_monitor.py",
+              "line": 58,
               "var": "issue",
               "kind": "attr"
             }
@@ -1512,73 +1918,73 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 106,
+              "line": 109,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 107,
+              "line": 110,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 348,
+              "line": 361,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 349,
+              "line": 362,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 350,
+              "line": 363,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 422,
+              "line": 442,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 423,
+              "line": 443,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 433,
+              "line": 453,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 504,
+              "line": 526,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 574,
+              "line": 598,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 754,
+              "line": 792,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 755,
+              "line": 793,
               "var": "issue",
               "kind": "attr"
             }
@@ -1586,13 +1992,13 @@
           "status_details": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 108,
+              "line": 111,
               "var": "issue",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 756,
+              "line": 794,
               "var": "issue",
               "kind": "attr"
             }
@@ -1608,7 +2014,15 @@
           "type_details": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 129,
+              "line": 132,
+              "var": "issue",
+              "kind": "attr"
+            }
+          ],
+          "upload_attachment": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 1085,
               "var": "issue",
               "kind": "attr"
             }
@@ -1620,7 +2034,7 @@
           "as_dict": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 221,
+              "line": 224,
               "var": "category_doc",
               "kind": "attr"
             }
@@ -1658,13 +2072,13 @@
           "category_name": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 122,
+              "line": 125,
               "var": "category_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 767,
+              "line": 805,
               "var": "category_doc",
               "kind": "attr"
             }
@@ -1672,7 +2086,7 @@
           "confidentiality_level": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 123,
+              "line": 126,
               "var": "category_doc",
               "kind": "attr"
             }
@@ -1746,13 +2160,13 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 121,
+              "line": 124,
               "var": "category_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 766,
+              "line": 804,
               "var": "category_doc",
               "kind": "attr"
             }
@@ -1764,19 +2178,19 @@
           "append": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 60,
-              "var": "doc",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 84,
-              "var": "doc",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
               "line": 101,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 126,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 144,
               "var": "doc",
               "kind": "attr"
             }
@@ -1790,7 +2204,7 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 100,
+              "line": 143,
               "var": "doc",
               "kind": "attr"
             }
@@ -1798,19 +2212,19 @@
           "grm_project_link": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 60,
-              "var": "doc",
-              "kind": "append"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 84,
-              "var": "doc",
-              "kind": "append"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
               "line": 101,
+              "var": "doc",
+              "kind": "append"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 126,
+              "var": "doc",
+              "kind": "append"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 144,
               "var": "doc",
               "kind": "append"
             }
@@ -1818,19 +2232,19 @@
           "insert": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 61,
-              "var": "doc",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 85,
-              "var": "doc",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
               "line": 102,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 127,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 145,
               "var": "doc",
               "kind": "attr"
             }
@@ -1838,13 +2252,13 @@
           "update": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 59,
+              "line": 100,
               "var": "doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 83,
+              "line": 125,
               "var": "doc",
               "kind": "attr"
             }
@@ -1856,7 +2270,7 @@
           "as_dict": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 217,
+              "line": 220,
               "var": "status_doc",
               "kind": "attr"
             }
@@ -1864,18 +2278,38 @@
           "final_status": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 111,
+              "line": 114,
               "var": "status_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 759,
+              "line": 797,
               "var": "status_doc",
               "kind": "attr"
             }
           ],
           "initial_status": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 740,
+              "var": "status_doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 115,
+              "var": "status_doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
+              "line": 444,
+              "var": "status_doc",
+              "kind": "attr"
+            }
+          ],
+          "name": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
               "line": 112,
@@ -1884,29 +2318,21 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 424,
-              "var": "status_doc",
-              "kind": "attr"
-            }
-          ],
-          "name": [
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 109,
-              "var": "status_doc",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 757,
+              "line": 795,
               "var": "status_doc",
               "kind": "attr"
             }
           ],
           "open_status": [
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 740,
+              "var": "status_doc",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 113,
+              "line": 116,
               "var": "status_doc",
               "kind": "attr"
             }
@@ -1914,7 +2340,7 @@
           "rejected_status": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 114,
+              "line": 117,
               "var": "status_doc",
               "kind": "attr"
             }
@@ -1922,25 +2348,25 @@
           "status_name": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/stats.py",
-              "line": 465,
+              "line": 467,
               "var": "status_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/stats.py",
-              "line": 555,
+              "line": 557,
               "var": "status_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 110,
+              "line": 113,
               "var": "status_doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 758,
+              "line": 796,
               "var": "status_doc",
               "kind": "attr"
             }
@@ -1952,7 +2378,7 @@
           "as_dict": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 225,
+              "line": 228,
               "var": "type_doc",
               "kind": "attr"
             }
@@ -1960,7 +2386,7 @@
           "name": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 129,
+              "line": 132,
               "var": "type_doc",
               "kind": "attr"
             }
@@ -1968,8 +2394,72 @@
           "type_name": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/issue.py",
-              "line": 129,
+              "line": 132,
               "var": "type_doc",
+              "kind": "attr"
+            }
+          ]
+        }
+      },
+      "GRM Notification Template": {
+        "fields": {
+          "active": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 32,
+              "var": "template",
+              "kind": "attr"
+            }
+          ],
+          "email_template": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 652,
+              "var": "template",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 653,
+              "var": "template",
+              "kind": "attr"
+            }
+          ],
+          "enable_sms": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 655,
+              "var": "template",
+              "kind": "attr"
+            }
+          ],
+          "project": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 34,
+              "var": "template",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 34,
+              "var": "template",
+              "kind": "attr"
+            }
+          ],
+          "render_sms": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 700,
+              "var": "template",
+              "kind": "attr"
+            }
+          ],
+          "sms_message": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 655,
+              "var": "template",
               "kind": "attr"
             }
           ]
@@ -1986,8 +2476,16 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/stats.py",
-              "line": 168,
+              "line": 170,
               "var": "project",
+              "kind": "attr"
+            }
+          ],
+          "auto_escalation_days": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 120,
+              "var": "proj",
               "kind": "attr"
             }
           ],
@@ -2002,8 +2500,24 @@
           "creation": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/stats.py",
-              "line": 169,
+              "line": 171,
               "var": "project",
+              "kind": "attr"
+            }
+          ],
+          "current_setup_step": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 121,
+              "var": "proj",
+              "kind": "attr"
+            }
+          ],
+          "default_language": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 118,
+              "var": "proj",
               "kind": "attr"
             }
           ],
@@ -2015,30 +2529,78 @@
               "kind": "attr"
             },
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 107,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/stats.py",
-              "line": 167,
+              "line": 169,
               "var": "project",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 515,
+              "line": 539,
               "var": "project_doc",
+              "kind": "attr"
+            }
+          ],
+          "enable_notifications": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 641,
+              "var": "project",
+              "kind": "get"
+            }
+          ],
+          "end_date": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 117,
+              "var": "proj",
+              "kind": "attr"
+            }
+          ],
+          "get": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 641,
+              "var": "project",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_issue/grm_issue.py",
+              "line": 645,
+              "var": "project",
               "kind": "attr"
             }
           ],
           "insert": [
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 122,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 519,
+              "line": 543,
               "var": "project_doc",
               "kind": "attr"
             }
           ],
           "is_active": [
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 119,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 518,
+              "line": 542,
               "var": "project_doc",
               "kind": "attr"
             }
@@ -2051,16 +2613,100 @@
               "kind": "attr"
             },
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 127,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 136,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 148,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 156,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 163,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 174,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 183,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 190,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 203,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 211,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 217,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 226,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 236,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 521,
+              "line": 545,
               "var": "project_doc",
               "kind": "attr"
             }
           ],
           "project_code": [
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 105,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 513,
+              "line": 537,
               "var": "project_doc",
               "kind": "attr"
             }
@@ -2080,16 +2726,98 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/stats.py",
-              "line": 166,
+              "line": 168,
               "var": "project",
+              "kind": "attr"
+            }
+          ],
+          "start_date": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 116,
+              "var": "proj",
               "kind": "attr"
             }
           ],
           "title": [
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 106,
+              "var": "proj",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/commands/admin_regions.py",
-              "line": 514,
+              "line": 538,
               "var": "project_doc",
+              "kind": "attr"
+            }
+          ]
+        }
+      },
+      "GRM Project Role": {
+        "fields": {
+          "append": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/backfill_default_project_roles.py",
+              "line": 48,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "description": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/backfill_default_project_roles.py",
+              "line": 44,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "duties": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/backfill_default_project_roles.py",
+              "line": 48,
+              "var": "doc",
+              "kind": "append"
+            }
+          ],
+          "flags": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/backfill_default_project_roles.py",
+              "line": 49,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "insert": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/backfill_default_project_roles.py",
+              "line": 50,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "is_active": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/backfill_default_project_roles.py",
+              "line": 45,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "project": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/backfill_default_project_roles.py",
+              "line": 43,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "role_name": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/backfill_default_project_roles.py",
+              "line": 42,
+              "var": "doc",
               "kind": "attr"
             }
           ]
@@ -2100,7 +2828,7 @@
           "activate_worker": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/activation.py",
-              "line": 73,
+              "line": 129,
               "var": "assignment_doc",
               "kind": "attr"
             }
@@ -2108,7 +2836,7 @@
           "activated_on": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/activation.py",
-              "line": 83,
+              "line": 139,
               "var": "assignment_doc",
               "kind": "attr"
             }
@@ -2116,32 +2844,358 @@
           "activation_status": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/activation.py",
-              "line": 166,
+              "line": 215,
               "var": "assignment_doc",
+              "kind": "attr"
+            }
+          ],
+          "administrative_level": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 165,
+              "var": "d",
+              "kind": "attr"
+            }
+          ],
+          "administrative_region": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 201,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 277,
+              "var": "d",
+              "kind": "attr"
+            }
+          ],
+          "append": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 161,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "assign_role_to_user": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/migrate_users_to_duty_roles.py",
+              "line": 29,
+              "var": "doc",
               "kind": "attr"
             }
           ],
           "code_sent_on": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/activation.py",
-              "line": 167,
+              "line": 216,
               "var": "assignment_doc",
+              "kind": "attr"
+            }
+          ],
+          "description": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 160,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "duties": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 161,
+              "var": "doc",
+              "kind": "append"
+            }
+          ],
+          "expire_activation_code": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/page/grm_users/grm_users.py",
+              "line": 388,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "flags": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/activation.py",
+              "line": 125,
+              "var": "assignment_doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/activation.py",
+              "line": 203,
+              "var": "assignment_doc",
+              "kind": "attr"
+            }
+          ],
+          "group_name": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 237,
+              "var": "d",
+              "kind": "attr"
+            }
+          ],
+          "group_type": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 238,
+              "var": "d",
+              "kind": "attr"
+            }
+          ],
+          "insert": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/page/grm_users/grm_users.py",
+              "line": 328,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 162,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 211,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 168,
+              "var": "d",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 239,
+              "var": "d",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 279,
+              "var": "d",
+              "kind": "attr"
+            }
+          ],
+          "is_active": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/page/grm_users/grm_users.py",
+              "line": 327,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 159,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 203,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 278,
+              "var": "d",
+              "kind": "attr"
+            }
+          ],
+          "name": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/page/grm_users/grm_users.py",
+              "line": 329,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 163,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 214,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "parent_region": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 167,
+              "var": "d",
+              "kind": "attr"
+            }
+          ],
+          "project": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 157,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 200,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 163,
+              "var": "d",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 236,
+              "var": "d",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 276,
+              "var": "d",
+              "kind": "attr"
+            }
+          ],
+          "region_name": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 164,
+              "var": "d",
               "kind": "attr"
             }
           ],
           "resend_activation_code": [
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/page/grm_users/grm_users.py",
+              "line": 378,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/activation.py",
-              "line": 157,
+              "line": 206,
               "var": "assignment_doc",
+              "kind": "attr"
+            }
+          ],
+          "role": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 202,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "role_name": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 158,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "save": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/page/grm_users/grm_users.py",
+              "line": 359,
+              "var": "doc",
               "kind": "attr"
             }
           ],
           "send_activation_email": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/activation.py",
-              "line": 360,
+              "line": 405,
               "var": "assignment_doc",
+              "kind": "attr"
+            }
+          ],
+          "set": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/page/grm_users/grm_users.py",
+              "line": 326,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/page/grm_users/grm_users.py",
+              "line": 358,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "user": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_aqe_projects.py",
+              "line": 199,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/seed_rdap.py",
+              "line": 275,
+              "var": "d",
+              "kind": "attr"
+            }
+          ]
+        }
+      },
+      "Role": {
+        "fields": {
+          "desk_access": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/seed_grm_role_catalog.py",
+              "line": 28,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "disabled": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/seed_grm_role_catalog.py",
+              "line": 29,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "flags": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/seed_grm_role_catalog.py",
+              "line": 30,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "insert": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/seed_grm_role_catalog.py",
+              "line": 31,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "role_name": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/patches/v16_0/seed_grm_role_catalog.py",
+              "line": 27,
+              "var": "doc",
               "kind": "attr"
             }
           ]
@@ -2152,23 +3206,95 @@
           "append": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 140,
-              "var": "user_doc",
+              "line": 262,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 91,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 238,
+              "var": "user",
               "kind": "attr"
             }
           ],
           "email": [
             {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 73,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/lookup.py",
-              "line": 855,
+              "line": 979,
               "var": "user_doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 230,
+              "var": "user",
+              "kind": "attr"
+            }
+          ],
+          "enabled": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 77,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 234,
+              "var": "user",
+              "kind": "attr"
+            }
+          ],
+          "first_name": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 74,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 231,
+              "var": "user",
+              "kind": "attr"
+            }
+          ],
+          "flags": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
+              "line": 265,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
+              "line": 289,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 239,
+              "var": "user",
               "kind": "attr"
             }
           ],
           "full_name": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/lookup.py",
-              "line": 856,
+              "line": 980,
               "var": "user_doc",
               "kind": "attr"
             },
@@ -2180,15 +3306,63 @@
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/stats.py",
-              "line": 688,
+              "line": 690,
               "var": "user_doc",
+              "kind": "attr"
+            }
+          ],
+          "get": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 85,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 86,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 116,
+              "var": "user",
+              "kind": "attr"
+            }
+          ],
+          "insert": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 80,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 240,
+              "var": "user",
+              "kind": "attr"
+            }
+          ],
+          "last_name": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 75,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 232,
+              "var": "user",
               "kind": "attr"
             }
           ],
           "name": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/api/lookup.py",
-              "line": 854,
+              "line": 978,
               "var": "user_doc",
               "kind": "attr"
             }
@@ -2196,60 +3370,198 @@
           "new_password": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 527,
+              "line": 648,
               "var": "user_doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 79,
+              "var": "user",
+              "kind": "attr"
+            }
+          ],
+          "remove": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 88,
+              "var": "user",
               "kind": "attr"
             }
           ],
           "roles": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 137,
-              "var": "user_doc",
+              "line": 257,
+              "var": "user",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 140,
-              "var": "user_doc",
+              "line": 262,
+              "var": "user",
               "kind": "append"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 166,
-              "var": "user_doc",
+              "line": 278,
+              "var": "user",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 166,
+              "line": 288,
+              "var": "user",
+              "kind": "set"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
+              "line": 353,
               "var": "user_doc",
               "kind": "attr"
             },
             {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 236,
-              "var": "user_doc",
-              "kind": "attr"
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 85,
+              "var": "user",
+              "kind": "get"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 86,
+              "var": "user",
+              "kind": "get"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 91,
+              "var": "user",
+              "kind": "append"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 116,
+              "var": "user",
+              "kind": "get"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 238,
+              "var": "user",
+              "kind": "append"
             }
           ],
           "save": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 141,
-              "var": "user_doc",
+              "line": 266,
+              "var": "user",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 167,
-              "var": "user_doc",
+              "line": 290,
+              "var": "user",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
-              "line": 528,
+              "line": 649,
               "var": "user_doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 92,
+              "var": "user",
+              "kind": "attr"
+            }
+          ],
+          "send_welcome_email": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 76,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 233,
+              "var": "user",
+              "kind": "attr"
+            }
+          ],
+          "set": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_user_project_assignment/grm_user_project_assignment.py",
+              "line": 288,
+              "var": "user",
+              "kind": "attr"
+            }
+          ],
+          "user_type": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/cli/sync_test_users.py",
+              "line": 78,
+              "var": "user",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/api/bulk_import.py",
+              "line": 235,
+              "var": "user",
+              "kind": "attr"
+            }
+          ]
+        }
+      },
+      "User Permission": {
+        "fields": {
+          "allow": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/utils/user_permissions.py",
+              "line": 33,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "apply_to_all_doctypes": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/utils/user_permissions.py",
+              "line": 35,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "flags": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/utils/user_permissions.py",
+              "line": 36,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "for_value": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/utils/user_permissions.py",
+              "line": 34,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "insert": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/utils/user_permissions.py",
+              "line": 37,
+              "var": "doc",
+              "kind": "attr"
+            }
+          ],
+          "user": [
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/utils/user_permissions.py",
+              "line": 32,
+              "var": "doc",
               "kind": "attr"
             }
           ]
@@ -2294,19 +3606,19 @@
           "append": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 60,
-              "var": "doc",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 84,
-              "var": "doc",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
               "line": 101,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 126,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 144,
               "var": "doc",
               "kind": "attr"
             }
@@ -2314,7 +3626,7 @@
           "department_name": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 100,
+              "line": 143,
               "var": "doc",
               "kind": "attr"
             }
@@ -2322,19 +3634,19 @@
           "grm_project_link": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 60,
-              "var": "doc",
-              "kind": "append"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 84,
-              "var": "doc",
-              "kind": "append"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
               "line": 101,
+              "var": "doc",
+              "kind": "append"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 126,
+              "var": "doc",
+              "kind": "append"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 144,
               "var": "doc",
               "kind": "append"
             }
@@ -2342,19 +3654,19 @@
           "insert": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 61,
-              "var": "doc",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 85,
-              "var": "doc",
-              "kind": "attr"
-            },
-            {
-              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
               "line": 102,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 127,
+              "var": "doc",
+              "kind": "attr"
+            },
+            {
+              "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
+              "line": 145,
               "var": "doc",
               "kind": "attr"
             }
@@ -2362,13 +3674,13 @@
           "update": [
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 59,
+              "line": 100,
               "var": "doc",
               "kind": "attr"
             },
             {
               "file": "/Users/victor/egrm/apps/egrm/egrm/egrm/doctype/grm_project/grm_project.py",
-              "line": 83,
+              "line": 125,
               "var": "doc",
               "kind": "attr"
             }
@@ -2378,10 +3690,10 @@
     },
     "unknown": {},
     "stats": {
-      "files_scanned": 812,
-      "py_files": 73,
-      "doctypes_detected": 10,
-      "total_field_hits": 326
+      "files_scanned": 12874,
+      "py_files": 164,
+      "doctypes_detected": 19,
+      "total_field_hits": 502
     }
   }
 }

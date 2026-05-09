@@ -309,13 +309,25 @@ class HierarchicalAdminProcessor:
         try:
             self.frappe.log(f"Creating highest level region: {self.highest_level}")
 
+            # Resolve the project-scoped admin level type record name
+            highest_level_doc = frappe.db.get_value(
+                "GRM Administrative Level Type",
+                {"project": self.project_code, "level_name": self.highest_level},
+                "name",
+            )
+            if not highest_level_doc:
+                self.frappe.log_error(
+                    f"Highest level type not found for project {self.project_code}: {self.highest_level}"
+                )
+                return False
+
             # Check if highest level region already exists
             existing = frappe.db.exists(
                 "GRM Administrative Region",
                 {
                     "region_name": self.highest_level,
                     "project": self.project_code,
-                    "administrative_level": self.highest_level,
+                    "administrative_level": highest_level_doc,
                 },
             )
 
@@ -330,7 +342,7 @@ class HierarchicalAdminProcessor:
             # Create new highest level region
             region_doc = frappe.new_doc("GRM Administrative Region")
             region_doc.region_name = self.highest_level
-            region_doc.administrative_level = self.highest_level
+            region_doc.administrative_level = highest_level_doc
             region_doc.project = self.project_code
             region_doc.parent_region = None  # No parent for highest level
             region_doc.path = self.highest_level  # Materialized path
@@ -481,10 +493,22 @@ class HierarchicalAdminProcessor:
                 self.path_to_region[region_path] = existing
                 return True
 
+            # Resolve the project-scoped admin level type record name
+            level_doc_name = frappe.db.get_value(
+                "GRM Administrative Level Type",
+                {"project": self.project_code, "level_name": level_name},
+                "name",
+            )
+            if not level_doc_name:
+                self.frappe.log_error(
+                    f"Admin level type not found for project {self.project_code}: {level_name}"
+                )
+                return False
+
             # Create new region
             region_doc = frappe.new_doc("GRM Administrative Region")
             region_doc.region_name = region_name
-            region_doc.administrative_level = level_name
+            region_doc.administrative_level = level_doc_name
             region_doc.parent_region = parent_region_id
             region_doc.project = self.project_code
             region_doc.path = region_path  # Materialized path

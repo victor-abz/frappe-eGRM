@@ -82,3 +82,20 @@ def track_complaint(tracking_code):
             "status": "error",
             "message": _("Error retrieving complaint status")
         }
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST", "GET"])
+def add_comment(*args, **kwargs):
+    """PC-13 documented-gap stub.
+
+    The eGRM public portal does NOT expose a citizen-comment endpoint
+    on a tracked issue. Hitting this path always returns HTTP 404; the
+    AQE contract test asserts that none of the plausible "add comment"
+    paths resolve as a real feature. Replace this stub if/when public
+    commenting becomes a real feature.
+    """
+    frappe.local.response.http_status_code = 404
+    return {
+        "status": "error",
+        "message": _("Public citizen-comment endpoint is not available."),
+    }

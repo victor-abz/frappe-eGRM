@@ -13,14 +13,31 @@ from egrm.utils.user_permissions import revoke_project_access, sync_assignment
 log = logging.getLogger(__name__)
 
 
-LEGACY_ROLES: set[str] = {
-    "GRM Administrator",
-    "GRM Project Manager",
-    "GRM Department Head",
-    "GRM Field Officer",
-}
-
 GOVERNMENT_WORKER_DUTIES: set[str] = {"Intake", "Investigate & Resolve"}
+
+
+def _government_worker_role_names_for_project(project: str) -> list[str]:
+    """Return Project Role names in `project` whose duty list intersects
+    GOVERNMENT_WORKER_DUTIES. Used to scope activation-code exports to
+    field-staff assignments under the duty-driven schema."""
+    if not project:
+        return []
+    project_roles = frappe.get_all(
+        "GRM Project Role",
+        filters={"project": project, "is_active": 1},
+        pluck="name",
+    )
+    if not project_roles:
+        return []
+    matching = frappe.get_all(
+        "GRM Project Role Duty",
+        filters={
+            "parent": ["in", project_roles],
+            "duty": ["in", list(GOVERNMENT_WORKER_DUTIES)],
+        },
+        pluck="parent",
+    )
+    return list(set(matching))
 
 
 def _project_role_duties(project_role: str) -> list[str]:
@@ -129,45 +146,74 @@ class GRMUserProjectAssignment(Document):
             raise
 
     def validate_role(self):
+        """Ensure ``role`` points to an active Project Role for this project.
+
+        Under the duty-driven schema (post-migration), ``role`` is a Link to
+        ``GRM Project Role`` whose names are project-scoped (e.g.
+        ``RDAP-District GRM Officer``). The Frappe Link constraint already
+        enforces the row exists; here we additionally:
+
+          - Require the role belongs to the same project as the assignment
+            (prevents cross-project role pollution).
+          - Require the role is active (``is_active = 1``).
+        """
         try:
-            # Check if the role exists
-            if not frappe.db.exists("Role", self.role):
-                frappe.throw(_("Role {0} does not exist").format(self.role))
+            if not self.role:
+                frappe.throw(_("Project Role is required"))
 
-            # Check if the role is a GRM role
-            valid_grm_roles = [
-                "GRM Administrator",
-                "GRM Project Manager",
-                "GRM Department Head",
-                "GRM Field Officer"
-            ]
+            if not frappe.db.exists("GRM Project Role", self.role):
+                frappe.throw(
+                    _("Project Role {0} does not exist").format(self.role)
+                )
 
-            if self.role not in valid_grm_roles:
-                frappe.throw(_("Role {0} is not a valid GRM role").format(self.role))
-
+            role_project, role_active = frappe.db.get_value(
+                "GRM Project Role", self.role, ["project", "is_active"]
+            )
+            if role_project != self.project:
+                frappe.throw(
+                    _(
+                        "Project Role {0} belongs to project {1}, not {2}"
+                    ).format(self.role, role_project, self.project)
+                )
+            if not role_active:
+                frappe.throw(
+                    _("Project Role {0} is not active").format(self.role)
+                )
         except Exception as e:
             frappe.log_error(f"Error validating role: {str(e)}")
             raise
 
     def validate_department_and_region(self):
-        try:
-            # Department Head must have a department
-            if self.role == "GRM Department Head" and not self.department:
-                frappe.throw(_("Department Head must have a department assigned"))
+        """Cross-doctype consistency for ``department`` / ``administrative_region``.
 
-            # Field Officer must have an administrative region
-            if self.role == "GRM Field Officer" and not self.administrative_region:
+        Two responsibilities:
+
+        1. **Duty-aware requirement** — if the project role's duties include
+           any government-worker duty (``Intake``, ``Investigate & Resolve``),
+           the assignment must be scoped to a region OR a department.
+
+        2. **Project-scope consistency** — the department (if set) must be
+           linked to the project via ``GRM Project Link``, and the region
+           (if set) must belong to the same project.
+        """
+        try:
+            duties = set(_project_role_duties(self.role))
+            if duties & GOVERNMENT_WORKER_DUTIES and not (
+                self.administrative_region or self.department
+            ):
                 frappe.throw(
-                    _("Field Officer must have an administrative region assigned")
+                    _(
+                        "A government-worker assignment (duties: Intake / "
+                        "Investigate & Resolve) requires either an "
+                        "administrative region or a department."
+                    )
                 )
 
-            # If department is specified, check if it belongs to the project
             if self.department:
                 dept_linked_to_project = frappe.db.exists(
                     "GRM Project Link",
                     {"parent": self.department, "project": self.project},
                 )
-
                 if not dept_linked_to_project:
                     frappe.throw(
                         _("Department {0} is not linked to project {1}").format(
@@ -175,7 +221,6 @@ class GRMUserProjectAssignment(Document):
                         )
                     )
 
-            # If administrative region is specified, check if it belongs to the project
             if self.administrative_region:
                 region_belongs_to_project = (
                     frappe.db.get_value(
@@ -185,7 +230,6 @@ class GRMUserProjectAssignment(Document):
                     )
                     == self.project
                 )
-
                 if not region_belongs_to_project:
                     frappe.throw(
                         _(
@@ -706,22 +750,28 @@ class GRMUserProjectAssignment(Document):
             import io
 
             # Get all government worker assignments for this project
-            assignments = frappe.get_all(
-                "GRM User Project Assignment",
-                filters={
-                    "project": self.project,
-                    "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
-                },
-                fields=[
-                    "user",
-                    "activation_code",
-                    "activation_status",
-                    "position_title",
-                    "administrative_region",
-                    "department",
-                    "activation_expires_on",
-                ],
+            government_worker_roles = _government_worker_role_names_for_project(
+                self.project
             )
+            if government_worker_roles:
+                assignments = frappe.get_all(
+                    "GRM User Project Assignment",
+                    filters={
+                        "project": self.project,
+                        "role": ["in", government_worker_roles],
+                    },
+                    fields=[
+                        "user",
+                        "activation_code",
+                        "activation_status",
+                        "position_title",
+                        "administrative_region",
+                        "department",
+                        "activation_expires_on",
+                    ],
+                )
+            else:
+                assignments = []
 
             # Create CSV content
             output = io.StringIO()
@@ -796,11 +846,16 @@ def export_project_activation_codes(project_code):
         from frappe.utils.file_manager import save_file
 
         # Get all government worker assignments for this project
+        government_worker_roles = _government_worker_role_names_for_project(
+            project_code
+        )
+        if not government_worker_roles:
+            frappe.throw(_("No government worker roles configured for this project"))
         assignments = frappe.get_all(
             "GRM User Project Assignment",
             filters={
                 "project": project_code,
-                "role": ["in", ["GRM Field Officer", "GRM Department Head"]],
+                "role": ["in", government_worker_roles],
             },
             fields=[
                 "user",

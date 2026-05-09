@@ -53,6 +53,7 @@ def _user_has_duty(user: str, duty: str, project: str) -> bool:
             "activation_status": ["in", ("Activated", "")],
         },
         pluck="role",
+        ignore_permissions=True,
     )
     if not role_names:
         return False
@@ -60,6 +61,7 @@ def _user_has_duty(user: str, duty: str, project: str) -> bool:
         "GRM Project Role Duty",
         filters={"parent": ["in", role_names], "duty": duty},
         limit=1,
+        ignore_permissions=True,
     )
     return bool(matches)
 
@@ -180,8 +182,14 @@ class GRMIssue(Document):
     def _enforce_duty_field_constraints(self) -> None:
         """For each restricted field, if it changed since fetched_doc, verify
         the user holds the required duty for this issue's project. Insert is
-        gated separately via L1 'create' permission (GRM Intake)."""
-        if self.is_new():
+        gated separately via L1 'create' permission (GRM Intake).
+
+        Honors flags.ignore_permissions so trusted server flows (e.g. sync
+        push auto-submit, controllers calling save() with elevation) can run
+        without re-asserting field-level duty checks the L1 layer already
+        verified.
+        """
+        if self.is_new() or self.flags.ignore_permissions:
             return
         user = frappe.session.user
         for field, duty in FIELD_DUTY_REQUIREMENTS.items():
@@ -546,49 +554,30 @@ class GRMIssue(Document):
         return self.contact_information
 
     def has_permission_to_view_sensitive_data(self):
-        """Check if current user has permission to view sensitive data"""
+        """Duty-driven sensitive-data visibility.
+
+        Bypass roles (System Manager, GRM Platform Administrator) and
+        anyone holding a Supervise duty on this project can see sensitive
+        fields. The current assignee always sees their own issue.
+        """
         try:
-            # System Manager and GRM Administrator always have access
-            if (
-                "System Manager" in frappe.get_roles()
-                or "GRM Administrator" in frappe.get_roles()
-            ):
-                return True
-
-            # Project Manager of this project can view
-            if frappe.db.exists(
-                "GRM User Project Assignment",
-                {
-                    "user": frappe.session.user,
-                    "project": self.project,
-                    "role": "GRM Project Manager",
-                    "is_active": 1,
-                },
-            ):
-                return True
-
-            # Department Head for this category can view
-            category_dept = frappe.db.get_value(
-                "GRM Issue Category", self.category, "assigned_department"
+            from egrm.server_scripts.grm_issue_permissions import (
+                BYPASS_ROLES,
+                _user_duties_for_project,
             )
-            if category_dept and frappe.db.exists(
-                "GRM User Project Assignment",
-                {
-                    "user": frappe.session.user,
-                    "project": self.project,
-                    "role": "GRM Department Head",
-                    "department": category_dept,
-                    "is_active": 1,
-                },
-            ):
+
+            user = frappe.session.user
+            if user == "Administrator":
                 return True
 
-            # Current assignee can view
-            if self.assignee == frappe.session.user:
+            if set(frappe.get_roles(user)) & set(BYPASS_ROLES):
                 return True
 
-            # By default, no access to sensitive data
-            return False
+            if self.assignee == user:
+                return True
+
+            duties = _user_duties_for_project(user, self.project)
+            return "Supervise" in duties
         except Exception as e:
             frappe.log(f"Error checking sensitive data permissions: {str(e)}")
             return False

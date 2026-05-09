@@ -5,10 +5,19 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "project",
   "age_group",
   "grm_project_link"
  ],
  "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Project",
+   "options": "GRM Project"
+  },
   {
    "fieldname": "age_group",
    "fieldtype": "Data",

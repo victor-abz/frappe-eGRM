@@ -1,11 +1,27 @@
 import frappe
 
 DEFAULT_HOME_PAGE = "grm-portal"
+DEFAULT_DESK_APP = "egrm"
 
 
 def after_install() -> None:
     set_default_home_page()
+    set_default_desk_app()
     seed_desktop_icons()
+
+
+def set_default_desk_app() -> None:
+    """Pin EGRM as the system-wide default desk app.
+
+    Read by `frappe.apps.get_default_path()` so any logged-in user
+    without a per-user `User.default_app` override is routed to
+    `/desk/egrm` instead of the empty `/apps` chooser. Idempotent.
+    """
+    current = frappe.db.get_single_value("System Settings", "default_app")
+    if current == DEFAULT_DESK_APP:
+        return
+    frappe.db.set_single_value("System Settings", "default_app", DEFAULT_DESK_APP)
+    frappe.db.commit()
 
 
 def set_default_home_page() -> None:

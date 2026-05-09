@@ -241,37 +241,6 @@ def get_project_users(doctype, txt, searchfield, start, page_len, filters):
         return []
 
 
-def get_department_head_suggestions(
-    doctype, txt, searchfield, start, page_len, filters
-):
-    """
-    Get user suggestions for department head role
-    """
-    try:
-        department = filters.get("department", "")
-        search_condition = f"AND u.full_name LIKE '%{txt}%'" if txt else ""
-
-        # First try to find users with Department Head role
-        users = frappe.db.sql(
-            f"""
-            SELECT u.name, u.full_name
-            FROM `tabUser` u
-            INNER JOIN `tabHas Role` r ON r.parent = u.name
-            WHERE r.role = 'GRM Department Head'
-            AND u.enabled = 1
-            {search_condition}
-            ORDER BY u.full_name
-            LIMIT {start}, {page_len}
-        """,
-            as_list=1,
-        )
-
-        return users
-    except Exception as e:
-        frappe.log_error(f"Error getting department head suggestions: {str(e)}")
-        return []
-
-
 def get_initial_status(project):
     """
     Get the initial status for a project

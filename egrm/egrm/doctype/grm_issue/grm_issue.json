@@ -760,13 +760,15 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRM Intake"
+   "role": "GRM Intake",
+   "write": 1
   },
   {
    "print": 1,
    "read": 1,
    "report": 1,
    "role": "GRM Review",
+   "submit": 1,
    "write": 1
   },
   {
@@ -774,6 +776,7 @@
    "read": 1,
    "report": 1,
    "role": "GRM Assignment",
+   "submit": 1,
    "write": 1
   },
   {
@@ -789,6 +792,7 @@
    "read": 1,
    "report": 1,
    "role": "GRM Feedback",
+   "submit": 1,
    "write": 1
   },
   {

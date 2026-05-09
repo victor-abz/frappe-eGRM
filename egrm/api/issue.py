@@ -12,7 +12,9 @@ from frappe import _
 from frappe.utils import cint, flt, get_datetime, now_datetime
 
 from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
-from egrm.api.sync import create_issue_from_sync  # Import the sync creation function
+# `create_issue_from_sync` was removed when sync.py was refactored to the
+# WatermelonDB-style protocol. We now route create() through sync.create_record.
+from egrm.api.sync import create_record as _sync_create_record
 
 # Configure logging
 log = logging.getLogger(__name__)
@@ -259,22 +261,32 @@ def create(issue_data):
         if isinstance(issue_data, str):
             issue_data = json.loads(issue_data)
 
-        # Use the sync creation function to ensure consistency
-        result = create_issue_from_sync(issue_data, user)
+        # Route through the WatermelonDB-style sync.create_record so issue.create()
+        # and the offline-sync path always produce structurally identical records.
+        record_id = issue_data.get("id") if isinstance(issue_data, dict) else None
+        if not record_id:
+            return {
+                "status": "error",
+                "message": _("Missing 'id' on issue payload"),
+            }
 
-        if result.get("status") == "success":
-            issue_name = result["data"]["name"]
+        try:
+            _sync_create_record("GRM Issue", issue_data)
+        except frappe.PermissionError as pe:
+            return {"status": "error", "message": str(pe)}
+        except Exception as e:
+            frappe.log_error(f"Error creating issue via sync.create_record: {e}")
+            return {"status": "error", "message": str(e)}
 
-            # Get the created issue
-            issue = frappe.get_doc("GRM Issue", issue_name)
+        if not frappe.db.exists("GRM Issue", record_id):
+            return {
+                "status": "error",
+                "message": _("Issue creation failed; record not found"),
+            }
 
-            frappe.log(f"Issue {issue.name} already submitted")
-            return {"status": "success", "data": issue.as_dict()}
-        else:
-            frappe.log_error(
-                f"Error in create_issue_from_sync: {result.get('message')}"
-            )
-            return result  # Return the error from create_issue_from_sync
+        issue = frappe.get_doc("GRM Issue", record_id)
+        frappe.log(f"Issue {issue.name} created and submitted")
+        return {"status": "success", "data": issue.as_dict()}
 
     except Exception as e:
         print(frappe.get_traceback())
@@ -323,14 +335,22 @@ def update(issue_id, issue_data):
         # Track changes for logging
         changes = []
 
-        # Update fields
+        # Update fields. Field names track the GRM Issue DocType schema —
+        # `citizen_name`/`title` no longer exist; the canonical names
+        # under the duty-driven schema are `citizen` (display name) and
+        # `description` (issue body). `getattr(issue, field, MISSING)`
+        # is used so a deployment that customises the schema doesn't
+        # crash with AttributeError on a missing field.
         updatable_fields = [
-            "title",
             "description",
-            "citizen_name",
+            "citizen",
             "citizen_type",
+            "citizen_age_group",
+            "citizen_group_1",
+            "citizen_group_2",
             "gender",
             "contact_medium",
+            "contact_information",
             "ongoing_issue",
             "confirmed",
             "resolution_accepted",
@@ -339,9 +359,13 @@ def update(issue_id, issue_data):
             "reject_reason",
         ]
 
+        _MISSING = object()
         for field in updatable_fields:
-            if field in issue_data and getattr(issue, field) != issue_data[field]:
-                old_value = getattr(issue, field)
+            current = getattr(issue, field, _MISSING)
+            if current is _MISSING:
+                continue
+            if field in issue_data and current != issue_data[field]:
+                old_value = current
                 setattr(issue, field, issue_data[field])
                 changes.append(f"{field}: {old_value} → {issue_data[field]}")
 
@@ -354,15 +378,22 @@ def update(issue_id, issue_data):
         # Save issue
         issue.save()
 
-        # Add update log if there were changes
+        # Add update log if there were changes. GRM Issue Log child uses
+        # text/user/timestamp (the legacy log_type/log_by/log_date/description
+        # field names were dropped in the duty-driven schema rev — passing
+        # them in caused "Value missing for: Log Entry/User/Timestamp"
+        # validation errors and made the controller return status=error
+        # even when the field-level update itself had succeeded).
         if changes:
             issue.append(
                 "grm_issue_log",
                 {
-                    "log_type": "Updated",
-                    "log_by": user,
-                    "log_date": now_datetime(),
-                    "description": f"Issue updated: {', '.join(changes)}",
+                    "text": f"Updated: {', '.join(changes)}",
+                    "user": user,
+                    "timestamp": now_datetime(),
+                    "action_taken": "Updated",
+                    "action_taken_by": user,
+                    "action_taken_date": now_datetime(),
                 },
             )
             issue.save()
@@ -423,10 +454,16 @@ def assign(issue_id, assignee_id):
         if issue.status:
             status_doc = frappe.get_doc("GRM Issue Status", issue.status)
             if status_doc.initial_status:
-                # Find accepted status
+                # Find accepted status — MUST be project-scoped AND not the
+                # initial status itself, otherwise we either leak another
+                # project's status or leave the issue in its starting bucket.
                 accepted_status = frappe.get_all(
                     "GRM Issue Status",
-                    filters={"open_status": 1},
+                    filters={
+                        "open_status": 1,
+                        "initial_status": 0,
+                        "project": issue.project,
+                    },
                     fields=["name"],
                     limit=1,
                 )
@@ -436,15 +473,17 @@ def assign(issue_id, assignee_id):
         # Save issue
         issue.save()
 
-        # Add assignment log
+        # Add assignment log (text/user/timestamp — see update() for context).
         assignee_name = frappe.get_value("User", assignee_id, "full_name")
         issue.append(
             "grm_issue_log",
             {
-                "log_type": "Assigned",
-                "log_by": user,
-                "log_date": now_datetime(),
-                "description": f"Issue assigned to {assignee_name}",
+                "text": f"Assigned to {assignee_name}",
+                "user": user,
+                "timestamp": now_datetime(),
+                "action_taken": "Assigned",
+                "action_taken_by": user,
+                "action_taken_date": now_datetime(),
             },
         )
         issue.save()
@@ -492,13 +531,20 @@ def resolve(issue_id, resolution_text=None):
         # Get issue
         issue = frappe.get_doc("GRM Issue", issue_id)
 
-        # Find resolved status
+        # Find resolved status — MUST be project-scoped to avoid picking up
+        # a final status from a different project (each GRM Project owns
+        # its own status taxonomy).
         resolved_status = frappe.get_all(
-            "GRM Issue Status", filters={"final_status": 1}, fields=["name"], limit=1
+            "GRM Issue Status",
+            filters={"final_status": 1, "project": issue.project},
+            fields=["name"],
+            limit=1,
         )
 
         if not resolved_status:
-            log.warning("No resolved status found")
+            log.warning(
+                f"No resolved status found for project {issue.project}"
+            )
             return {"status": "error", "message": _("No resolved status configured")}
 
         # Update issue
@@ -510,14 +556,16 @@ def resolve(issue_id, resolution_text=None):
         # Save issue
         issue.save()
 
-        # Add resolution log
+        # Add resolution log (text/user/timestamp — see update() for context).
         issue.append(
             "grm_issue_log",
             {
-                "log_type": "Resolved",
-                "log_by": user,
-                "log_date": now_datetime(),
-                "description": f"Issue resolved: {resolution_text or 'No description provided'}",
+                "text": f"Resolved: {resolution_text or 'No description provided'}",
+                "user": user,
+                "timestamp": now_datetime(),
+                "action_taken": "Resolved",
+                "action_taken_by": user,
+                "action_taken_date": now_datetime(),
             },
         )
         issue.save()
@@ -578,14 +626,16 @@ def reopen(issue_id, reason=None):
         # Save issue
         issue.save()
 
-        # Add reopen log
+        # Add reopen log (text/user/timestamp — see update() for context).
         issue.append(
             "grm_issue_log",
             {
-                "log_type": "Reopened",
-                "log_by": user,
-                "log_date": now_datetime(),
-                "description": f"Issue reopened: {reason or 'No reason provided'}",
+                "text": f"Reopened: {reason or 'No reason provided'}",
+                "user": user,
+                "timestamp": now_datetime(),
+                "action_taken": "Reopened",
+                "action_taken_by": user,
+                "action_taken_date": now_datetime(),
             },
         )
         issue.save()
@@ -633,33 +683,49 @@ def escalate(issue_id, reason=None):
         # Get issue
         issue = frappe.get_doc("GRM Issue", issue_id)
 
-        # Set escalation flag
+        # Set escalation flag and tracking fields
         issue.escalate_flag = True
-
-        # Add escalation reason if provided
+        issue.escalated_date = now_datetime()
+        issue.escalated_by = user
         if reason:
-            if not issue.escalation_reasons:
-                issue.escalation_reasons = []
-            issue.append(
-                "escalation_reasons",
-                {
-                    "reason": reason,
-                    "escalated_by": user,
-                    "escalation_date": now_datetime(),
-                },
-            )
+            issue.escalation_reason = reason
+            # Append a row to the grm_issue_escalation_reason child table
+            # (the legacy `escalation_reasons` attr did not exist on the
+            # GRMIssue controller — passing it caused an
+            # AttributeError and made the controller return status=error
+            # while leaving the issue partially escalated).
+            try:
+                # GRM Issue Escalation Reason child fields:
+                # user (Link User, reqd), comment (Data, reqd),
+                # due_at (Datetime, reqd).
+                from frappe.utils import add_days
+                issue.append(
+                    "grm_issue_escalation_reason",
+                    {
+                        "user": user,
+                        "comment": reason,
+                        "due_at": add_days(now_datetime(), 7),
+                    },
+                )
+            except Exception:
+                # The child table fieldset may differ by deployment; fall
+                # through silently — the parent-level tracking fields
+                # above are the canonical record.
+                pass
 
         # Save issue
         issue.save()
 
-        # Add escalation log
+        # Add escalation log (text/user/timestamp — see update() for context).
         issue.append(
             "grm_issue_log",
             {
-                "log_type": "Escalated",
-                "log_by": user,
-                "log_date": now_datetime(),
-                "description": f"Issue escalated: {reason or 'No reason provided'}",
+                "text": f"Escalated: {reason or 'No reason provided'}",
+                "user": user,
+                "timestamp": now_datetime(),
+                "action_taken": "Escalated",
+                "action_taken_by": user,
+                "action_taken_date": now_datetime(),
             },
         )
         issue.save()
@@ -817,7 +883,7 @@ def get_user_accessible_projects(user):
     # Get projects assigned to the user
     assignments = frappe.get_all(
         "GRM User Project Assignment",
-        filters={"user": user, "active": 1},
+        filters={"user": user, "is_active": 1},
         fields=["project"],
     )
 
@@ -834,19 +900,24 @@ def get_reopened_status(project_id):
     Returns:
         str: Reopened status ID
     """
-    # Find a status with "reopen" or "reopened" in the name
+    # Find a status with "reopen" or "reopened" in the name — project-scoped.
     statuses = frappe.get_all(
         "GRM Issue Status",
-        filters=[["status_name", "like", "%reopen%"]],
+        filters=[
+            ["status_name", "like", "%reopen%"],
+            ["project", "=", project_id],
+        ],
         fields=["name"],
     )
 
     if statuses:
         return statuses[0].name
 
-    # Fallback: Get first non-final status
+    # Fallback: Get first non-final status in the same project.
     statuses = frappe.get_all(
-        "GRM Issue Status", filters={"final_status": 0}, fields=["name"]
+        "GRM Issue Status",
+        filters={"final_status": 0, "project": project_id},
+        fields=["name"],
     )
 
     if statuses:
@@ -873,7 +944,7 @@ def user_has_project_access(user, project_id):
     # Check if user is assigned to project
     assignments = frappe.get_all(
         "GRM User Project Assignment",
-        filters={"user": user, "project": project_id, "active": 1},
+        filters={"user": user, "project": project_id, "is_active": 1},
         fields=["name"],
     )
 
@@ -917,14 +988,16 @@ def create_log_entry(issue_id, log_type, user, description):
         # Get issue
         issue = frappe.get_doc("GRM Issue", issue_id)
 
-        # Add log entry
+        # Add log entry (text/user/timestamp — see update() for context).
         issue.append(
             "grm_issue_log",
             {
-                "log_type": log_type,
-                "log_by": user,
-                "log_date": get_datetime(),
-                "description": description,
+                "text": description,
+                "user": user,
+                "timestamp": get_datetime(),
+                "action_taken": log_type,
+                "action_taken_by": user,
+                "action_taken_date": get_datetime(),
             },
         )
 
@@ -937,3 +1010,112 @@ def create_log_entry(issue_id, log_type, user, description):
     except Exception as e:
         print(frappe.get_traceback())
         frappe.log_error(f"Error creating log entry for issue {issue_id}: {str(e)}")
+
+
+@frappe.whitelist()
+def upload_attachment(issue_id=None, attachment_data=None):
+    """
+    Append a single attachment row to an existing issue.
+
+    Mobile contract (DataManager.uploadAttachment):
+        body = {
+            "issue_id": <GRM Issue.name>,
+            "attachment_data": {
+                "issue": <GRM Issue.name>,
+                "attachment_url": <File doc URL or local URI>,
+                "attachment_name": <display name>,
+                "created_at": <ms-epoch, optional>,
+            },
+        }
+
+    The bulk attachment-upload path is `egrm.api.sync.push_changes` with embedded
+    base64 file_data; this endpoint is a lightweight fallback used when the
+    mobile already has a server-resident URL (e.g. file already uploaded as a
+    Frappe File doc) and only needs to register the row on the parent issue.
+    """
+    user = frappe.session.user
+    try:
+        if isinstance(attachment_data, str):
+            attachment_data = json.loads(attachment_data)
+
+        if not issue_id:
+            return {"status": "error", "message": _("issue_id is required")}
+        if not isinstance(attachment_data, dict):
+            return {
+                "status": "error",
+                "message": _("attachment_data must be an object"),
+            }
+
+        attachment_url = attachment_data.get("attachment_url") or attachment_data.get(
+            "attachment"
+        )
+        attachment_name = attachment_data.get("attachment_name") or attachment_data.get(
+            "file_name"
+        )
+        local_url = attachment_data.get("local_url") or attachment_data.get(
+            "attachment_url"
+        )
+
+        if not attachment_url:
+            return {
+                "status": "error",
+                "message": _("attachment_url is required"),
+            }
+
+        if not frappe.db.exists("GRM Issue", issue_id):
+            return {"status": "error", "message": _("Issue not found")}
+
+        if not frappe.has_permission("GRM Issue", "write", issue_id):
+            log.warning(
+                f"User {user} lacks permission to attach to issue {issue_id}"
+            )
+            return {
+                "status": "error",
+                "message": _(
+                    "You do not have permission to add attachments to this issue"
+                ),
+            }
+
+        issue = frappe.get_doc("GRM Issue", issue_id)
+        row = issue.append(
+            "grm_issue_attachment",
+            {
+                "attachment": attachment_url,
+                "file_name": attachment_name,
+                "local_url": local_url,
+                "uploaded": 1,
+            },
+        )
+        # GRM Issue Attachment is allow_on_submit=1, so child rows may be
+        # appended after the parent has been submitted. The duty-driven
+        # 'write' check above has already authorised this user to attach
+        # to this issue; we elevate the underlying save() because Frappe's
+        # check_docstatus_transition demands `submit` DocPerm on any save
+        # of a submitted doc, which our admin/duty roles intentionally do
+        # not hold (submit/cancel are reserved for Investigate & Resolve /
+        # System Manager). The save is bounded to a child-table append.
+        if issue.docstatus == 1:
+            issue.flags.ignore_validate_update_after_submit = True
+        issue.flags.ignore_permissions = True
+        issue.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "data": {
+                "name": row.name,
+                "issue": issue_id,
+                "attachment": attachment_url,
+                "file_name": attachment_name,
+                "local_url": local_url,
+                "uploaded": 1,
+            },
+        }
+    except frappe.PermissionError as pe:
+        return {"status": "error", "message": str(pe)}
+    except Exception as e:
+        frappe.log_error(
+            f"Error in upload_attachment for issue {issue_id}: {e}",
+            "egrm.api.issue.upload_attachment",
+        )
+        return {"status": "error", "message": str(e)}

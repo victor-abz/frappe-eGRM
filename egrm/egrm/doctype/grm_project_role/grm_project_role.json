@@ -1,7 +1,9 @@
 {
   "actions": [],
   "allow_rename": 1,
-  "autoname": "format:{project}-{role_name}",
+  "autoname": "hash",
+  "naming_rule": "Random",
+  "title_field": "role_name",
   "creation": "2026-04-25 00:00:00",
   "doctype": "DocType",
   "engine": "InnoDB",

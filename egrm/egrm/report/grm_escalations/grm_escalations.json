@@ -1,0 +1,24 @@
+{
+ "add_total_row": 0,
+ "creation": "2026-05-09 13:00:00",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "idx": 0,
+ "is_standard": "Yes",
+ "json": "{\"add_total_row\": 0, \"sort_by\": \"GRM Issue.escalated_date\", \"sort_order\": \"desc\", \"filters\": [[\"GRM Issue\", \"escalate_flag\", \"=\", 1]], \"columns\": [[\"name\", \"GRM Issue\"], [\"title\", \"GRM Issue\"], [\"escalation_count\", \"GRM Issue\"], [\"escalated_date\", \"GRM Issue\"], [\"escalated_by\", \"GRM Issue\"], [\"status\", \"GRM Issue\"]]}",
+ "letter_head": null,
+ "modified": "2026-05-09 13:00:00",
+ "modified_by": "Administrator",
+ "module": "egrm",
+ "name": "GRM Escalations",
+ "owner": "Administrator",
+ "ref_doctype": "GRM Issue",
+ "report_name": "GRM Escalations",
+ "report_type": "Report Builder",
+ "roles": [
+  { "role": "GRM Supervise" },
+  { "role": "GRM Platform Administrator" },
+  { "role": "System Manager" }
+ ]
+}

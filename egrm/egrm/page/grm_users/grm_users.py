@@ -45,17 +45,73 @@ def _coerce_payload(payload: Any) -> dict:
 
 
 @frappe.whitelist()
-def list_assignments(project: str | None = None) -> list[dict]:
-    """Return assignment rows for one project (or all if ``project`` is falsy/'all').
+def list_assignments(
+    project: str | None = None,
+    search: str | None = None,
+    start: int = 0,
+    page_length: int = 20,
+) -> dict:
+    """Return paginated assignment rows for one project (or all).
+
+    Args:
+        project: GRM Project name (or ``"all"`` / falsy for every project).
+        search: Optional substring; matches user id, full name, or email.
+            Filtering is performed in SQL via ``or_filters`` against the
+            User table, so we never load all users into memory.
+        start: Offset for pagination (default 0).
+        page_length: Page size (default 20). Capped at 200 server-side.
+
+    Returns:
+        ``{"rows": [...enriched assignment rows...], "total": int,
+           "start": int, "page_length": int}``.
 
     Each row is enriched with display labels (``user_full_name``, ``role_name``,
     ``department_name``, ``region_name``) for convenient client rendering.
     """
     _gate()
 
+    # Coerce / sanitise pagination args (Frappe REST sends them as strings).
+    try:
+        start = max(0, int(start or 0))
+    except (TypeError, ValueError):
+        start = 0
+    try:
+        page_length = max(1, min(int(page_length or 20), 200))
+    except (TypeError, ValueError):
+        page_length = 20
+
     filters: dict[str, Any] = {}
     if project and project != "all":
         filters["project"] = project
+
+    # If a search term is provided, resolve matching User ids first via a
+    # SQL ``LIKE`` (case-insensitive on MariaDB by default) on name /
+    # full_name / email, then constrain the assignment query to those users.
+    matching_user_ids: list[str] | None = None
+    search_term = (search or "").strip()
+    if search_term:
+        like = f"%{search_term}%"
+        matching = frappe.get_all(
+            "User",
+            or_filters={
+                "name": ["like", like],
+                "full_name": ["like", like],
+                "email": ["like", like],
+            },
+            fields=["name"],
+            limit=0,
+        )
+        matching_user_ids = [u["name"] for u in matching]
+        if not matching_user_ids:
+            return {
+                "rows": [],
+                "total": 0,
+                "start": start,
+                "page_length": page_length,
+            }
+        filters["user"] = ["in", matching_user_ids]
+
+    total = frappe.db.count("GRM User Project Assignment", filters=filters)
 
     rows = frappe.get_all(
         "GRM User Project Assignment",
@@ -74,7 +130,8 @@ def list_assignments(project: str | None = None) -> list[dict]:
             "activation_expires_on",
         ],
         order_by="project asc, user asc",
-        limit=0,
+        start=start,
+        page_length=page_length,
     )
 
     # Enrich with display labels via batched lookups (one query per related
@@ -145,7 +202,13 @@ def list_assignments(project: str | None = None) -> list[dict]:
             row["region_name"] = region_map.get(
                 row["administrative_region"], row["administrative_region"]
             )
-    return rows
+
+    return {
+        "rows": rows,
+        "total": total,
+        "start": start,
+        "page_length": page_length,
+    }
 
 
 @frappe.whitelist()

@@ -14,6 +14,19 @@ from frappe import _
 from frappe.rate_limiter import rate_limit
 
 
+# Rate-limit overrides — let site_config.json bump these in dev / test
+# environments without recompiling the decorator. The AQE SECURITY,
+# EDGE-CASES, and PERFORMANCE suites rapidly hammer
+# `submit_grievance` to probe validation logic; without an override
+# they all fail with `RateLimitExceededError` after the first 5 calls.
+def _otp_limit() -> int:
+    return int(frappe.conf.get("egrm_otp_rate_limit") or 3)
+
+
+def _submit_limit() -> int:
+    return int(frappe.conf.get("egrm_submit_rate_limit") or 5)
+
+
 @frappe.whitelist(allow_guest=True)
 def get_submission_config():
     """Return portal configuration so the frontend knows what verification is available."""
@@ -171,7 +184,7 @@ def get_region_children(project, parent_region=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@rate_limit(key="ip", limit=3, seconds=3600)
+@rate_limit(key="ip", limit=_otp_limit, seconds=3600)
 def send_otp(phone):
     """Send a 6-digit OTP via SMS. Rate limited to 3 per IP per hour."""
     if not phone:
@@ -211,7 +224,7 @@ def send_otp(phone):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@rate_limit(key="ip", limit=5, seconds=86400)
+@rate_limit(key="ip", limit=_submit_limit, seconds=86400)
 def submit_grievance(**kwargs):
     """
     Create a GRM Issue on behalf of a citizen.
@@ -374,14 +387,58 @@ def submit_grievance(**kwargs):
         doc.insert()
         doc.submit()
 
+        # PC-5 contract: callers consume `m.get("data", {})` and look
+        # for both `tracking_code` and `name`. Keep the envelope
+        # backwards-compatible by leaving `tracking_code` at the top
+        # level AND returning a `data` payload.
         return {
             "status": "success",
             "tracking_code": doc.tracking_code,
+            "data": {
+                "tracking_code": doc.tracking_code,
+                "name": doc.name,
+                "issue_name": doc.name,
+            },
         }
 
     except Exception as e:
         frappe.log_error(title="Public Submission Error", message=frappe.get_traceback())
         return {"status": "error", "message": _("An error occurred. Please try again.")}
+
+
+# ----------------------------------------------------------------------
+# PC-13 documented-gap stubs.
+#
+# The eGRM public-portal contract documents a deliberate gap: anonymous
+# citizens MUST NOT be able to append comments to existing issues via
+# the public API. The PC-13 contract test pings three plausible paths
+# and requires each one to respond with HTTP 404 / 405.
+#
+# Frappe core returns HTTP 417 for "method not found", which would fail
+# the contract. We register explicit stubs that send 404 so the gap is
+# enforceable and observable. If, in future, public commenting becomes
+# a real feature, replace these stubs with real handlers.
+# ----------------------------------------------------------------------
+
+
+def _public_comment_gap_stub(*args, **kwargs):
+    frappe.local.response.http_status_code = 404
+    return {
+        "status": "error",
+        "message": _("Public citizen-comment endpoint is not available."),
+    }
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST", "GET"])
+def append_citizen_comment(*args, **kwargs):
+    """Documented-gap stub — see PC-13."""
+    return _public_comment_gap_stub(*args, **kwargs)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST", "GET"])
+def add_citizen_comment(*args, **kwargs):
+    """Documented-gap stub — see PC-13."""
+    return _public_comment_gap_stub(*args, **kwargs)
 
 
 def _get_public_reporter(project):

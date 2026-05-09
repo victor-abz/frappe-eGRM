@@ -21,6 +21,10 @@ const ACTIVATION_INDICATOR = {
     Draft: "grey",
 };
 
+const PAGE_SIZE_CHOICES = [20, 50, 100];
+const DEFAULT_PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 250;
+
 class GRMUsersPage {
     constructor(page) {
         this.page = page;
@@ -34,6 +38,14 @@ class GRMUsersPage {
         this.user_search_timer = null;
         this.user_search_seq = 0;
         this.submitting = false;
+
+        // Pagination + search state
+        this.search_query = "";
+        this.search_timer = null;
+        this.start = 0;
+        this.page_length = DEFAULT_PAGE_SIZE;
+        this.total_count = 0;
+        this.list_seq = 0;              // monotonic to discard stale list responses
 
         this.render_shell();
         this.boot();
@@ -79,6 +91,13 @@ class GRMUsersPage {
     }
 
     render_shell() {
+        const page_size_options = PAGE_SIZE_CHOICES
+            .map((n) => {
+                const sel = n === this.page_length ? "selected" : "";
+                return `<option value="${n}" ${sel}>${n}</option>`;
+            })
+            .join("");
+
         $(this.page.body).html(`
             <div class="grm-users">
               <div class="grm-users-toolbar">
@@ -89,6 +108,20 @@ class GRMUsersPage {
                   <select id="grm-users-project-filter" class="form-control">
                     <option value="all">${__("All Projects")}</option>
                   </select>
+
+                  <div class="grm-users-search">
+                    <input
+                      type="search"
+                      id="grm-users-search"
+                      class="form-control user-search"
+                      placeholder="${__("Search users by name or email…")}"
+                      autocomplete="off"
+                      value="">
+                    <button type="button"
+                            id="grm-users-search-clear"
+                            class="grm-users-search-clear hidden"
+                            aria-label="${__("Clear search")}">×</button>
+                  </div>
                 </div>
                 <div class="grm-users-toolbar-right">
                   <button class="btn btn-primary" id="grm-users-add">
@@ -100,15 +133,86 @@ class GRMUsersPage {
               <div id="grm-users-form" class="grm-users-form hidden"></div>
 
               <div id="grm-users-table-region" class="grm-users-table-region"></div>
+
+              <div class="grm-users-paginator" id="grm-users-paginator">
+                <div class="grm-users-paginator-status" id="grm-users-status">
+                  ${__("Loading…")}
+                </div>
+                <div class="grm-users-paginator-controls">
+                  <label class="control-label" for="grm-users-page-size">
+                    ${__("Page size")}
+                  </label>
+                  <select id="grm-users-page-size"
+                          class="form-control page-size">
+                    ${page_size_options}
+                  </select>
+                  <button type="button"
+                          class="btn btn-default btn-sm prev-page"
+                          id="grm-users-prev"
+                          disabled>‹ ${__("Prev")}</button>
+                  <span class="grm-users-page-numbers"
+                        id="grm-users-page-numbers"></span>
+                  <button type="button"
+                          class="btn btn-default btn-sm next-page"
+                          id="grm-users-next"
+                          disabled>${__("Next")} ›</button>
+                </div>
+              </div>
             </div>
         `);
 
         $("#grm-users-project-filter").on("change", (e) => {
             this.selected_project = $(e.currentTarget).val() || "all";
+            this.start = 0;
             this.reload_assignments();
         });
 
         $("#grm-users-add").on("click", () => this.show_form(null));
+
+        // Search input — debounced 250ms, server-side filtering.
+        const $search = $("#grm-users-search");
+        const $clear = $("#grm-users-search-clear");
+        $search.on("input", (e) => {
+            const val = $(e.currentTarget).val() || "";
+            $clear.toggleClass("hidden", !val);
+            if (this.search_timer) clearTimeout(this.search_timer);
+            this.search_timer = setTimeout(() => {
+                this.search_query = val.trim();
+                this.start = 0;
+                this.reload_assignments();
+            }, SEARCH_DEBOUNCE_MS);
+        });
+        $clear.on("click", () => {
+            $search.val("");
+            $clear.addClass("hidden");
+            if (this.search_timer) clearTimeout(this.search_timer);
+            this.search_query = "";
+            this.start = 0;
+            this.reload_assignments();
+            $search.trigger("focus");
+        });
+
+        // Page-size selector.
+        $("#grm-users-page-size").on("change", (e) => {
+            const n = parseInt($(e.currentTarget).val(), 10) || DEFAULT_PAGE_SIZE;
+            this.page_length = n;
+            this.start = 0;
+            this.reload_assignments();
+        });
+
+        // Prev / Next.
+        $("#grm-users-prev").on("click", () => {
+            const next_start = Math.max(0, this.start - this.page_length);
+            if (next_start === this.start) return;
+            this.start = next_start;
+            this.reload_assignments();
+        });
+        $("#grm-users-next").on("click", () => {
+            const next_start = this.start + this.page_length;
+            if (next_start >= this.total_count) return;
+            this.start = next_start;
+            this.reload_assignments();
+        });
     }
 
     // ---------------------------------------------------------------
@@ -140,9 +244,39 @@ class GRMUsersPage {
             this.selected_project && this.selected_project !== "all"
                 ? this.selected_project
                 : null;
-        const rows = (await this.call("list_assignments", { project })) || [];
+        const seq = ++this.list_seq;
+        const resp = await this.call("list_assignments", {
+            project,
+            search: this.search_query || "",
+            start: this.start,
+            page_length: this.page_length,
+        });
+        if (seq !== this.list_seq) return;       // stale response — discard
+
+        // Backwards-compat: list_assignments now returns
+        //   {rows, total, start, page_length}
+        // but historically returned a bare list. Tolerate either shape.
+        let rows = [];
+        let total = 0;
+        if (Array.isArray(resp)) {
+            rows = resp;
+            total = resp.length;
+        } else if (resp && Array.isArray(resp.rows)) {
+            rows = resp.rows;
+            total = Number.isFinite(resp.total) ? resp.total : rows.length;
+        }
         this.assignments = rows;
+        this.total_count = total;
+
+        // Defensive: if `start` overshoots after a project/search change,
+        // clamp back to page 0 and refetch once.
+        if (this.start > 0 && this.start >= total) {
+            this.start = 0;
+            return this.reload_assignments();
+        }
+
         this.render_table();
+        this.render_paginator();
     }
 
     // ---------------------------------------------------------------
@@ -191,6 +325,80 @@ class GRMUsersPage {
         `);
 
         this.bind_row_actions();
+    }
+
+    render_paginator() {
+        const total = Math.max(0, this.total_count || 0);
+        const page_length = Math.max(1, this.page_length || DEFAULT_PAGE_SIZE);
+        const start = Math.max(0, this.start || 0);
+        const end = total === 0 ? 0 : Math.min(total, start + this.assignments.length);
+        const human_start = total === 0 ? 0 : start + 1;
+
+        const $status = $("#grm-users-status");
+        if (total === 0) {
+            if (this.search_query) {
+                $status.text(__("No users match “{0}”.", [this.search_query]));
+            } else {
+                $status.text(__("No assignments to display."));
+            }
+        } else {
+            $status.text(
+                __("Showing {0}–{1} of {2}", [human_start, end, total]),
+            );
+        }
+
+        // Page numbers (windowed: current ±2, with first/last anchors).
+        const total_pages = Math.max(1, Math.ceil(total / page_length));
+        const current_page = Math.floor(start / page_length) + 1;
+        const $nums = $("#grm-users-page-numbers").empty();
+
+        const make_btn = (label, page_idx, opts = {}) => {
+            const cls = opts.active ? "btn-primary" : "btn-default";
+            const disabled = opts.disabled ? "disabled" : "";
+            return `
+                <button type="button"
+                        class="btn ${cls} btn-sm grm-users-page-num"
+                        data-page="${page_idx}"
+                        ${disabled}>${label}</button>
+            `;
+        };
+
+        if (total > 0) {
+            const pages = new Set();
+            // Always include first + last + current ±2.
+            pages.add(1);
+            pages.add(total_pages);
+            for (let p = current_page - 2; p <= current_page + 2; p++) {
+                if (p >= 1 && p <= total_pages) pages.add(p);
+            }
+            const ordered = Array.from(pages).sort((a, b) => a - b);
+            let prev_p = 0;
+            const html_parts = [];
+            for (const p of ordered) {
+                if (prev_p && p - prev_p > 1) {
+                    html_parts.push(`<span class="grm-users-page-ellipsis">…</span>`);
+                }
+                html_parts.push(make_btn(String(p), p, { active: p === current_page }));
+                prev_p = p;
+            }
+            $nums.html(html_parts.join(""));
+            $nums.find(".grm-users-page-num").on("click", (e) => {
+                const p = parseInt($(e.currentTarget).data("page"), 10) || 1;
+                const next_start = (p - 1) * this.page_length;
+                if (next_start === this.start) return;
+                this.start = next_start;
+                this.reload_assignments();
+            });
+        }
+
+        $("#grm-users-prev").prop("disabled", start <= 0 || total === 0);
+        $("#grm-users-next").prop(
+            "disabled",
+            total === 0 || start + page_length >= total,
+        );
+
+        // Mark the paginator visible (hidden by default until first load completes).
+        $("#grm-users-paginator").toggleClass("is-empty", total === 0);
     }
 
     render_row(row, project_title) {
