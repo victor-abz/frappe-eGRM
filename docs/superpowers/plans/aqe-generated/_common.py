@@ -71,6 +71,116 @@ def state_for(code: str) -> dict | None:
     return None
 
 
+# ----------------------------------------------------------------- bootstrap
+
+# The only credential the test suite hardcodes. Everything else is
+# created at runtime through the wizard Step 9 UI.
+ADMIN_BOOTSTRAP = ("Administrator", "frappe")
+
+# ----------------------------------------------------------------- per-project actors
+
+class NoUsersForProject(Exception):
+    """Raised when get_actor() is called for a project that did not reach Step 9."""
+
+
+# (slot, first_name, last_name, position) — position MUST match a User
+# Type created in wizard Step 3 verbatim, otherwise the resulting user
+# has no duties and downstream auth tests fail with cryptic 403s.
+PROJECT_USER_TEMPLATE: list[tuple[str, str, str, str]] = [
+    ("project_admin",  "Project", "Admin",   "Project Admin"),
+    ("field_officer",  "Field",   "Officer", "Field Officer"),
+    ("triage_officer", "Triage",  "Officer", "Triage Officer"),
+    ("resolver",       "Resolver","User",    "Resolver"),
+    ("grm_officer",    "GRM",     "Officer", "GRM Officer"),
+]
+
+
+def build_step9_csv(project_code: str, top_region: str) -> tuple[str, dict]:
+    """Build the CSV pasted into the wizard Step 9 textarea.
+
+    Returns (csv_text, role_to_email_map). Email format:
+    ``{role-slug}-{project-slug}@egrm.test`` — globally unique, makes
+    cross-project leak detection trivial, and self-documents in logs.
+    """
+    slug = project_code.lower()
+    rows = ["first_name,last_name,position,region,phone,email"]
+    role_map: dict[str, str] = {}
+    for i, (role, fn, ln, position) in enumerate(PROJECT_USER_TEMPLATE, 1):
+        email = f"{role.replace('_', '-')}-{slug}@egrm.test"
+        rows.append(f"{fn},{ln},{position},{top_region},+250700000{i:03d},{email}")
+        role_map[role] = email
+    return ("\n".join(rows), role_map)
+
+
+def get_actor(project_code: str, role: str) -> tuple[str, str]:
+    """Return (email, password) for a wizard-created actor.
+
+    Reads `users.by_role[role]` from the project's wizard_state record
+    and resolves the password as ``entry.get("password") or
+    users["default_password"]``.
+
+    Raises NoUsersForProject if the project did not reach Step 9.
+    Raises KeyError if the project succeeded but the role slot is missing.
+    """
+    proj = state_for(project_code)
+    if not proj or not proj.get("users"):
+        raise NoUsersForProject(project_code)
+    users = proj["users"]
+    entry = users.get("by_role", {}).get(role)
+    if not entry:
+        raise KeyError(f"{project_code} has no actor for role={role}")
+    pwd = entry.get("password") or users["default_password"]
+    return (entry["email"], pwd)
+
+
+def get_activation_code(project_code: str, role: str) -> str:
+    """Return the mobile activation code (NOT the desk password)."""
+    proj = state_for(project_code)
+    if not proj or not proj.get("users"):
+        raise NoUsersForProject(project_code)
+    return proj["users"]["by_role"][role]["activation_code"]
+
+
+def project_codes_with_users() -> list[str]:
+    """Subset of provisioned projects that successfully completed Step 9."""
+    return [p["code"] for p in load_wizard_state() if p.get("users")]
+
+
+def skip_if_no_users(suite, project_code: str,
+                     role: str = "project_admin") -> tuple[str, str] | None:
+    """Helper for downstream suites. Returns (email, pwd) or None.
+
+    On None, emits ``{suite.name}.{project_code}.skipped_no_users`` so
+    cascading auth failures don't pollute the report. Caller should
+    early-`continue` on None.
+    """
+    try:
+        return get_actor(project_code, role)
+    except NoUsersForProject:
+        suite.ok(f"{suite.name}.{project_code}.skipped_no_users", True,
+                 "ONBOARDING did not provision users for this project")
+        return None
+
+
+def validate_wizard_state(state: list[dict]) -> list[str]:
+    """Returns list of structural issues; empty = OK.
+
+    Used by ONBOARDING's ``OB-9.wizard_state_schema_ok`` assertion.
+    """
+    issues: list[str] = []
+    for p in state:
+        users = p.get("users")
+        if users is None:
+            continue  # skipped projects are allowed
+        code = p.get("code", "<unknown>")
+        if "default_password" not in users:
+            issues.append(f"{code}.users missing default_password")
+        for role, _, _, _ in PROJECT_USER_TEMPLATE:
+            if role not in users.get("by_role", {}):
+                issues.append(f"{code}.users.by_role missing {role}")
+    return issues
+
+
 # ----------------------------------------------------------------- assertion helpers
 
 @dataclass
