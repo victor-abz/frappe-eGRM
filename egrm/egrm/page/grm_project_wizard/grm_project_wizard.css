@@ -541,6 +541,60 @@
     background: #fbfbfa;
 }
 
+/* ---- Step 9 (Phase D) — Add panel: Single + Bulk toggle ---- */
+.grm-wizard-body .grm-step9-add-section {
+    margin-top: 16px;
+}
+.grm-wizard-body .grm-step9-add-toggle {
+    display: inline-flex;
+    gap: 0;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #d6dadd;
+}
+.grm-wizard-body .grm-step9-add-toggle .btn {
+    border-radius: 0;
+    border: none;
+    background: #f7f8f9;
+    color: #4a4f53;
+    padding: 6px 14px;
+}
+.grm-wizard-body .grm-step9-add-toggle .btn + .btn {
+    border-left: 1px solid #d6dadd;
+}
+.grm-wizard-body .grm-step9-add-toggle .btn.active {
+    background: #2e86de;
+    color: #fff;
+}
+.grm-wizard-body .grm-step9-add-form {
+    border: 1px solid #DADCDC;
+    border-radius: 6px;
+    padding: 16px;
+    background: #fff;
+}
+.grm-wizard-body .grm-step9-add-form h5 {
+    margin-top: 0;
+    margin-bottom: 14px;
+}
+.grm-wizard-body .grm-step9-add-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+.grm-wizard-body .grm-region-cascade {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+}
+.grm-wizard-body .grm-region-cascade-slot {
+    display: inline-block;
+    margin-right: 8px;
+    margin-bottom: 6px;
+    min-width: 180px;
+    flex: 0 0 auto;
+}
+
 /* ---- Activation step accent ---- */
 .grm-wizard .activation-card {
     background: linear-gradient(135deg, #edfaf4 0%, #ffffff 100%);

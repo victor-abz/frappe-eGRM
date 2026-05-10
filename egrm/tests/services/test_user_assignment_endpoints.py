@@ -1,10 +1,12 @@
-"""Phase C tests — existing-users list/edit/bulk endpoints.
+"""Phase C + D tests — existing-users list/edit/bulk + single-add.
 
 Covers:
-- ``list_project_users`` — pagination, search, role filter.
-- ``update_assignment_field`` — allowlist enforcement + happy-path persist.
-- ``bulk_update_assignments`` — partial failure shape.
-- ``bulk_remove_assignments`` — happy-path delete.
+- ``list_project_users`` — pagination, search, role filter (Phase C).
+- ``update_assignment_field`` — allowlist + happy-path persist (Phase C).
+- ``bulk_update_assignments`` — partial failure shape (Phase C).
+- ``bulk_remove_assignments`` — happy-path delete (Phase C).
+- ``create_assignment`` — happy path + duplicate guard + cross-project
+  role rejection + region-below-role-admin-level rejection (Phase D).
 
 Uses ``frappe.tests.utils.FrappeTestCase`` so the bench test runner
 discovers it.
@@ -20,6 +22,9 @@ from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_assignments impor
     bulk_update_assignments,
     list_project_users,
     update_assignment_field,
+)
+from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_create import (
+    create_assignment,
 )
 
 PROJECT_CODE = "TEST-USER-ASSIGN-A"
@@ -302,3 +307,260 @@ class BulkAssignmentTests(FrappeTestCase):
         self.assertEqual(result["errors"], [])
         for n in names:
             self.assertFalse(frappe.db.exists("GRM User Project Assignment", n))
+
+
+# ---------------------------------------------------------------------------
+# Phase D — ``create_assignment`` single-add endpoint
+# ---------------------------------------------------------------------------
+
+PROJECT_CODE_D = "TEST-USER-ASSIGN-D"
+PROJECT_CODE_D_OTHER = "TEST-USER-ASSIGN-D2"
+
+# Three project levels with explicit `level_order` so the
+# region-below-role-admin-level test has a real hierarchy to lean on.
+LEVEL_ORDERS_D = [
+    ("Province", 1),
+    ("District", 2),
+    ("Sector",   3),
+]
+
+
+class _PhaseDFixture:
+    """Two projects, three admin levels, one province / district / sector
+    chain, two roles (one Province-restricted, one no-restriction), one
+    spare User, and *no* existing assignment.
+
+    Each test mutates this fixture in isolation; ``FrappeTestCase`` rolls
+    back transactions between methods so the seeded rows survive.
+    """
+
+    province_id: str | None = None
+    district_id: str | None = None
+    sector_id: str | None = None
+    province_level: str | None = None
+    district_level: str | None = None
+    sector_level: str | None = None
+    role_province_only: str | None = None  # admin_level = Province
+    role_unrestricted: str | None = None    # admin_level = None
+    role_other_project: str | None = None   # belongs to PROJECT_CODE_D_OTHER
+    user_email = "phase_d_user@example.com"
+
+    @classmethod
+    def seed(cls) -> None:
+        cls.teardown()
+
+        for code in (PROJECT_CODE_D, PROJECT_CODE_D_OTHER):
+            if not frappe.db.exists("GRM Project", code):
+                frappe.get_doc({
+                    "doctype": "GRM Project",
+                    "project_code": code,
+                    "title": code,
+                }).insert(ignore_permissions=True)
+
+        # Build the three-level hierarchy under PROJECT_CODE_D.
+        level_ids: dict[str, str] = {}
+        for level_name, order in LEVEL_ORDERS_D:
+            doc = frappe.get_doc({
+                "doctype": "GRM Administrative Level Type",
+                "project": PROJECT_CODE_D,
+                "level_name": level_name,
+                "level_order": order,
+            }).insert(ignore_permissions=True)
+            level_ids[level_name] = doc.name
+        cls.province_level = level_ids["Province"]
+        cls.district_level = level_ids["District"]
+        cls.sector_level = level_ids["Sector"]
+
+        # Province → District → Sector chain so we can test the
+        # "region below role admin level" rejection.
+        province = frappe.get_doc({
+            "doctype": "GRM Administrative Region",
+            "region_name": "Province D",
+            "project": PROJECT_CODE_D,
+            "administrative_level": cls.province_level,
+        }).insert(ignore_permissions=True)
+        cls.province_id = province.name
+
+        district = frappe.get_doc({
+            "doctype": "GRM Administrative Region",
+            "region_name": "District D",
+            "project": PROJECT_CODE_D,
+            "administrative_level": cls.district_level,
+            "parent_region": cls.province_id,
+        }).insert(ignore_permissions=True)
+        cls.district_id = district.name
+
+        sector = frappe.get_doc({
+            "doctype": "GRM Administrative Region",
+            "region_name": "Sector D",
+            "project": PROJECT_CODE_D,
+            "administrative_level": cls.sector_level,
+            "parent_region": cls.district_id,
+        }).insert(ignore_permissions=True)
+        cls.sector_id = sector.name
+
+        duty = "Supervise" if frappe.db.exists("GRM Duty", "Supervise") else None
+
+        # Role A: admin_level pinned to Province → assigning at Sector
+        # MUST be rejected by `create_assignment`.
+        role_a = frappe.get_doc({
+            "doctype": "GRM Project Role",
+            "project": PROJECT_CODE_D,
+            "role_name": "PhaseD Province Role",
+            "admin_level": cls.province_level,
+            "is_active": 1,
+            "duties": [{"duty": duty}] if duty else [],
+        }).insert(ignore_permissions=True)
+        cls.role_province_only = role_a.name
+
+        # Role B: no admin_level restriction → any region in this project
+        # is acceptable. Used by happy-path + duplicate tests.
+        role_b = frappe.get_doc({
+            "doctype": "GRM Project Role",
+            "project": PROJECT_CODE_D,
+            "role_name": "PhaseD Unrestricted Role",
+            "is_active": 1,
+            "duties": [{"duty": duty}] if duty else [],
+        }).insert(ignore_permissions=True)
+        cls.role_unrestricted = role_b.name
+
+        # Role C: belongs to a *different* project → using it on
+        # PROJECT_CODE_D MUST be rejected.
+        role_c = frappe.get_doc({
+            "doctype": "GRM Project Role",
+            "project": PROJECT_CODE_D_OTHER,
+            "role_name": "PhaseD Other Project Role",
+            "is_active": 1,
+            "duties": [{"duty": duty}] if duty else [],
+        }).insert(ignore_permissions=True)
+        cls.role_other_project = role_c.name
+
+        if not frappe.db.exists("User", cls.user_email):
+            frappe.get_doc({
+                "doctype": "User",
+                "email": cls.user_email,
+                "first_name": "PhaseD",
+                "last_name": "User",
+                "send_welcome_email": 0,
+                "enabled": 1,
+            }).insert(ignore_permissions=True)
+
+        frappe.db.commit()
+
+    @classmethod
+    def teardown(cls) -> None:
+        for code in (PROJECT_CODE_D, PROJECT_CODE_D_OTHER):
+            for assn in frappe.get_all(
+                "GRM User Project Assignment",
+                filters={"project": code},
+                pluck="name",
+            ):
+                _delete_if_exists("GRM User Project Assignment", assn)
+            for role in frappe.get_all(
+                "GRM Project Role", filters={"project": code}, pluck="name",
+            ):
+                _delete_if_exists("GRM Project Role", role)
+            for region in frappe.get_all(
+                "GRM Administrative Region", filters={"project": code}, pluck="name",
+            ):
+                _delete_if_exists("GRM Administrative Region", region)
+            for level in frappe.get_all(
+                "GRM Administrative Level Type",
+                filters={"project": code},
+                pluck="name",
+            ):
+                _delete_if_exists("GRM Administrative Level Type", level)
+            _delete_if_exists("GRM Project", code)
+
+        _delete_if_exists("User", cls.user_email)
+        frappe.db.commit()
+
+
+class CreateAssignmentTests(FrappeTestCase):
+    """Phase D ``create_assignment`` endpoint behaviour."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        _PhaseDFixture.seed()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        _PhaseDFixture.teardown()
+        super().tearDownClass()
+
+    def setUp(self) -> None:
+        super().setUp()
+        frappe.set_user("Administrator")
+        # Ensure no leftover assignment from a prior test method (transaction
+        # rollback between tests handles in-memory state, but committed rows
+        # in the seed may be re-touched by our own happy-path test).
+        for n in frappe.get_all(
+            "GRM User Project Assignment",
+            filters={
+                "project": PROJECT_CODE_D,
+                "user": _PhaseDFixture.user_email,
+            },
+            pluck="name",
+        ):
+            _delete_if_exists("GRM User Project Assignment", n)
+
+    def test_create_assignment_happy(self) -> None:
+        result = create_assignment(
+            project=PROJECT_CODE_D,
+            user=_PhaseDFixture.user_email,
+            role=_PhaseDFixture.role_unrestricted,
+            administrative_region=_PhaseDFixture.sector_id,
+            position_title="District Coordinator",
+        )
+        self.assertIn("name", result)
+        self.assertEqual(result["user"], _PhaseDFixture.user_email)
+        self.assertEqual(result["role"], _PhaseDFixture.role_unrestricted)
+        # Persisted in DB with the right region.
+        self.assertEqual(
+            frappe.db.get_value(
+                "GRM User Project Assignment", result["name"], "administrative_region",
+            ),
+            _PhaseDFixture.sector_id,
+        )
+
+    def test_create_assignment_duplicate_user_raises(self) -> None:
+        # First insert succeeds.
+        create_assignment(
+            project=PROJECT_CODE_D,
+            user=_PhaseDFixture.user_email,
+            role=_PhaseDFixture.role_unrestricted,
+            administrative_region=_PhaseDFixture.sector_id,
+        )
+        # Second insert (any role) for the same (project, user) must fail.
+        with self.assertRaises(frappe.ValidationError) as ctx:
+            create_assignment(
+                project=PROJECT_CODE_D,
+                user=_PhaseDFixture.user_email,
+                role=_PhaseDFixture.role_unrestricted,
+                administrative_region=_PhaseDFixture.sector_id,
+            )
+        self.assertIn("already assigned", str(ctx.exception))
+
+    def test_create_assignment_role_wrong_project_raises(self) -> None:
+        # role_other_project belongs to PROJECT_CODE_D_OTHER, not D.
+        with self.assertRaises(frappe.ValidationError) as ctx:
+            create_assignment(
+                project=PROJECT_CODE_D,
+                user=_PhaseDFixture.user_email,
+                role=_PhaseDFixture.role_other_project,
+                administrative_region=_PhaseDFixture.sector_id,
+            )
+        self.assertIn("does not belong", str(ctx.exception))
+
+    def test_create_assignment_region_below_role_admin_level_raises(self) -> None:
+        # role_province_only.admin_level = Province; assigning at Sector
+        # (deeper level_order) MUST be rejected.
+        with self.assertRaises(frappe.ValidationError) as ctx:
+            create_assignment(
+                project=PROJECT_CODE_D,
+                user=_PhaseDFixture.user_email,
+                role=_PhaseDFixture.role_province_only,
+                administrative_region=_PhaseDFixture.sector_id,
+            )
+        self.assertIn("below the role's allowed admin level", str(ctx.exception))

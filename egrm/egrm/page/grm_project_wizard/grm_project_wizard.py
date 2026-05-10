@@ -617,3 +617,6 @@ from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_assignments impor
     bulk_update_assignments,
     bulk_remove_assignments,
 )
+from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_create import (  # noqa: E402, F401
+    create_assignment,
+)

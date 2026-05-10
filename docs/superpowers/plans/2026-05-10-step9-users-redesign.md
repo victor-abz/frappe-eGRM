@@ -211,9 +211,9 @@ This runs ONCE during `prepare_user_import` to:
 
 ### Phase D — Single-add form (Section B-Single)
 
-- [ ] **D.1** Build `GRMWizardStep9UserAdd` inner class. Use `frappe.get_meta("GRM User Project Assignment").fields` to drive which fields are shown and which are required (red asterisks). User picker uses `frappe.ui.form.make_control`.
-- [ ] **D.2** Region picker: cascading select fed by project's level tree. When user picks a Project Role, the cascade resets to the role's `admin_level` and disables levels below.
-- [ ] **D.3** Submit calls `create_assignment` then auto-refreshes the list above.
+- [x] **D.1** Build `GRMWizardStep9UserAdd` inner class. Use `frappe.get_meta("GRM User Project Assignment").fields` to drive which fields are shown and which are required (red asterisks). User picker uses `frappe.ui.form.make_control`.
+- [x] **D.2** Region picker: cascading select fed by project's level tree. When user picks a Project Role, the cascade resets to the role's `admin_level` and disables levels below.
+- [x] **D.3** Submit calls `create_assignment` then auto-refreshes the list above.
 
 ### Phase E — Bulk import flow (Section B-Bulk)
 
