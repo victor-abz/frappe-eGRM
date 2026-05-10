@@ -593,11 +593,19 @@ def issue_status_seed_defaults(project: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Phase A (Step 9 redesign) — doctype introspection for the bulk-user mapper
+# Phase A + B (Step 9 redesign) — bulk-user mapper + Data Import wrappers
 # ---------------------------------------------------------------------------
-# Endpoints live in `grm_project_wizard_user_import` to keep this module
-# under the 400-line target (see plan §Engineering Conventions clause 4).
+# Endpoints are split across two helper modules to keep each <= 400 lines
+# (plan §Engineering Conventions clause 4):
+#   - `grm_project_wizard_user_import` — Phase A introspection
+#   - `grm_project_wizard_user_data_import` — Phase B Data Import wrappers
 # Re-exported here so frontend RPC paths stay stable.
 from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_import import (  # noqa: E402, F401
     get_assignment_field_meta,
+)
+from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_data_import import (  # noqa: E402, F401
+    prepare_user_import,
+    start_user_import,
+    poll_user_import,
+    download_user_template,
 )

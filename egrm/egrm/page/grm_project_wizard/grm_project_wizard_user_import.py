@@ -1,29 +1,39 @@
-"""Whitelisted endpoints for Step 9 (Users) bulk-import flow.
+"""Whitelisted endpoints for Step 9 (Users) bulk-import flow — Phase A.
 
-Split out from ``grm_project_wizard.py`` per plan §Engineering Conventions
-clause 4 (modules ≤ 400 lines). Phase A only adds doctype introspection;
-later phases (B–E) will land:
+Hosts the doctype-introspection endpoint consumed by the Step 9
+column-mapper UI:
 
-- ``prepare_user_import`` — calls ``services.user_import.materialize_staged_csv``
-  and creates the wrapping ``Data Import`` record.
-- ``start_user_import`` — calls Frappe's
-  ``form_start_import``.
-- ``poll_user_import`` — returns Data Import status / log preview for the
-  Step 9 UI to render inline.
-- ``download_user_template`` — generates a project-tailored CSV/XLSX skeleton.
+- ``get_assignment_field_meta(project)`` — returns picker options for the
+  source-header → target-field dropdown plus the project's level types
+  and active roles.
 
-Endpoints are re-exported from ``grm_project_wizard.py`` so the JS RPC
-paths (``egrm.egrm.page.grm_project_wizard.grm_project_wizard.<method>``)
-keep working.
+The Phase B Data Import wrapper endpoints
+(``prepare_user_import``, ``start_user_import``, ``poll_user_import``,
+``download_user_template``) live in
+``grm_project_wizard_user_data_import.py`` to keep each module under the
+400-line target (plan §Engineering Conventions clause 4). All endpoints
+are re-exported from ``grm_project_wizard.py`` so the JS RPC paths
+(``egrm.egrm.page.grm_project_wizard.grm_project_wizard.<method>``) keep
+working unchanged.
 """
 
 from __future__ import annotations
 
 import frappe
 
-from egrm.egrm.page.grm_project_wizard.grm_project_wizard import (
-    _require_wizard_role,
-)
+
+def _require_wizard_role() -> None:
+    """Lazy-import shim to avoid a circular import with ``grm_project_wizard``.
+
+    The wizard module re-exports our endpoints at the bottom of its own
+    body; importing ``_require_wizard_role`` at module top would close
+    the cycle and fail with a partially-initialized module error when
+    this file is imported first (e.g. by a test).
+    """
+    from egrm.egrm.page.grm_project_wizard.grm_project_wizard import (
+        _require_wizard_role as _impl,
+    )
+    return _impl()
 
 # Field types that have no business showing up in a CSV mapper picker:
 # UI breaks (Section/Column/Tab) cannot carry data, and Tables are flattened

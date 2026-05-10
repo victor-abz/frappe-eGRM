@@ -198,10 +198,10 @@ This runs ONCE during `prepare_user_import` to:
 
 ### Phase B — Wrap Data Import (server)
 
-- [ ] **B.1** Add `prepare_user_import(project, file_url, header_mapping, level_mapping, auto_create_regions)` whitelisted endpoint. Steps: (1) read uploaded file from `file_url`, (2) call `materialize_staged_csv`, (3) save staged CSV under `private/files/grm_user_import/`, (4) create a `Data Import` record with `reference_doctype="GRM User Project Assignment"`, `import_type="Insert New Records"`, `import_file=<staged>`, (5) return preview rows + `data_import` name.
-- [ ] **B.2** Add `start_user_import(data_import)` whitelisted endpoint that calls `frappe.core.doctype.data_import.data_import.form_start_import(data_import)`.
-- [ ] **B.3** Add `poll_user_import(data_import)` whitelisted endpoint that returns `{status, payload_count, import_log_preview, succeeded, failed}` from the Data Import doc.
-- [ ] **B.4** Add `download_user_template(project, format)` — generates CSV (or XLSX) with one column per project's level type + required User/Assignment fields. Reuse `frappe.utils.xlsxutils`.
+- [x] **B.1** Add `prepare_user_import(project, file_url, header_mapping, level_mapping, auto_create_regions)` whitelisted endpoint. Steps: (1) read uploaded file from `file_url`, (2) call `materialize_staged_csv`, (3) save staged CSV under `private/files/grm_user_import/`, (4) create a `Data Import` record with `reference_doctype="GRM User Project Assignment"`, `import_type="Insert New Records"`, `import_file=<staged>`, (5) return preview rows + `data_import` name.
+- [x] **B.2** Add `start_user_import(data_import)` whitelisted endpoint that calls `frappe.core.doctype.data_import.data_import.form_start_import(data_import)`.
+- [x] **B.3** Add `poll_user_import(data_import)` whitelisted endpoint that returns `{status, payload_count, import_log_preview, succeeded, failed}` from the Data Import doc.
+- [x] **B.4** Add `download_user_template(project, format)` — generates CSV (or XLSX) with one column per project's level type + required User/Assignment fields. Reuse `frappe.utils.xlsxutils`.
 
 ### Phase C — Existing-users panel (Section A of Step 9)
 
