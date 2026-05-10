@@ -192,9 +192,9 @@ This runs ONCE during `prepare_user_import` to:
 
 ### Phase A — Service module + doctype introspection (server only)
 
-- [ ] **A.1** Create `egrm/services/user_import.py` with: `resolve_region(...)`, `auto_detect_mapping(headers, project_meta)`, `validate_mapping(mapping, project_meta)`, `materialize_staged_csv(rows, mapping, project, auto_create_regions)`.
-- [ ] **A.2** Add unit test `tests/services/test_user_import.py` covering: 3-level hierarchy resolution, partial path (only Province + District given), missing-region with `auto_create=False` raises, missing-region with `auto_create=True` creates the chain.
-- [ ] **A.3** Add `get_assignment_field_meta(project)` whitelisted endpoint that returns: doctype field metadata for `GRM User Project Assignment` + `User`, project's level types ordered by `level` (highest first), project's roles with their `admin_level` link.
+- [x] **A.1** Create `egrm/services/user_import.py` with: `resolve_region(...)`, `auto_detect_mapping(headers, project_meta)`, `validate_mapping(mapping, project_meta)`, `materialize_staged_csv(rows, mapping, project, auto_create_regions)`.
+- [x] **A.2** Add unit test `tests/services/test_user_import.py` covering: 3-level hierarchy resolution, partial path (only Province + District given), missing-region with `auto_create=False` raises, missing-region with `auto_create=True` creates the chain.
+- [x] **A.3** Add `get_assignment_field_meta(project)` whitelisted endpoint that returns: doctype field metadata for `GRM User Project Assignment` + `User`, project's level types ordered by `level` (highest first), project's roles with their `admin_level` link.
 
 ### Phase B — Wrap Data Import (server)
 

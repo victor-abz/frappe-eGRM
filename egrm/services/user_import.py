@@ -138,26 +138,24 @@ def resolve_region(
 # A.1 — auto_detect_mapping
 # ---------------------------------------------------------------------------
 
-_USER_REQUIRED_LABELS = {
-    # User doctype fields the wizard *always* needs (even though
-    # ``frappe.get_meta('User').fields`` may flag others as reqd, the
-    # wizard's contract is: at minimum email + first_name + last_name).
-    "email": "User.email",
-    "first_name": "User.first_name",
-    "last_name": "User.last_name",
-}
-
-
 def _normalize(label: str) -> str:
     """Lower, strip whitespace/underscores/non-alnum — for fuzzy matching."""
     return re.sub(r"[^a-z0-9]+", "", (label or "").lower())
 
 
 def _user_field_lookup() -> dict[str, str]:
-    """Map normalized User-doctype label/fieldname -> ``User.<fieldname>``."""
+    """Map normalized User-doctype label/fieldname -> ``User.<fieldname>``.
+
+    Excludes ``full_name`` — Frappe computes it from ``first_name`` +
+    ``last_name`` at save time, so importing into it is a no-op. We also
+    exclude it so a header literally named "Full Name" falls through to
+    the name-split heuristic (which flags it for user confirmation).
+    """
     out: dict[str, str] = {}
     for f in frappe.get_meta("User").fields:
         if not f.fieldname or f.fieldtype in ("Section Break", "Column Break", "Tab Break", "Table"):
+            continue
+        if f.fieldname == "full_name":
             continue
         out[_normalize(f.fieldname)] = f"User.{f.fieldname}"
         if f.label:
@@ -196,21 +194,29 @@ def _project_level_lookup(project_meta: dict) -> dict[str, str]:
 
 
 def auto_detect_mapping(headers: list[str], project_meta: dict) -> dict:
-    """Best-effort mapping ``{source_header: {target, level_type}}``.
+    """Best-effort mapping ``{source_header: {target, level_type, ...}}``.
 
-    Heuristic (per plan §"Auto-detect heuristic"):
+    Heuristic (matches plan §"Auto-detect heuristic" lines 111-115 in
+    ``docs/superpowers/plans/2026-05-10-step9-users-redesign.md`` — that
+    plan is the authoritative order):
 
-    1. Header fuzzy match against ``GRM Administrative Level Type.level_name``
-       for the project → propose ``administrative_region`` with that level.
-       This is checked **first** so a column literally named "Province" or
-       "District" lands on the region target instead of a chance match
-       against an unrelated User/Assignment field.
-    2. Header fuzzy match against ``User``-doctype field labels/fieldnames.
-    3. Header fuzzy match against ``GRM User Project Assignment``-doctype
-       field labels/fieldnames.
-    4. Headers containing "name" → ``User.first_name`` / ``User.last_name``
-       split heuristic (``full name`` / ``fullname`` → first_name with a
-       warning so the UI can flag a split-needed banner).
+    1. Header fuzzy match against ``User``-doctype field labels/fieldnames,
+       then against ``GRM User Project Assignment`` field labels/fieldnames
+       (case-insensitive, strip spaces/underscores).
+    2. For unmatched columns, fuzzy match against
+       ``GRM Administrative Level Type.level_name`` rows for the project —
+       if matched, propose ``administrative_region`` + that level.
+    3. Headers containing "name" → ``User.first_name`` / ``User.last_name``
+       (split-needed when the header is just "name" or "full name" — we
+       attach ``needs_split: True`` + a ``warning`` string so the UI can
+       render a confirm-or-split prompt; user confirms in Phase E).
+
+    Rationale for doctype-first ordering: plan order. The current
+    User/Assignment doctypes have no field whose label matches a common
+    admin-level name ("Province", "District", "Sector", "County", "Cell"),
+    so today there is no collision. If a future project ever defines a
+    level type whose name shadows a real doctype field label, the user
+    can override the auto-detected target in the mapper UI.
 
     Unrecognized headers get ``target == TARGET_SKIP``.
     """
@@ -225,24 +231,33 @@ def auto_detect_mapping(headers: list[str], project_meta: dict) -> dict:
             mapping[header] = {"target": TARGET_SKIP, "level_type": None}
             continue
 
-        # 1. Admin level match
-        if norm in level_lookup:
-            mapping[header] = {"target": TARGET_REGION, "level_type": level_lookup[norm]}
-            continue
-
-        # 2. User field match (prefer User.email / User.first_name etc.)
+        # 1a. User field match (prefer User.email / User.first_name etc.)
         if norm in user_fields:
             mapping[header] = {"target": user_fields[norm], "level_type": None}
             continue
 
-        # 3. Assignment field match
+        # 1b. Assignment field match
         if norm in asgn_fields:
             mapping[header] = {"target": asgn_fields[norm], "level_type": None}
             continue
 
-        # 4. "name"-bearing header heuristic
+        # 2. Admin-level match for unmatched columns
+        if norm in level_lookup:
+            mapping[header] = {"target": TARGET_REGION, "level_type": level_lookup[norm]}
+            continue
+
+        # 3. "name"-bearing header heuristic. If the header is just "name"
+        # or "full name", we can't tell first vs last — flag for the UI.
         if norm in {"fullname", "name"}:
-            mapping[header] = {"target": "User.first_name", "level_type": None}
+            mapping[header] = {
+                "target": "User.first_name",
+                "level_type": None,
+                "needs_split": True,
+                "warning": (
+                    "May contain full name — confirm this maps to first name only, "
+                    "or split into two columns"
+                ),
+            }
             continue
         if "first" in norm and "name" in norm:
             mapping[header] = {"target": "User.first_name", "level_type": None}

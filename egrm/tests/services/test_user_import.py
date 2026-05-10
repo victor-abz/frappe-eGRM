@@ -300,6 +300,32 @@ class UserImportMappingTests(FrappeTestCase):
         self.assertEqual(result["missing_required"], [])
         self.assertEqual(result["errors"], [])
 
+    def test_auto_detect_full_name_header_emits_warning(self) -> None:
+        # Header "Full Name" cannot be split deterministically — auto-detect
+        # must flag it so the Phase E UI can prompt the user.
+        project_meta = {"project_levels": []}
+        m = auto_detect_mapping(["Full Name"], project_meta)
+        entry = m["Full Name"]
+        self.assertEqual(entry["target"], "User.first_name")
+        self.assertTrue(entry.get("needs_split"))
+        self.assertIsInstance(entry.get("warning"), str)
+        self.assertIn("full name", entry["warning"].lower())
+
+    def test_auto_detect_order_matches_plan(self) -> None:
+        # Plan order: doctype-label first, level-type second, name-split third.
+        # Construct a synthetic project_meta whose level type collides with
+        # a real User-doctype field label ("Username") to verify the
+        # doctype-first ordering takes precedence.
+        project_meta = {
+            "project_levels": [
+                {"level_name": "Username", "level_order": 1, "name": "x1"},
+            ],
+        }
+        m = auto_detect_mapping(["Username"], project_meta)
+        # Doctype match must win: User.username, NOT TARGET_REGION.
+        self.assertEqual(m["Username"]["target"], "User.username")
+        self.assertIsNone(m["Username"]["level_type"])
+
     def test_validate_mapping_flags_duplicate_level(self) -> None:
         # Two columns mapped to the same admin level type — the mapper
         # should reject this per plan line 116.
