@@ -7,14 +7,16 @@ column-mapper UI:
   source-header → target-field dropdown plus the project's level types
   and active roles.
 
-The Phase B Data Import wrapper endpoints
-(``prepare_user_import``, ``start_user_import``, ``poll_user_import``,
-``download_user_template``) live in
-``grm_project_wizard_user_data_import.py`` to keep each module under the
-400-line target (plan §Engineering Conventions clause 4). All endpoints
-are re-exported from ``grm_project_wizard.py`` so the JS RPC paths
-(``egrm.egrm.page.grm_project_wizard.grm_project_wizard.<method>``) keep
-working unchanged.
+Sibling modules (kept under the 400-line cap, plan §Engineering
+Conventions clause 4):
+
+- Phase B Data Import wrappers — ``grm_project_wizard_user_data_import.py``
+- Phase C list/edit/bulk endpoints — ``grm_project_wizard_user_assignments.py``
+
+All endpoints are re-exported from ``grm_project_wizard.py`` so the JS
+RPC paths
+(``egrm.egrm.page.grm_project_wizard.grm_project_wizard.<method>``)
+keep working unchanged.
 """
 
 from __future__ import annotations

@@ -66,6 +66,23 @@ def _coerce_bool(value: Any) -> bool:
     return bool(value)
 
 
+def _coerce_list(value: Any, label: str = "value") -> list:
+    """Coerce JSON-string-or-list RPC argument to a list.
+
+    REST form-encoded RPC may send list arguments as JSON strings; this
+    helper accepts either a real list or its JSON-encoded form. ``None``
+    and ``""`` both yield an empty list so callers don't need to guard.
+    """
+    if value is None or value == "":
+        return []
+    if isinstance(value, list):
+        return value
+    parsed = frappe.parse_json(value)
+    if not isinstance(parsed, list):
+        frappe.throw(_("Expected a list for {0}, got {1}").format(label, type(parsed).__name__))
+    return parsed
+
+
 # --- B.1 prepare_user_import -----------------------------------------------
 
 def _read_uploaded_file(file_url: str) -> tuple[list[str], list[list[str]]]:

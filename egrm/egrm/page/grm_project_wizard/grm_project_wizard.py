@@ -593,12 +593,14 @@ def issue_status_seed_defaults(project: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Phase A + B (Step 9 redesign) — bulk-user mapper + Data Import wrappers
+# Phase A + B + C (Step 9 redesign) — bulk-user mapper + Data Import wrappers
+#                                     + existing-users list/edit/bulk
 # ---------------------------------------------------------------------------
-# Endpoints are split across two helper modules to keep each <= 400 lines
+# Endpoints are split across three helper modules to keep each <= 400 lines
 # (plan §Engineering Conventions clause 4):
-#   - `grm_project_wizard_user_import` — Phase A introspection
-#   - `grm_project_wizard_user_data_import` — Phase B Data Import wrappers
+#   - `grm_project_wizard_user_import`        — Phase A introspection
+#   - `grm_project_wizard_user_data_import`   — Phase B Data Import wrappers
+#   - `grm_project_wizard_user_assignments`   — Phase C list/edit/bulk
 # Re-exported here so frontend RPC paths stay stable.
 from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_import import (  # noqa: E402, F401
     get_assignment_field_meta,
@@ -608,4 +610,10 @@ from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_data_import impor
     start_user_import,
     poll_user_import,
     download_user_template,
+)
+from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_assignments import (  # noqa: E402, F401
+    list_project_users,
+    update_assignment_field,
+    bulk_update_assignments,
+    bulk_remove_assignments,
 )

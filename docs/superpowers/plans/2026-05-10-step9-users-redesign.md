@@ -205,9 +205,9 @@ This runs ONCE during `prepare_user_import` to:
 
 ### Phase C — Existing-users panel (Section A of Step 9)
 
-- [ ] **C.1** Add `list_project_users(...)`, `update_assignment_field`, `bulk_update_assignments`, `bulk_remove_assignments` endpoints.
-- [ ] **C.2** Build `GRMWizardStep9UsersList` inner class: search bar, filter dropdowns, pager, bulk-actions strip (using existing `grm_render_bulk_toolbar` + `grm_wire_bulk_table` helpers), table with inline pills.
-- [ ] **C.3** Pill-edit popovers: clicking a pill opens a small dropdown grounded next to the pill — pick role / level / duty / region — calls `update_assignment_field`.
+- [x] **C.1** Add `list_project_users(...)`, `update_assignment_field`, `bulk_update_assignments`, `bulk_remove_assignments` endpoints.
+- [x] **C.2** Build `GRMWizardStep9UsersList` inner class: search bar, filter dropdowns, pager, bulk-actions strip (using existing `grm_render_bulk_toolbar` + `grm_wire_bulk_table` helpers), table with inline pills.
+- [x] **C.3** Pill-edit popovers: clicking a pill opens a small dropdown grounded next to the pill — pick role / level / duty / region — calls `update_assignment_field`.
 
 ### Phase D — Single-add form (Section B-Single)
 

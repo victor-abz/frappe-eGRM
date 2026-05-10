@@ -382,6 +382,165 @@
     cursor: pointer;
 }
 
+/* ---- Step 9 (Users) — list panel + pills ----
+   The Users step is a doctype-driven list where row-level pills (role /
+   level / region / status) double as inline editors. Pills are hit
+   targets that pop a small Awesomplete-backed picker; an unset value
+   shows as a dashed gray "(unset)" pill. */
+.grm-wizard-body .grm-step9-users-panel {
+    margin-bottom: 16px;
+}
+.grm-wizard-body .grm-step9-list-title {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #171717;
+}
+.grm-wizard-body .grm-step9-list-controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.grm-wizard-body .grm-step9-list-controls-row .grm-step9-search {
+    flex: 2 1 220px;
+    min-width: 180px;
+}
+.grm-wizard-body .grm-step9-list-controls-row select {
+    flex: 1 1 130px;
+    min-width: 130px;
+}
+.grm-wizard-body .grm-step9-pager {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted, #7C7C7C);
+    font-size: var(--text-sm, 12px);
+}
+.grm-wizard-body .grm-step9-bulk-extras {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.grm-wizard-body .grm-step9-bulk-extras[hidden] {
+    display: none;
+}
+
+.grm-wizard-body .grm-users-table {
+    width: 100%;
+    margin-bottom: 0;
+}
+.grm-wizard-body .grm-users-table th,
+.grm-wizard-body .grm-users-table td {
+    padding: 6px 10px;
+    vertical-align: middle;
+    font-size: var(--text-sm, 13px);
+}
+.grm-wizard-body .grm-users-table tbody tr:nth-child(even) {
+    background: #fbfbfa;
+}
+.grm-wizard-body .grm-step9-name {
+    font-weight: 500;
+    color: #171717;
+}
+.grm-wizard-body .grm-step9-email {
+    font-size: 12px;
+}
+.grm-wizard-body .grm-step9-empty {
+    padding: 24px;
+    text-align: center;
+    background: #fbfbfa;
+    border: 1px dashed #DADCDC;
+    border-radius: var(--border-radius-md, 6px);
+}
+
+/* ---- Pills ---- */
+.grm-wizard-body .grm-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 12px;
+    line-height: 1;
+    background: #EDEDED;
+    color: #171717;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.grm-wizard-body .grm-pill:hover:not(.grm-pill-readonly) {
+    border-color: rgba(0, 0, 0, 0.18);
+}
+.grm-wizard-body .grm-pill-readonly {
+    cursor: default;
+    opacity: 0.85;
+}
+.grm-wizard-body .grm-pill[data-empty="true"] {
+    background: transparent;
+    border: 1px dashed #C9CBCB;
+    color: #7C7C7C;
+    font-style: italic;
+}
+.grm-wizard-body .grm-pill-role {
+    background: #E6F1FB;
+    color: #1d6cb1;
+}
+.grm-wizard-body .grm-pill-level {
+    background: #E6F7EF;
+    color: #1da672;
+}
+.grm-wizard-body .grm-pill-region {
+    background: #F1ECF9;
+    color: #6e3fb6;
+}
+.grm-wizard-body .grm-pill-status-activated {
+    background: #E6F7EF;
+    color: #1da672;
+}
+.grm-wizard-body .grm-pill-status-pending-activation {
+    background: #FCEFD8;
+    color: #b07a1c;
+}
+.grm-wizard-body .grm-pill-status-draft {
+    background: #EDEDED;
+    color: #555;
+}
+.grm-wizard-body .grm-pill-status-suspended {
+    background: #FAE3E3;
+    color: #b04545;
+}
+.grm-wizard-body .grm-pill-status-expired {
+    background: #FAE3E3;
+    color: #b04545;
+}
+
+.grm-pill-popover {
+    background: #ffffff;
+    border: 1px solid #DADCDC;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+    padding: 8px 10px;
+    min-width: 220px;
+    max-width: 320px;
+}
+.grm-pill-popover .grm-pill-pop-label {
+    display: block;
+    font-size: 11px;
+    color: #7C7C7C;
+    margin-bottom: 4px;
+}
+
+.grm-wizard-body .grm-step9-placeholder {
+    padding: 16px;
+    border: 1px dashed #DADCDC;
+    border-radius: 6px;
+    background: #fbfbfa;
+}
+
 /* ---- Activation step accent ---- */
 .grm-wizard .activation-card {
     background: linear-gradient(135deg, #edfaf4 0%, #ffffff 100%);
