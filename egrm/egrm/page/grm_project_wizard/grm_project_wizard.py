@@ -590,3 +590,14 @@ def issue_status_seed_defaults(project: str) -> dict:
         }).insert()
         added.append(doc.name)
     return {"added": added, "count": len(added)}
+
+
+# ---------------------------------------------------------------------------
+# Phase A (Step 9 redesign) — doctype introspection for the bulk-user mapper
+# ---------------------------------------------------------------------------
+# Endpoints live in `grm_project_wizard_user_import` to keep this module
+# under the 400-line target (see plan §Engineering Conventions clause 4).
+# Re-exported here so frontend RPC paths stay stable.
+from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_import import (  # noqa: E402, F401
+    get_assignment_field_meta,
+)
