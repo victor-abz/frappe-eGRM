@@ -11,6 +11,9 @@ discovers it (the runner is unittest-based, not pytest).
 
 from __future__ import annotations
 
+import csv
+import os
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
@@ -18,6 +21,7 @@ from egrm.services.user_import import (
     TARGET_REGION,
     TARGET_SKIP,
     auto_detect_mapping,
+    materialize_staged_csv,
     resolve_region,
     validate_mapping,
 )
@@ -341,3 +345,171 @@ class UserImportMappingTests(FrappeTestCase):
         result = validate_mapping(mapping, project_meta={})
         self.assertFalse(result["ok"])
         self.assertTrue(any("Province" in e for e in result["errors"]))
+
+
+class UserImportMaterializeTests(FrappeTestCase):
+    """Coverage of ``materialize_staged_csv`` end-to-end (file write).
+
+    Uses the same seeded project as ``UserImportRegionTests`` to keep the
+    test footprint small and independent of any wizard plumbing.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        UserImportRegionTests._teardown_project()
+        UserImportRegionTests._seed_project()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        UserImportRegionTests._teardown_project()
+        super().tearDownClass()
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._staged_files: list[str] = []
+        # Drop any leftover regions from prior tests so each run is hermetic.
+        regions = frappe.get_all(
+            "GRM Administrative Region",
+            filters={"project": PROJECT_CODE},
+            pluck="name",
+        )
+        for _ in range(len(LEVELS) + 1):
+            for r in list(regions):
+                try:
+                    frappe.delete_doc(
+                        "GRM Administrative Region", r,
+                        force=True, delete_permanently=True, ignore_permissions=True,
+                    )
+                    regions.remove(r)
+                except Exception:
+                    frappe.db.rollback()
+        frappe.db.commit()
+
+    def tearDown(self) -> None:
+        for path in self._staged_files:
+            try:
+                if path and os.path.exists(path):
+                    os.remove(path)
+            except OSError:
+                pass
+        super().tearDown()
+
+    # Standard mapping reused across tests: 3 source columns map to
+    # User.email/first_name/last_name + Assignment.user/role + 3 region
+    # level columns. validate_mapping would pass for this mapping.
+    @staticmethod
+    def _standard_mapping() -> dict:
+        return {
+            "Email":      {"target": "User.email",        "level_type": None},
+            "First Name": {"target": "User.first_name",   "level_type": None},
+            "Last Name":  {"target": "User.last_name",    "level_type": None},
+            "Username":   {"target": "Assignment.user",   "level_type": None},
+            "Role":       {"target": "Assignment.role",   "level_type": None},
+            "Province":   {"target": TARGET_REGION,       "level_type": "Province"},
+            "District":   {"target": TARGET_REGION,       "level_type": "District"},
+            "Sector":     {"target": TARGET_REGION,       "level_type": "Sector"},
+        }
+
+    @staticmethod
+    def _headers() -> list[str]:
+        return [
+            "Email", "First Name", "Last Name", "Username", "Role",
+            "Province", "District", "Sector",
+        ]
+
+    def test_materialize_happy_path(self) -> None:
+        # 2 rows, auto_create_regions=True, no missing pieces.
+        rows = [
+            ["a@example.com", "Alice", "Aaron",  "alice", "GRM Officer",
+             "Kigali", "Gasabo",     "Kacyiru"],
+            ["b@example.com", "Bob",   "Brown",  "bob",   "GRM Officer",
+             "Kigali", "Nyarugenge", "Nyamirambo"],
+        ]
+        result = materialize_staged_csv(
+            rows=rows,
+            headers=self._headers(),
+            mapping=self._standard_mapping(),
+            project=PROJECT_CODE,
+            auto_create_regions=True,
+        )
+        self._staged_files.append(result["staged_path"])
+
+        self.assertTrue(os.path.exists(result["staged_path"]))
+        self.assertEqual(result["rows_total"], 2)
+        self.assertEqual(result["rows_ready"], 2)
+        self.assertEqual(result["rows_skipped"], 0)
+        self.assertEqual(len(result["preview"]), 2)
+        for entry in result["preview"]:
+            self.assertIsInstance(entry, dict)
+
+        with open(result["staged_path"], encoding="utf-8") as fh:
+            reader = csv.reader(fh)
+            header_row = next(reader)
+            staged_rows = list(reader)
+        # Header must include the mapped target fieldnames + administrative_region.
+        for expected in ("email", "first_name", "last_name", "user", "role", "administrative_region"):
+            self.assertIn(expected, header_row, f"staged header missing {expected!r}: {header_row}")
+        self.assertEqual(len(staged_rows), 2)
+
+    def test_materialize_dryrun_lists_missing_regions(self) -> None:
+        # auto_create_regions=False; no regions seeded → all rows unresolvable.
+        rows = [
+            ["a@example.com", "Alice", "Aaron", "alice", "GRM Officer",
+             "Kigali", "Gasabo", "Kacyiru"],
+            ["b@example.com", "Bob",   "Brown", "bob",   "GRM Officer",
+             "Kigali", "Gasabo", "Remera"],
+        ]
+        result = materialize_staged_csv(
+            rows=rows,
+            headers=self._headers(),
+            mapping=self._standard_mapping(),
+            project=PROJECT_CODE,
+            auto_create_regions=False,
+        )
+        self._staged_files.append(result["staged_path"])
+
+        # regions_to_create is the dry-run shape: list of (level_type, value) 2-tuples.
+        self.assertTrue(result["regions_to_create"])
+        for entry in result["regions_to_create"]:
+            self.assertEqual(len(entry), 2, f"dry-run regions_to_create must be 2-tuples; got {entry!r}")
+            level_type, value = entry
+            self.assertIsInstance(level_type, str)
+            self.assertIsInstance(value, str)
+
+        # Every row was unresolvable → every row skipped, with documented error format.
+        self.assertEqual(result["rows_skipped"], 2)
+        self.assertEqual(result["rows_ready"], 0)
+        self.assertEqual(len(result["errors"]), 2)
+        for err in result["errors"]:
+            self.assertIn("does not exist", err)
+            self.assertIn("auto_create=False", err)
+
+    def test_materialize_skips_row_with_missing_region_in_dryrun(self) -> None:
+        # Locked contract from Issue #3: in dry-run, an unresolvable row is
+        # NOT written to the staged CSV (no NULL-region ghosts).
+        rows = [
+            ["a@example.com", "Alice", "Aaron", "alice", "GRM Officer",
+             "Nowhere", "Nope", "Nada"],
+        ]
+        result = materialize_staged_csv(
+            rows=rows,
+            headers=self._headers(),
+            mapping=self._standard_mapping(),
+            project=PROJECT_CODE,
+            auto_create_regions=False,
+        )
+        self._staged_files.append(result["staged_path"])
+
+        self.assertEqual(result["rows_ready"], 0)
+        self.assertEqual(result["rows_skipped"], 1)
+
+        with open(result["staged_path"], encoding="utf-8") as fh:
+            reader = csv.reader(fh)
+            next(reader)  # header
+            staged_rows = list(reader)
+        # Row count in CSV must equal rows_ready (0), not rows_total.
+        self.assertEqual(
+            len(staged_rows), result["rows_ready"],
+            f"staged CSV must contain only ready rows; got {len(staged_rows)} body rows",
+        )

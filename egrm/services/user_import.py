@@ -54,6 +54,7 @@ def resolve_region(
     level_columns_ordered: list[tuple[str, str]],
     project: str,
     auto_create: bool = True,
+    level_lookup: dict[str, str] | None = None,
 ) -> tuple[str | None, list[tuple[str, str, str]]]:
     """Resolve a list of admin-level cells into a single region id.
 
@@ -67,6 +68,11 @@ def resolve_region(
         project: ``GRM Project.name``.
         auto_create: When ``True``, missing regions are inserted; when
             ``False``, a missing region raises ``frappe.ValidationError``.
+        level_lookup: Optional pre-built ``{level_name: level_doc_name}``
+            cache (one ``GRM Administrative Level Type`` row per entry).
+            When provided, avoids a per-row × per-level DB roundtrip.
+            When ``None``, falls back to per-row ``frappe.db.get_value``
+            so direct callers don't need to know about the cache.
 
     Returns:
         ``(administrative_region_id, created)`` where ``created`` is the
@@ -86,18 +92,18 @@ def resolve_region(
             # Empty cell ends resolution at the deepest non-empty ancestor.
             continue
 
-        level_doc_name = frappe.db.get_value(
-            "GRM Administrative Level Type",
-            {"project": project, "level_name": level_type},
-            "name",
-        )
+        if level_lookup is not None:
+            level_doc_name = level_lookup.get(level_type)
+        else:
+            level_doc_name = frappe.db.get_value(
+                "GRM Administrative Level Type",
+                {"project": project, "level_name": level_type},
+                "name",
+            )
         if not level_doc_name:
-            if not auto_create:
-                raise frappe.ValidationError(
-                    f"Administrative level type not found: {level_type} (project={project})"
-                )
-            # The plan's contract is that level *types* are pre-seeded by
-            # Step 2; auto-creating one here would be surprising. Fail fast.
+            # Level *types* are pre-seeded by Step 2; their absence is
+            # always fatal — ``auto_create`` only governs region rows,
+            # not level-type rows.
             raise frappe.ValidationError(
                 f"Administrative level type not found: {level_type} (project={project}). "
                 f"Run Step 2 first or seed the level type."
@@ -448,6 +454,30 @@ def materialize_staged_csv(
     if level_columns:
         out_headers.append("administrative_region")
 
+    # ------------------------------------------------------------------
+    # Caches built ONCE per call (vs per-row × per-target previously).
+    # ------------------------------------------------------------------
+    # 1) Level-name → level-doc-name. Saves N_rows × N_levels DB lookups.
+    level_lookup: dict[str, str] = {
+        row.level_name: row.name
+        for row in frappe.get_all(
+            "GRM Administrative Level Type",
+            filters={"project": project},
+            fields=["name", "level_name"],
+        )
+    }
+    # 2) Target token → source header. ``_find_source_for`` semantics:
+    #    on duplicate mappings the *last* declared header wins; replicate
+    #    by overwriting on iteration. Region target is many-to-one
+    #    (per-level-type), so it is handled separately via ``level_columns``
+    #    and intentionally excluded here.
+    target_to_source: dict[str, str] = {}
+    for header, m in mapping.items():
+        target = m.get("target")
+        if not target or target == TARGET_SKIP or target == TARGET_REGION:
+            continue
+        target_to_source[target] = header
+
     preview: list[dict[str, Any]] = []
     rows_ready = 0
     rows_skipped = 0
@@ -475,15 +505,39 @@ def materialize_staged_csv(
                     if auto_create_regions:
                         region_id, created_here = resolve_region(
                             row_dict, level_cells, project, auto_create=True,
+                            level_lookup=level_lookup,
                         )
                         regions_created_global.extend(created_here)
                     else:
                         # Dry-run: don't write, but compute what *would* be needed.
                         region_id = _resolve_region_dryrun(
                             level_cells, project, regions_to_create_dryrun,
+                            level_lookup=level_lookup,
                         )
             except frappe.ValidationError as exc:
                 errors.append(f"Row {row_num}: {exc}")
+                rows_skipped += 1
+                continue
+
+            # Locked dry-run contract: if auto_create_regions=False AND the
+            # row had non-empty admin-level cells but resolved to no region,
+            # do NOT write a NULL-region row to the staged CSV (Frappe Data
+            # Import would otherwise silently insert assignments with
+            # administrative_region=NULL). Skip the row, record the first
+            # missing level for the error message.
+            if (
+                not auto_create_regions
+                and level_cells
+                and any(v for _, v in level_cells)
+                and region_id is None
+            ):
+                first_missing_level, first_missing_value = next(
+                    (lt, v) for lt, v in level_cells if v
+                )
+                errors.append(
+                    f"Row {row_num}: region {first_missing_level}={first_missing_value!r} "
+                    f"does not exist (auto_create=False)"
+                )
                 rows_skipped += 1
                 continue
 
@@ -491,12 +545,12 @@ def materialize_staged_csv(
             resolved: dict[str, Any] = {}
 
             for fname in user_targets:
-                src_header = _find_source_for(mapping, f"User.{fname}")
+                src_header = target_to_source.get(f"User.{fname}")
                 val = (row_dict.get(src_header) or "").strip() if src_header else ""
                 out_row.append(val)
                 resolved[fname] = val
             for fname in asgn_targets:
-                src_header = _find_source_for(mapping, f"Assignment.{fname}")
+                src_header = target_to_source.get(f"Assignment.{fname}")
                 val = (row_dict.get(src_header) or "").strip() if src_header else ""
                 out_row.append(val)
                 resolved[fname] = val
@@ -545,23 +599,30 @@ def _resolve_region_dryrun(
     level_cells: list[tuple[str, str]],
     project: str,
     accumulator: set[tuple[str, str]],
+    level_lookup: dict[str, str] | None = None,
 ) -> str | None:
     """Walk the hierarchy without inserting; record any missing levels.
 
     Mirrors ``resolve_region`` but never writes. Records each missing
     ``(level_type, value)`` pair into ``accumulator`` so the caller can
     surface them as the ``regions_to_create`` preview list.
+
+    ``level_lookup`` is the same optional cache as ``resolve_region``;
+    callers building it once across many rows pass it here too.
     """
     parent: str | None = None
     for level_type, raw_value in level_cells:
         value = (raw_value or "").strip()
         if not value:
             continue
-        level_doc_name = frappe.db.get_value(
-            "GRM Administrative Level Type",
-            {"project": project, "level_name": level_type},
-            "name",
-        )
+        if level_lookup is not None:
+            level_doc_name = level_lookup.get(level_type)
+        else:
+            level_doc_name = frappe.db.get_value(
+                "GRM Administrative Level Type",
+                {"project": project, "level_name": level_type},
+                "name",
+            )
         if not level_doc_name:
             accumulator.add((level_type, value))
             return None
