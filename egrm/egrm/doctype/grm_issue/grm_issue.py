@@ -233,10 +233,31 @@ class GRMIssue(Document):
         try:
             # Generate auto increment ID, internal code, and tracking code
             self.generate_codes()
-            frappe.log(f"Generated codes for GRM Issue {self.name}")
+            self._apply_default_routing_from_category()
+            frappe.log(
+                f"Generated codes + applied default routing for GRM Issue {self.name}"
+            )
         except Exception as e:
-            frappe.log(f"Error generating codes for GRM Issue: {str(e)}")
+            frappe.log(f"Error in before_insert for GRM Issue: {str(e)}")
             raise
+
+    def _apply_default_routing_from_category(self) -> None:
+        """Populate ``assigned_department`` / ``assigned_role`` from the category
+        when neither was explicitly set on the incoming payload.
+
+        Caller-provided values take precedence so manual overrides
+        (mobile API, admin desk) are respected.
+        """
+        if self.assigned_department or self.assigned_role:
+            return
+        if not self.category:
+            return
+        from egrm.services.category_routing import resolve_routing_for_issue_creation
+        routing = resolve_routing_for_issue_creation(self.category)
+        if routing["assigned_department"]:
+            self.assigned_department = routing["assigned_department"]
+        if routing["assigned_role"]:
+            self.assigned_role = routing["assigned_role"]
 
     def after_insert(self):
         try:

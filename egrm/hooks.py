@@ -9,7 +9,16 @@ fixtures = [
     {
         "dt": "Email Template",
         "filters": [["name", "like", "GRM%"]]
-    }
+    },
+    # Canonical 6 duties (WB GRM Customization Questionnaire § 4). Shipped
+    # as a fixture so they land on `bench install-app` AND every subsequent
+    # migrate — the equivalent post_model_sync patch
+    # (egrm.patches.v16_0.seed_duty_catalog) only runs on migrate, not on
+    # a fresh install, which left GRM Duty empty and broke Project Role
+    # creation in the AQE onboarding wizard.
+    {
+        "dt": "GRM Duty"
+    },
 ]
 
 # Default homepage for guest and logged-in users (overrides Website Settings fallback)
@@ -40,6 +49,7 @@ after_migrate = [
     "egrm.install.set_default_home_page",
     "egrm.install.set_default_desk_app",
     "egrm.install.seed_desktop_icons",
+    "egrm.install.seed_grm_role_catalog",
 ]
 
 # Branding for the v16 Desktop / Apps screen tile

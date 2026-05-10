@@ -14,6 +14,11 @@
   "end_date",
   "is_active",
   "section_break_1",
+  "country",
+  "number_format",
+  "date_format",
+  "currency",
+  "time_zone",
   "default_language",
   "auto_escalation_days",
   "enable_citizen_feedback",
@@ -196,6 +201,37 @@
    "fieldtype": "Int",
    "label": "Current Setup Step",
    "read_only": 1
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "default": "#,###.##",
+   "fieldname": "number_format",
+   "fieldtype": "Select",
+   "label": "Number Format",
+   "options": "#,###.##\n#.###,##\n# ###.##\n#,##,###.##"
+  },
+  {
+   "default": "yyyy-mm-dd",
+   "fieldname": "date_format",
+   "fieldtype": "Select",
+   "label": "Date Format",
+   "options": "yyyy-mm-dd\ndd-mm-yyyy\nmm-dd-yyyy\ndd/mm/yyyy\nmm/dd/yyyy"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "time_zone",
+   "fieldtype": "Autocomplete",
+   "label": "Time Zone"
   }
  ],
  "index_web_pages_for_search": 1,

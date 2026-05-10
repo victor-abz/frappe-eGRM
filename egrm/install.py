@@ -5,9 +5,53 @@ DEFAULT_DESK_APP = "egrm"
 
 
 def after_install() -> None:
+    mark_setup_complete()
     set_default_home_page()
     set_default_desk_app()
     seed_desktop_icons()
+    seed_grm_role_catalog()
+
+
+def seed_grm_role_catalog() -> None:
+    """Create the duty/platform Frappe Roles on a fresh install.
+
+    The `seed_grm_role_catalog` patch is the source of truth for these
+    role names but only runs via `bench migrate`. Fresh `bench install-app`
+    flows initialize the patches table to "all applied" without executing
+    the bodies, so the duty Roles never get created — every doctype
+    permission row referencing them then references a non-existent Role,
+    and downstream contract tests (AC-2.frappe_role_catalog_complete)
+    fail. Idempotent.
+    """
+    from egrm.patches.v16_0.seed_grm_role_catalog import execute as seed_roles
+    try:
+        seed_roles()
+    except Exception as exc:
+        frappe.log_error(
+            title="seed_grm_role_catalog failed during after_install",
+            message=str(exc),
+        )
+
+
+def mark_setup_complete() -> None:
+    """Skip Frappe's stock initial-setup wizard.
+
+    Frappe v16's `is_setup_complete()` checks every `Installed Application`
+    row's `is_setup_complete` flag; if any are 0, every `/app/*` URL 302s
+    to `/desk/setup-wizard/0`. Fresh `bench install-app` lands every row
+    at 0, which traps both the AQE Playwright walker (Step 9 wizard URL
+    redirects away before the file input renders) and any human admin
+    landing on the GRM workspace right after install.
+
+    Mark all installed-app rows complete and clear the request cache so
+    `is_setup_complete()` re-reads truth.
+    """
+    frappe.db.sql(
+        "UPDATE `tabInstalled Application` SET is_setup_complete = 1 "
+        "WHERE is_setup_complete = 0"
+    )
+    frappe.db.commit()
+    frappe.clear_cache()
 
 
 def set_default_desk_app() -> None:

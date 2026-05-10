@@ -7,23 +7,142 @@ frappe.pages["grm-project-wizard"].on_page_load = function (wrapper) {
     new GRMProjectWizard(page);
 };
 
+// Display order is dependency-driven, NOT class-name order:
+//   Categories (now display 5) needs Roles + Departments to exist first,
+//   so User Types and Departments are promoted to display 3 and 4. The
+//   underlying step classes keep their original numeric names — only the
+//   slot they occupy in `step_class()` and the title shown to the user
+//   changes. See comments above `step_class()` for the full mapping.
 const STEP_TITLES = [
     "",
-    "Project Information",
-    "Uptake Notes",
-    "Administrative Levels",
-    "Project Roles",
-    "Departments",
-    "Issue Categories & Routing",
-    "Issue Types",
-    "Issue Statuses",
-    "SLAs",
-    "Citizen Lookups",
-    "Notification Templates",
-    "Activate",
+    "Project Information",            //  1
+    "Administrative Levels & Regions", //  2
+    "User Types",                     //  3 (was 7) — must precede Categories
+    "Departments",                    //  4 (was 8) — must precede Categories
+    "Issue Categories",               //  5 (was 3)
+    "Issue Types",                    //  6 (was 4)
+    "Citizen Groups",                 //  7 (was 5)
+    "Notification Templates",         //  8 (was 6)
+    "Users",                          //  9
+    "Issue Routing",                  // 10
+    "SLAs",                           // 11
+    "Issue Statuses",                 // 12
+    "Activate",                       // 13
 ];
 
-const TOTAL_STEPS = 12;
+const TOTAL_STEPS = 13;
+
+// ---------------------------------------------------------------------------
+// Reusable bulk-selection helper for wizard tables that use the simple HTML
+// `<table class="table table-borderless">` markup (Steps 5, 6, 7, 8, 9, 11, 12).
+// Steps 3 and 4 use the Frappe div-grid pattern and inline their own bulk
+// wiring — see `bind_bulk_select` / `refresh_bulk_actions` on those classes.
+//
+// Caller responsibilities:
+//   1. Maintain `this.selected = new Set()` on the step instance and pass it in.
+//   2. Render `${grm_render_bulk_toolbar(key)}` above the table.
+//   3. Add a leading checkbox cell to the header + each row:
+//          <th class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-all"></th>
+//          <td class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-row-check"></td>
+//      Each <tr> must carry `data-name="{row.name}"`.
+//   4. After mounting, call `grm_wire_bulk_table($wrap, opts)`.
+//
+// The helper is idempotent: it namespaces handlers (`.grm-bulk`) and rebinds
+// safely on every re-render.
+// ---------------------------------------------------------------------------
+function grm_render_bulk_toolbar(key) {
+    return `
+      <div class="grm-bulk-actions" data-grm-bulk-for="${key}" hidden>
+        <span class="grm-bulk-count"></span>
+        <button type="button" class="btn btn-xs btn-danger grm-bulk-delete">${__("Delete")}</button>
+        <button type="button" class="btn btn-xs btn-secondary grm-bulk-clear">${__("Clear selection")}</button>
+      </div>
+    `;
+}
+
+function grm_wire_bulk_table($wrap, opts) {
+    const { selected, row_names, key, delete_one, on_done } = opts;
+    const singular = opts.singular || __("row");
+    const plural = opts.plural || (singular + "s");
+    const confirm_msg = opts.confirm_msg || ((n) => n === 1
+        ? __("Delete this {0}?", [singular])
+        : __("Delete {0} selected {1}?", [n, plural]));
+
+    const $bar = $wrap.find(`.grm-bulk-actions[data-grm-bulk-for='${key}']`);
+    const $tbl = $wrap.find("table");
+
+    function refresh() {
+        const n = selected.size;
+        $bar.attr("hidden", n === 0 ? "hidden" : null);
+        $bar.find(".grm-bulk-count").text(
+            n === 0 ? "" : (n === 1 ? __("1 selected") : __("{0} selected", [n])),
+        );
+        $bar.find(".grm-bulk-delete").text(
+            n <= 1 ? __("Delete") : __("Delete {0}", [n]),
+        );
+        const total = row_names.length;
+        const $all = $tbl.find(".grm-bulk-all");
+        if (total > 0) {
+            $all.prop("checked", n === total);
+            $all.prop("indeterminate", n > 0 && n < total);
+        }
+        $tbl.find(".grm-bulk-row-check").each(function () {
+            const name = $(this).closest("tr").attr("data-name");
+            $(this).prop("checked", !!name && selected.has(name));
+        });
+    }
+
+    $wrap.off(".grm-bulk")
+        .on("change.grm-bulk", ".grm-bulk-all", function () {
+            const checked = $(this).prop("checked");
+            if (checked) row_names.forEach((n) => selected.add(n));
+            else selected.clear();
+            refresh();
+        })
+        .on("change.grm-bulk", ".grm-bulk-row-check", function () {
+            const name = $(this).closest("tr").attr("data-name");
+            if (!name) return;
+            if ($(this).prop("checked")) selected.add(name);
+            else selected.delete(name);
+            refresh();
+        })
+        .on("click.grm-bulk", ".grm-bulk-clear", () => {
+            selected.clear();
+            refresh();
+        })
+        .on("click.grm-bulk", ".grm-bulk-delete", async () => {
+            const names = [...selected];
+            if (!names.length) return;
+            const proceed = await new Promise((res) =>
+                frappe.confirm(confirm_msg(names.length), () => res(true), () => res(false)),
+            );
+            if (!proceed) return;
+            const errs = [];
+            frappe.dom.freeze(__("Deleting…"));
+            for (const name of names) {
+                try { await delete_one(name); }
+                catch (e) { errs.push(name); }
+            }
+            frappe.dom.unfreeze();
+            selected.clear();
+            if (errs.length) {
+                frappe.show_alert({
+                    message: __("Could not delete {0} {1} — they may still be referenced.",
+                        [errs.length, errs.length === 1 ? singular : plural]),
+                    indicator: "red",
+                });
+            } else {
+                frappe.show_alert({
+                    message: __("{0} {1} deleted.",
+                        [names.length, names.length === 1 ? singular : plural]),
+                    indicator: "green",
+                });
+            }
+            if (on_done) await on_done();
+        });
+
+    refresh();
+}
 
 class GRMProjectWizard {
     constructor(page) {
@@ -52,6 +171,18 @@ class GRMProjectWizard {
         `);
         $("#grm-prev").on("click", () => this.goto_step(this.current_step - 1));
         $("#grm-next").on("click", () => this.advance());
+        // Stepper dots are clickable shortcuts to any step. Useful for reviewing
+        // existing data on already-saved projects. Navigation is direct (no
+        // implicit save of the current step) — for save-and-advance, use
+        // Continue. Disabled dots (e.g. when project hasn't been saved yet)
+        // are inert via the native button [disabled] attribute.
+        $("#grm-stepper").on("click", ".grm-step", (e) => {
+            const $btn = $(e.currentTarget);
+            if ($btn.is(":disabled") || $btn.attr("aria-disabled") === "true") return;
+            const n = parseInt($btn.attr("data-step"), 10);
+            if (!Number.isFinite(n) || n === this.current_step) return;
+            this.goto_step(n);
+        });
     }
 
     async load_project() {
@@ -88,33 +219,60 @@ class GRMProjectWizard {
     }
 
     render_stepper() {
+        // Stepper dots are clickable buttons (Option C — pulsing halo on active).
+        // CSS sizes them as solid circles; the visible label is the tooltip.
+        // Until Step 1 is saved (no project yet) only the current step is enabled,
+        // so users can't jump into a step that has nothing to render.
         const $s = $("#grm-stepper").empty();
+        const has_project = !!(this.project && this.project.name);
         for (let i = 1; i <= TOTAL_STEPS; i++) {
             const cls = i < this.current_step ? "done" : i === this.current_step ? "active" : "pending";
-            $s.append(`<div class="grm-step ${cls}">${i}</div>`);
+            const title = `${i}. ${STEP_TITLES[i] || ""}`;
+            const aria_label = `${__("Go to step")} ${title}`;
+            const aria_current = i === this.current_step ? 'aria-current="step"' : "";
+            const disabled = !has_project && i !== this.current_step ? 'disabled aria-disabled="true"' : "";
+            $s.append(
+                `<button type="button" class="grm-step ${cls}" data-step="${i}" `
+                + `title="${frappe.utils.escape_html(title)}" `
+                + `aria-label="${frappe.utils.escape_html(aria_label)}" `
+                + `${aria_current} ${disabled}></button>`,
+            );
         }
     }
 
     step_class(n) {
+        // NOTE: class names retain their *original* step number (e.g.
+        // GRMWizardStep3IssueCategories) but the *display* slot they
+        // occupy was reordered so data dependencies are honoured. The
+        // wizard always asks for things you'll need before the step
+        // that consumes them. Class-name N != display-slot key.
         const map = {
-            1: GRMWizardStep1ProjectInfo,
-            2: GRMWizardStep2UptakeNotes,
-            3: GRMWizardStep3AdminLevels,
-            4: GRMWizardStep4ProjectRoles,
-            5: GRMWizardStep8Departments,
-            6: GRMWizardStep5IssueCategories,
-            7: GRMWizardStep6IssueTypes,
-            8: GRMWizardStep7IssueStatuses,
-            9: GRMWizardStep9SLAs,
-            10: GRMWizardStep10CitizenLookups,
-            11: GRMWizardStep11NotificationTemplates,
-            12: GRMWizardStep12Activate,
+            1:  GRMWizardStep1ProjectInfo,           // 1 → Project Information
+            2:  GRMWizardStep2AdminUnits,            // 2 → Admin Levels & Regions
+            3:  GRMWizardStep7ProjectRoles,          // 3 → User Types  (was 7)
+            4:  GRMWizardStep8Departments,           // 4 → Departments (was 8)
+            5:  GRMWizardStep3IssueCategories,       // 5 → Categories  (was 3, needs roles+depts)
+            6:  GRMWizardStep4IssueTypes,            // 6 → Issue Types (was 4)
+            7:  GRMWizardStep5CitizenLookups,        // 7 → Citizen Groups (was 5)
+            8:  GRMWizardStep6NotificationTemplates, // 8 → Notif Templates (was 6)
+            9:  GRMWizardStep9Users,                 // 9 → Users
+            10: GRMWizardStep10Routing,              // 10 → Issue Routing
+            11: GRMWizardStep11SLAs,                 // 11 → SLAs
+            12: GRMWizardStep12IssueStatuses,        // 12 → Issue Statuses
+            13: GRMWizardStep13Activate,             // 13 → Activate
         };
         return map[n] || null;
     }
 
     render_step_body() {
         const $body = $("#grm-step-body").empty();
+        // Wipe any page-header primary/secondary actions from the previous step
+        // so they never leak across steps. Steps that need actions render them
+        // inside the form body (see grm-step7-footer in Step 3 for the pattern).
+        if (this.page) {
+            try { this.page.clear_primary_action && this.page.clear_primary_action(); } catch (e) { /* ignore */ }
+            try { this.page.clear_secondary_action && this.page.clear_secondary_action(); } catch (e) { /* ignore */ }
+        }
         const StepClass = this.step_class(this.current_step);
         if (!StepClass) {
             $body.html(`
@@ -201,7 +359,12 @@ class GRMWizardStep1ProjectInfo {
             : `<small class="text-warning">${__("Heads up: project code becomes the record name and cannot be changed after save.")}</small>`;
 
         this.$body.html(`
-            <div class="grm-step1-form" style="max-width: 720px;">
+            <div class="grm-step1-form" style="max-width: 760px;">
+
+              <p class="text-muted">${__("Tell us about your project. The information below will appear across the platform — citizen-facing portals, mobile apps, and notification templates.")}</p>
+
+              <h4 class="mt-4">${__("Identity")}</h4>
+              <p class="text-muted small">${__("These fields identify your project to staff and citizens.")}</p>
               <div class="form-group">
                 <label class="control-label reqd">${__("Project Code")}</label>
                 <input type="text" class="form-control" id="grm-f-project_code"
@@ -209,7 +372,7 @@ class GRMWizardStep1ProjectInfo {
                 ${code_warning}
               </div>
               <div class="form-group">
-                <label class="control-label reqd">${__("Title")}</label>
+                <label class="control-label reqd">${__("Project Title")}</label>
                 <input type="text" class="form-control" id="grm-f-title"
                        value="${frappe.utils.escape_html(p.title || "")}">
               </div>
@@ -217,6 +380,9 @@ class GRMWizardStep1ProjectInfo {
                 <label class="control-label">${__("Description")}</label>
                 <textarea class="form-control" id="grm-f-description" rows="3">${frappe.utils.escape_html(p.description || "")}</textarea>
               </div>
+
+              <h4 class="mt-4">${__("Schedule")}</h4>
+              <p class="text-muted small">${__("Optional. Used in dashboards and to gate intake outside the project window.")}</p>
               <div class="row">
                 <div class="col-md-6">
                   <div class="form-group">
@@ -233,19 +399,80 @@ class GRMWizardStep1ProjectInfo {
                   </div>
                 </div>
               </div>
+
+              <h4 class="mt-4">${__("Locale")}</h4>
+              <p class="text-muted small">${__("How dates, numbers, and currency are formatted across the platform. Default Language drives label translations for citizens and staff.")}</p>
               <div class="row">
                 <div class="col-md-6">
                   <div class="form-group">
-                    <label class="control-label">${__("Default Language")}</label>
-                    <input type="text" class="form-control" id="grm-f-default_language"
-                           value="${frappe.utils.escape_html(p.default_language || "en")}">
+                    <label class="control-label">${__("Country")}</label>
+                    <div id="grm-f-country-wrap"></div>
                   </div>
                 </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="control-label">${__("Default Language")}</label>
+                    <div id="grm-f-default_language-wrap"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="control-label">${__("Number Format")}</label>
+                    <select class="form-control" id="grm-f-number_format">
+                      <option value="#,###.##" ${ (p.number_format || "#,###.##") === "#,###.##" ? "selected" : "" }>1,234.56 (en-US)</option>
+                      <option value="#.###,##" ${ p.number_format === "#.###,##" ? "selected" : "" }>1.234,56 (de-DE)</option>
+                      <option value="# ###.##"  ${ p.number_format === "# ###.##"  ? "selected" : "" }>1 234.56 (fr-FR)</option>
+                      <option value="#,##,###.##" ${ p.number_format === "#,##,###.##" ? "selected" : "" }>1,23,456.78 (Indic)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="control-label">${__("Date Format")}</label>
+                    <select class="form-control" id="grm-f-date_format">
+                      ${["yyyy-mm-dd","dd-mm-yyyy","mm-dd-yyyy","dd/mm/yyyy","mm/dd/yyyy"].map(fmt =>
+                        `<option value="${fmt}" ${ (p.date_format || "yyyy-mm-dd") === fmt ? "selected" : "" }>${fmt}</option>`).join("")}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="control-label">${__("Currency")}</label>
+                    <div id="grm-f-currency-wrap"></div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="control-label">${__("Time Zone")}</label>
+                    <input type="text" class="form-control" id="grm-f-time_zone"
+                           placeholder="Africa/Kigali"
+                           value="${frappe.utils.escape_html(p.time_zone || "")}">
+                  </div>
+                </div>
+              </div>
+
+              <h4 class="mt-4">${__("Operational Defaults")}</h4>
+              <p class="text-muted small">${__("Project-wide behavioural defaults. You can adjust these later from project settings.")}</p>
+              <div class="row">
                 <div class="col-md-6">
                   <div class="form-group">
                     <label class="control-label">${__("Auto Escalation Days")}</label>
                     <input type="number" min="0" class="form-control" id="grm-f-auto_escalation_days"
                            value="${p.auto_escalation_days != null ? p.auto_escalation_days : 7}">
+                    <small class="text-muted">${__("Days before an unresolved issue auto-escalates to the next tier.")}</small>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="checkbox">
+                      <input type="checkbox" id="grm-f-enable_citizen_feedback" ${p.enable_citizen_feedback ? "checked" : ""}>
+                      ${__("Enable Citizen Feedback")}
+                    </label>
+                    <small class="text-muted d-block">${__("Allow citizens to rate the resolution of their complaints.")}</small>
                   </div>
                 </div>
               </div>
@@ -254,15 +481,45 @@ class GRMWizardStep1ProjectInfo {
                   <input type="checkbox" id="grm-f-is_active" ${(p.is_active == null ? 1 : p.is_active) ? "checked" : ""}>
                   ${__("Is Active")}
                 </label>
+                <small class="text-muted d-block">${__("Inactive projects are hidden from intake screens but stay queryable in reports.")}</small>
               </div>
             </div>
         `);
+
+        this._mount_link_controls(p);
+    }
+
+    _mount_link_controls(p) {
+        const make = (parent_id, fieldname, doctype, value) => {
+            const parent = this.$body.find(`#${parent_id}`)[0];
+            if (!parent) return;
+            try {
+                const ctl = frappe.ui.form.make_control({
+                    df: { fieldtype: "Link", fieldname, options: doctype, label: "" },
+                    parent,
+                    render_input: true,
+                });
+                ctl.set_value(value || "");
+                this[`_ctl_${fieldname}`] = ctl;
+            } catch (e) {
+                // Fallback: plain text input if make_control fails (older Frappe versions)
+                $(parent).html(`<input type="text" class="form-control" data-fb="${fieldname}" value="${frappe.utils.escape_html(value || "")}">`);
+            }
+        };
+        make("grm-f-country-wrap",          "country",          "Country",  p.country);
+        make("grm-f-default_language-wrap", "default_language", "Language", p.default_language || "en");
+        make("grm-f-currency-wrap",         "currency",         "Currency", p.currency);
     }
 
     read_form() {
         const get = (id) => this.$body.find(`#${id}`).val();
         const checked = (id) => this.$body.find(`#${id}`).is(":checked") ? 1 : 0;
         const trim = (v) => (v == null ? "" : String(v).trim());
+        const link_value = (fieldname, fallback_id) => {
+            const ctl = this[`_ctl_${fieldname}`];
+            if (ctl && typeof ctl.get_value === "function") return trim(ctl.get_value());
+            return trim(this.$body.find(`[data-fb="${fieldname}"]`).val());
+        };
         const auto_esc = parseInt(get("grm-f-auto_escalation_days"), 10);
         return {
             project_code: trim(get("grm-f-project_code")),
@@ -270,8 +527,14 @@ class GRMWizardStep1ProjectInfo {
             description: trim(get("grm-f-description")),
             start_date: trim(get("grm-f-start_date")) || null,
             end_date: trim(get("grm-f-end_date")) || null,
-            default_language: trim(get("grm-f-default_language")) || "en",
+            country: link_value("country"),
+            default_language: link_value("default_language") || "en",
+            number_format: trim(get("grm-f-number_format")) || "#,###.##",
+            date_format: trim(get("grm-f-date_format")) || "yyyy-mm-dd",
+            currency: link_value("currency"),
+            time_zone: trim(get("grm-f-time_zone")) || "",
             is_active: checked("grm-f-is_active"),
+            enable_citizen_feedback: checked("grm-f-enable_citizen_feedback"),
             auto_escalation_days: isNaN(auto_esc) ? 7 : auto_esc,
         };
     }
@@ -331,9 +594,9 @@ class GRMWizardStep1ProjectInfo {
 }
 
 // ---------------------------------------------------------------------------
-// Step 2 — Uptake Notes
+// Step 2 — Administrative Levels & Regions (composite of Levels + Regions tabs)
 // ---------------------------------------------------------------------------
-class GRMWizardStep2UptakeNotes {
+class GRMWizardStep2AdminUnits {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
@@ -350,50 +613,411 @@ class GRMWizardStep2UptakeNotes {
             `);
             return;
         }
-        const desc = this.project.description || "";
         this.$body.html(`
-            <div class="grm-step2-form" style="max-width: 820px;">
-              <div class="grm-step2-intro" style="margin-bottom: 16px;">
-                <p>${__("The World Bank GRM uptake-channel framework recommends defining how citizens can submit grievances. Capture your project's decisions below.")}</p>
-                <ul class="text-muted small">
-                  <li>${__("Direct: in-person at field offices, project sites, or community meetings")}</li>
-                  <li>${__("Mediated: community focal points, local leaders, paralegals, NGO partners")}</li>
-                  <li>${__("Remote: phone hotline, SMS short-code, mobile app, web form, email")}</li>
-                  <li>${__("Anonymous: drop-boxes, suggestion boxes at village level")}</li>
-                </ul>
-                <p class="text-muted small">${__("Example: \"Citizens via mobile + paper letterboxes at village level + community focal points (1 per ADM4).\"")}</p>
-              </div>
-              <div class="form-group">
-                <label class="control-label">${__("Project Description / Uptake Channels")}</label>
-                <textarea class="form-control" id="grm-f-description" rows="10">${frappe.utils.escape_html(desc)}</textarea>
-                <small class="text-muted">${__("This is saved to the project description and is visible on the GRM Project record.")}</small>
+            <div class="grm-step2-admin">
+              <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#grm-tab-levels">${__("Levels")}</a></li>
+                <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#grm-tab-regions">${__("Regions")}</a></li>
+              </ul>
+              <div class="tab-content pt-3">
+                <div class="tab-pane fade show active" id="grm-tab-levels"></div>
+                <div class="tab-pane fade" id="grm-tab-regions"></div>
               </div>
             </div>
         `);
+        this.levels_inner = new GRMWizardStep2AdminLevelsInner(this.$body.find("#grm-tab-levels"), this.project, this.wizard);
+        this.regions_inner = new GRMWizardStep2AdminRegionsInner(this.$body.find("#grm-tab-regions"), this.project, this.wizard);
     }
 
     async save() {
-        if (!this.project) {
-            frappe.show_alert({ message: __("Save Step 1 first."), indicator: "red" });
-            return false;
+        if (!this.levels_inner) return true;
+        const ok1 = await this.levels_inner.save();
+        if (!ok1) return false;
+        if (this.regions_inner) {
+            return this.regions_inner.save();
         }
-        const value = (this.$body.find("#grm-f-description").val() || "").trim();
-        try {
-            if ((this.project.description || "") !== value) {
-                await frappe.db.set_value("GRM Project", this.project.name, "description", value);
-                this.project.description = value;
-            }
-            return true;
-        } catch (e) {
-            return false;
-        }
+        return true;
     }
 }
 
 // ---------------------------------------------------------------------------
-// Step 12 — Activate
+// Step 2 — Regions tab (bulk CSV upload of administrative regions)
 // ---------------------------------------------------------------------------
-class GRMWizardStep12Activate {
+class GRMWizardStep2AdminRegionsInner {
+    constructor($container, project, wizard) {
+        this.$container = $container;
+        this.project = project;
+        this.wizard = wizard;
+        this.parsed = null;
+        this.render();
+    }
+
+    render() {
+        this.$container.html(`
+            <p class="text-muted">${__("Upload a CSV with one column per administrative level (e.g. Province, District, Sector). The highest level is auto-created from the project's country.")}</p>
+            <div class="form-group">
+              <label>${__("Highest level (single value, applied to all rows)")}</label>
+              <input type="text" class="form-control" id="grm-rg-highest" placeholder="Country" value="Country">
+            </div>
+            <div class="form-group">
+              <label>${__("CSV file")}</label>
+              <input type="file" accept=".csv" id="grm-rg-file" class="form-control-file">
+            </div>
+            <button class="btn btn-default btn-sm" id="grm-rg-preview">${__("Preview")}</button>
+            <button class="btn btn-primary btn-sm" id="grm-rg-import" disabled>${__("Import Regions")}</button>
+            <div id="grm-rg-result" class="mt-3"></div>
+        `);
+        this.$container.find("#grm-rg-preview").on("click", () => this.preview());
+        this.$container.find("#grm-rg-import").on("click",  () => this.do_import());
+    }
+
+    async _read_file() {
+        const file = this.$container.find("#grm-rg-file")[0].files[0];
+        if (!file) {
+            frappe.show_alert({ message: __("Pick a CSV first."), indicator: "orange" });
+            return null;
+        }
+        return await file.text();
+    }
+
+    async preview() {
+        const csv_text = await this._read_file();
+        if (!csv_text) return;
+        const highest = this.$container.find("#grm-rg-highest").val().trim() || "Country";
+        const r = await frappe.call({
+            method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.parse_admin_regions_csv",
+            args: { project: this.project.name, highest_level: highest, csv_text },
+        });
+        this.parsed = r.message;
+        this._render_preview();
+    }
+
+    _render_preview() {
+        const p = this.parsed || {};
+        const $r = this.$container.find("#grm-rg-result").empty();
+        if (p.errors && p.errors.length) {
+            $r.append(`<div class="alert alert-danger"><strong>${__("Errors")}:</strong><ul>${p.errors.map(e => `<li>${frappe.utils.escape_html(e)}</li>`).join("")}</ul></div>`);
+            this.$container.find("#grm-rg-import").prop("disabled", true);
+            return;
+        }
+        const cols = p.level_columns || [];
+        $r.append(`<div class="alert alert-info">${__("Detected {0} rows across levels: {1}", [p.total_rows || 0, cols.join(" → ")])}</div>`);
+        const $tbl = $(`<div class="form-grid"><table class="table table-borderless"><thead><tr>${cols.map(c => `<th>${frappe.utils.escape_html(c)}</th>`).join("")}</tr></thead><tbody></tbody></table></div>`);
+        (p.preview || []).forEach(row => {
+            $tbl.find("tbody").append(`<tr>${cols.map(c => `<td>${frappe.utils.escape_html(row[c] || "")}</td>`).join("")}</tr>`);
+        });
+        $r.append($tbl);
+        this.$container.find("#grm-rg-import").prop("disabled", false);
+    }
+
+    async do_import() {
+        const csv_text = await this._read_file();
+        if (!csv_text) return;
+        const highest = this.$container.find("#grm-rg-highest").val().trim() || "Country";
+        const r = await frappe.call({
+            method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.bulk_insert_admin_regions",
+            args: { project: this.project.name, highest_level: highest, csv_text },
+        });
+        const m = r.message || {};
+        const $r = this.$container.find("#grm-rg-result").empty();
+        $r.append(`<div class="alert alert-success">${__("Imported {0} regions ({1} updated). {2} errors.", [m.created || 0, m.updated || 0, (m.errors || []).length])}</div>`);
+        if (m.errors && m.errors.length) {
+            $r.append(`<ul>${m.errors.map(e => `<li class="text-danger">${frappe.utils.escape_html(e)}</li>`).join("")}</ul>`);
+        }
+    }
+
+    async save() {
+        // The Regions tab does not gate step navigation — bulk upload is optional.
+        return true;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 9 — Users (bulk creation: CSV upload + auto-generate per region + activation codes)
+// ---------------------------------------------------------------------------
+class GRMWizardStep9Users {
+    constructor($body, project, wizard) {
+        this.$body = $body;
+        this.project = project;
+        this.wizard = wizard;
+        this.render();
+    }
+
+    render() {
+        if (!this.project) {
+            this.$body.html(`<p class="text-muted">${__("Save Step 1 first to create the project.")}</p>`);
+            return;
+        }
+        this.$body.html(`
+            <p class="text-muted">${__("Create government workers in bulk. Either upload a CSV or auto-generate one worker per administrative region.")}</p>
+            <ul class="nav nav-tabs">
+              <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#grm-u-csv">${__("Upload CSV")}</a></li>
+              <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#grm-u-auto">${__("Auto-generate per Region")}</a></li>
+              <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#grm-u-codes">${__("Activation Codes")}</a></li>
+            </ul>
+            <div class="tab-content pt-3">
+              <div class="tab-pane fade show active" id="grm-u-csv"></div>
+              <div class="tab-pane fade" id="grm-u-auto"></div>
+              <div class="tab-pane fade" id="grm-u-codes"></div>
+            </div>
+        `);
+        this._render_csv_tab();
+        this._render_auto_tab();
+        this._render_codes_tab();
+    }
+
+    _render_csv_tab() {
+        this.$body.find("#grm-u-csv").html(`
+            <p>${__("Required columns: first_name, last_name, position, region, phone. Optional: email.")}</p>
+            <button class="btn btn-link btn-sm p-0" id="grm-u-template">${__("Download template")}</button>
+            <div class="form-group mt-2">
+              <input type="file" accept=".csv" id="grm-u-file" class="form-control-file">
+            </div>
+            <button class="btn btn-default btn-sm" id="grm-u-validate">${__("Validate")}</button>
+            <button class="btn btn-primary btn-sm" id="grm-u-import" disabled>${__("Create Users")}</button>
+            <div id="grm-u-result" class="mt-3"></div>
+        `);
+        this.$body.find("#grm-u-validate").on("click", () => this._validate());
+        this.$body.find("#grm-u-import").on("click",   () => this._import());
+        this.$body.find("#grm-u-template").on("click", () => this._download_template());
+    }
+
+    async _download_template() {
+        const r = await frappe.call({
+            method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.export_user_template",
+        });
+        const csv_text = r.message || "";
+        this._save_blob(csv_text, "government-workers-template.csv");
+    }
+
+    _render_auto_tab() {
+        this.$body.find("#grm-u-auto").html(`
+            <p>${__("Pick the level at which to create one worker per region. The CLI position template defaults to '{level}_officer'.")}</p>
+            <div class="form-group">
+              <label>${__("Administrative Level Type")}</label>
+              <input type="text" class="form-control" id="grm-u-level" placeholder="Sector">
+            </div>
+            <div class="form-group">
+              <label>${__("Position template")}</label>
+              <input type="text" class="form-control" id="grm-u-tmpl" value="{level}_officer">
+            </div>
+            <button class="btn btn-primary btn-sm" id="grm-u-gen">${__("Auto-generate")}</button>
+            <div id="grm-u-gen-result" class="mt-3"></div>
+        `);
+        this.$body.find("#grm-u-gen").on("click", () => this._auto_generate());
+    }
+
+    _render_codes_tab() {
+        this.$body.find("#grm-u-codes").html(`
+            <p>${__("Download a CSV of all activation codes for this project. Codes expire 48 hours after creation.")}</p>
+            <button class="btn btn-default btn-sm" id="grm-u-export">${__("Export CSV")}</button>
+        `);
+        this.$body.find("#grm-u-export").on("click", () => this._export_codes());
+    }
+
+    async _read_file() {
+        const f = this.$body.find("#grm-u-file")[0].files[0];
+        if (!f) { frappe.show_alert({ message: __("Pick a CSV first."), indicator: "orange" }); return null; }
+        return await f.text();
+    }
+
+    _save_blob(text, filename) {
+        const blob = new Blob([text], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+    }
+
+    async _validate() {
+        const csv_text = await this._read_file();
+        if (!csv_text) return;
+        const r = await frappe.call({
+            method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.parse_users_csv",
+            args: { project: this.project.name, csv_text },
+        });
+        const m = r.message || {};
+        const $r = this.$body.find("#grm-u-result").empty();
+        if (m.errors && m.errors.length) {
+            $r.append(`<div class="alert alert-danger"><ul>${m.errors.map(e => `<li>${frappe.utils.escape_html(e)}</li>`).join("")}</ul></div>`);
+            return;
+        }
+        $r.append(`<div class="alert alert-info">${__("Detected {0} valid rows.", [m.total_rows || 0])}</div>`);
+        this.$body.find("#grm-u-import").prop("disabled", false);
+    }
+
+    async _import() {
+        const csv_text = await this._read_file();
+        if (!csv_text) return;
+        const r = await frappe.call({
+            method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.bulk_create_users",
+            args: { project: this.project.name, csv_text },
+        });
+        const m = r.message || {};
+        this.$body.find("#grm-u-result").empty().append(
+            `<div class="alert alert-success">${__("Created {0} users. Failures: {1}.", [m.created || 0, (m.errors || []).length])}</div>`
+        );
+    }
+
+    async _auto_generate() {
+        const level = this.$body.find("#grm-u-level").val().trim();
+        const tmpl  = this.$body.find("#grm-u-tmpl").val().trim() || "{level}_officer";
+        if (!level) { frappe.show_alert({ message: __("Pick a level."), indicator: "orange" }); return; }
+        const r = await frappe.call({
+            method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.auto_generate_regional_users",
+            args: { project: this.project.name, level_type: level, position_template: tmpl },
+        });
+        const m = r.message || {};
+        this.$body.find("#grm-u-gen-result").empty().append(
+            `<div class="alert alert-success">${__("Generated {0} users.", [m.created || 0])}</div>`
+        );
+    }
+
+    async _export_codes() {
+        const r = await frappe.call({
+            method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.export_activation_codes",
+            args: { project: this.project.name },
+        });
+        const csv_text = r.message || "";
+        this._save_blob(csv_text, `${this.project.name}-activation-codes.csv`);
+    }
+
+    async save() {
+        // User creation is optional per step. Continue freely.
+        return true;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 10 — Issue Routing finalization (review per-category routing)
+// ---------------------------------------------------------------------------
+class GRMWizardStep10Routing {
+    constructor($body, project, wizard) {
+        this.$body = $body;
+        this.project = project;
+        this.wizard = wizard;
+        this.categories = [];
+        this.departments = [];
+        this.roles = [];
+        this.render();
+    }
+
+    async render() {
+        if (!this.project) {
+            this.$body.html(`<p class="text-muted">${__("Save Step 1 first to create the project.")}</p>`);
+            return;
+        }
+        this.$body.html(`<p class="text-muted">${__("Loading…")}</p>`);
+        await this._load();
+        this._render_table();
+    }
+
+    async _load() {
+        try {
+            const [cats, depts, roles] = await Promise.all([
+                frappe.db.get_list("GRM Issue Category", {
+                    filters: [["GRM Project Link", "project", "=", this.project.name]],
+                    fields: ["name", "category_name", "label", "routing_target_type", "assigned_department", "assigned_role"],
+                    limit: 0,
+                }),
+                frappe.db.get_list("GRM Issue Department", {
+                    filters: { project: this.project.name },
+                    fields: ["name", "department_name"],
+                    limit: 0,
+                }),
+                frappe.db.get_list("GRM Project Role", {
+                    filters: { project: this.project.name, is_active: 1 },
+                    fields: ["name", "role_name"],
+                    limit: 0,
+                }),
+            ]);
+            this.categories = cats || [];
+            this.departments = depts || [];
+            this.roles = roles || [];
+        } catch (e) {
+            this.categories = [];
+            this.departments = [];
+            this.roles = [];
+        }
+    }
+
+    _opt(value, label, selected) {
+        const sel = (selected != null && String(selected) === String(value)) ? "selected" : "";
+        return `<option value="${frappe.utils.escape_html(value || "")}" ${sel}>${frappe.utils.escape_html(label || "")}</option>`;
+    }
+
+    _render_table() {
+        if (!this.categories.length) {
+            this.$body.html(`<p class="text-muted">${__("No issue categories defined yet — go back to Step 5 to add some.")}</p>`);
+            return;
+        }
+        const dept_opts = this.departments.map(d => `<option value="${frappe.utils.escape_html(d.name)}">${frappe.utils.escape_html(d.department_name || d.name)}</option>`).join("");
+        const role_opts = this.roles.map(r => `<option value="${frappe.utils.escape_html(r.name)}">${frappe.utils.escape_html(r.role_name || r.name)}</option>`).join("");
+        const rows = this.categories.map(c => {
+            const tt = c.routing_target_type || "Department";
+            const dept_options = `<option value="">— ${__("None")} —</option>` + dept_opts.replace(`value="${frappe.utils.escape_html(c.assigned_department)}"`, `value="${frappe.utils.escape_html(c.assigned_department)}" selected`);
+            const role_options = `<option value="">— ${__("None")} —</option>` + role_opts.replace(`value="${frappe.utils.escape_html(c.assigned_role)}"`, `value="${frappe.utils.escape_html(c.assigned_role)}" selected`);
+            return `
+              <tr data-cat="${frappe.utils.escape_html(c.name)}">
+                <td>${frappe.utils.escape_html(c.label || c.category_name || c.name)}</td>
+                <td>
+                  <select class="form-control form-control-sm grm-r-type">
+                    <option value="Department" ${tt === "Department" ? "selected" : ""}>${__("Department")}</option>
+                    <option value="Role"       ${tt === "Role"       ? "selected" : ""}>${__("Role")}</option>
+                  </select>
+                </td>
+                <td>
+                  <select class="form-control form-control-sm grm-r-target-dept" ${tt === "Role" ? "style='display:none'" : ""}>
+                    ${dept_options}
+                  </select>
+                  <select class="form-control form-control-sm grm-r-target-role" ${tt === "Department" ? "style='display:none'" : ""}>
+                    ${role_options}
+                  </select>
+                </td>
+              </tr>`;
+        }).join("");
+        this.$body.html(`
+            <p class="text-muted">${__("Finalise where each category's complaints are routed. Choose a Department for organisational routing, or a Role for cross-department workflows.")}</p>
+            <div class="form-grid">
+              <table class="table table-borderless">
+                <thead><tr><th>${__("Category")}</th><th style="width:160px;">${__("Route To")}</th><th>${__("Target")}</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+        `);
+        this.$body.on("change", ".grm-r-type", (e) => {
+            const $tr = $(e.target).closest("tr");
+            const t = $(e.target).val();
+            $tr.find(".grm-r-target-dept").toggle(t === "Department");
+            $tr.find(".grm-r-target-role").toggle(t === "Role");
+        });
+    }
+
+    async save() {
+        const tasks = [];
+        const me = this;
+        this.$body.find("tbody tr").each(function () {
+            const $tr = $(this);
+            const cat = $tr.data("cat");
+            const t = $tr.find(".grm-r-type").val();
+            const target = t === "Department"
+                ? $tr.find(".grm-r-target-dept").val()
+                : $tr.find(".grm-r-target-role").val();
+            if (!target) return;
+            tasks.push(frappe.call({
+                method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.update_category_routing",
+                args: { project: me.project.name, category: cat, target_type: t, target },
+            }));
+        });
+        try { await Promise.all(tasks); return true; }
+        catch (e) { return false; }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 13 — Activate
+// ---------------------------------------------------------------------------
+class GRMWizardStep13Activate {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
@@ -479,15 +1103,17 @@ class GRMWizardStep12Activate {
         const p = this.project;
         const $s = this.$body.find("#grm-step12-summary").empty();
         $s.html(`
-            <table class="table table-bordered" style="margin-bottom:0;">
-              <tbody>
-                <tr><th style="width:40%;">${__("Project Code")}</th><td>${frappe.utils.escape_html(p.project_code || "")}</td></tr>
-                <tr><th>${__("Title")}</th><td>${frappe.utils.escape_html(p.title || "")}</td></tr>
-                <tr><th>${__("Administrative Levels")}</th><td>${counts.adm_levels}</td></tr>
-                <tr><th>${__("Project Roles")}</th><td>${counts.roles}</td></tr>
-                <tr><th>${__("Issue Categories (linked)")}</th><td>${counts.categories}</td></tr>
-              </tbody>
-            </table>
+            <div class="form-grid">
+              <table class="table table-borderless" style="margin-bottom:0;">
+                <tbody>
+                  <tr><th style="width:40%;">${__("Project Code")}</th><td>${frappe.utils.escape_html(p.project_code || "")}</td></tr>
+                  <tr><th>${__("Title")}</th><td>${frappe.utils.escape_html(p.title || "")}</td></tr>
+                  <tr><th>${__("Administrative Levels")}</th><td>${counts.adm_levels}</td></tr>
+                  <tr><th>${__("Project Roles")}</th><td>${counts.roles}</td></tr>
+                  <tr><th>${__("Issue Categories (linked)")}</th><td>${counts.categories}</td></tr>
+                </tbody>
+              </table>
+            </div>
         `);
     }
 
@@ -567,7 +1193,7 @@ class GRMWizardStep12Activate {
 // ---------------------------------------------------------------------------
 // Step 3 — Administrative Levels
 // ---------------------------------------------------------------------------
-class GRMWizardStep3AdminLevels {
+class GRMWizardStep2AdminLevelsInner {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
@@ -575,6 +1201,7 @@ class GRMWizardStep3AdminLevels {
         this.rows = [];
         this.editing = null;
         this.adding = false;
+        this.selected = new Set();
         this.render();
     }
 
@@ -635,6 +1262,7 @@ class GRMWizardStep3AdminLevels {
         const head = `
             <thead>
               <tr>
+                <th class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-all" tabindex="-1"></th>
                 <th>${__("Level Name")}</th>
                 <th style="width:80px;">${__("Order")}</th>
                 <th style="width:90px;">${__("Ack Days")}</th>
@@ -646,7 +1274,10 @@ class GRMWizardStep3AdminLevels {
             </thead>
         `;
         const body_rows = this.rows.map((r) => this.render_row_html(r)).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+        $w.html(
+            grm_render_bulk_toolbar("levels")
+            + `<div class="form-grid"><table class="table table-borderless">${head}<tbody>${body_rows}</tbody></table></div>`,
+        );
 
         // Wire up actions via delegation
         $w.find("button.grm-edit").on("click", (ev) => {
@@ -665,6 +1296,19 @@ class GRMWizardStep3AdminLevels {
             this.editing = null;
             this.render_table();
         });
+
+        grm_wire_bulk_table($w, {
+            selected: this.selected,
+            row_names: this.rows.map((r) => r.name),
+            key: "levels",
+            singular: __("level"),
+            plural: __("levels"),
+            confirm_msg: (n) => n === 1
+                ? __("Delete the selected administrative level?")
+                : __("Delete {0} selected administrative levels?", [n]),
+            delete_one: (name) => frappe.db.delete_doc("GRM Administrative Level Type", name),
+            on_done: () => this.load_and_render_table(),
+        });
     }
 
     render_row_html(r) {
@@ -672,6 +1316,7 @@ class GRMWizardStep3AdminLevels {
         if (editing) {
             return `
               <tr data-name="${frappe.utils.escape_html(r.name)}">
+                <td class="grm-bulk-cell"></td>
                 <td><input type="text" class="form-control input-xs" id="grm-e-level_name" value="${frappe.utils.escape_html(r.level_name || "")}"></td>
                 <td><input type="number" min="1" class="form-control input-xs" id="grm-e-level_order" value="${r.level_order != null ? r.level_order : ""}"></td>
                 <td><input type="number" min="0" class="form-control input-xs" id="grm-e-acknowledgment_days" value="${r.acknowledgment_days != null ? r.acknowledgment_days : 7}"></td>
@@ -687,6 +1332,7 @@ class GRMWizardStep3AdminLevels {
         }
         return `
           <tr data-name="${frappe.utils.escape_html(r.name)}">
+            <td class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-row-check" tabindex="-1"></td>
             <td>${frappe.utils.escape_html(r.level_name || "")}</td>
             <td>${r.level_order != null ? r.level_order : ""}</td>
             <td>${r.acknowledgment_days != null ? r.acknowledgment_days : ""}</td>
@@ -694,8 +1340,8 @@ class GRMWizardStep3AdminLevels {
             <td>${r.reminder_before_days != null ? r.reminder_before_days : ""}</td>
             <td>${r.auto_escalate ? __("Yes") : __("No")}</td>
             <td>
-              <button class="btn btn-xs btn-default grm-edit" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
-              <button class="btn btn-xs btn-danger grm-delete" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+              <button class="grm-row-action grm-edit" title="${__("Edit")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("edit", "sm")}</button>
+              <button class="grm-row-action grm-row-action-danger grm-delete" title="${__("Delete")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("close", "sm")}</button>
             </td>
           </tr>
         `;
@@ -882,45 +1528,50 @@ const GRM_DEFAULT_DUTIES = [
     { name: "Supervise", label: "Supervise" },
 ];
 
-class GRMWizardStep4ProjectRoles {
+class GRMWizardStep7ProjectRoles {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
         this.wizard = wizard;
-        this.rows = [];           // [{name, role_name, admin_level, is_active, description, duties: [name,...]}]
-        this.admin_levels = [];   // [{name, level_name}]
-        this.duties = [];         // [{name, label}]
-        this.editing = null;
-        this.adding = false;
+        this.rows = [];          // [{name, role_name, admin_level, is_active, duties: Set<string>}]
+        this.admin_levels = [];  // [{name, level_name}]
+        this.duties = [];        // [{name, label, lifecycle_phase}]
         this.render();
     }
 
     async render() {
         if (!this.project) {
-            this.$body.html(`
-                <div class="grm-wizard-placeholder">
-                  <p class="text-muted">${__("Save Step 1 first to create the project.")}</p>
-                </div>
-            `);
+            this.$body.html(`<p class="text-muted">${__("Save Step 1 first to create the project.")}</p>`);
             return;
         }
         this.$body.html(`
-            <div class="grm-step4" style="max-width: 1040px;">
-              <div class="grm-step4-intro" style="margin-bottom: 16px;">
-                <p>${__("Project Roles bind a project-specific role label (e.g. \"District GRM Officer\") to one or more duties from the universal duty catalog.")}</p>
-                <p class="text-muted small">${__("Each role can be optionally bound to an administrative level — for example, a District GRM Officer is normally bound to the \"District\" level. Duties drive what the role can do in the case lifecycle.")}</p>
+            <div class="grm-step7-roles">
+              <div class="grm-step7-intro" style="margin-bottom: 12px;">
+                <p>${__("Define the project's user types (e.g. \"District GRM Officer\") and tick the duties each role performs in the case lifecycle.")}</p>
+                <p class="text-muted small">${__("Tick a checkbox to grant the role that duty — saves immediately.")}</p>
               </div>
-              <div id="grm-step4-table-wrap"></div>
-              <div id="grm-step4-form-wrap" style="margin-top: 12px;"></div>
-              <div style="margin-top: 12px;">
-                <button class="btn btn-default btn-sm" id="grm-step4-add">+ ${__("Add Role")}</button>
+              <div class="grm-perm-engine table-responsive" style="min-height: 120px;"></div>
+              <div class="grm-step7-footer" style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+                <button type="button" id="grm-step7-add-role" class="btn btn-default btn-sm">+ ${__("Add Role")}</button>
               </div>
             </div>
         `);
-        this.$body.find("#grm-step4-add").on("click", () => this.start_add());
-
+        this.body = this.$body.find(".grm-perm-engine");
+        this.install_page_actions();
+        this.add_check_events();
+        this.$body.find("#grm-step7-add-role").on("click", () => this.show_add_role_dialog());
         await this.load_lookups();
-        await this.load_and_render_table();
+        await this.refresh();
+    }
+
+    install_page_actions() {
+        // Primary actions live inside the step body (.grm-step7-footer) so they stay
+        // co-located with the form and never leak into adjacent steps. Clear any
+        // page-header actions that earlier renders (or other steps) may have set.
+        if (this.wizard && this.wizard.page) {
+            try { this.wizard.page.clear_primary_action && this.wizard.page.clear_primary_action(); } catch (e) { /* ignore */ }
+            try { this.wizard.page.clear_secondary_action && this.wizard.page.clear_secondary_action(); } catch (e) { /* ignore */ }
+        }
     }
 
     async load_lookups() {
@@ -940,36 +1591,34 @@ class GRMWizardStep4ProjectRoles {
                 limit: 0,
                 order_by: "lifecycle_phase asc",
             });
-            if (duty_rows && duty_rows.length) {
-                this.duties = duty_rows.map((d) => ({
+            this.duties = (duty_rows && duty_rows.length)
+                ? duty_rows.map((d) => ({
                     name: d.name,
                     label: d.label || d.duty_name || d.name,
-                }));
-            } else {
-                this.duties = GRM_DEFAULT_DUTIES.slice();
-            }
+                    lifecycle_phase: d.lifecycle_phase || "",
+                }))
+                : GRM_DEFAULT_DUTIES.slice();
         } catch (e) {
             this.duties = GRM_DEFAULT_DUTIES.slice();
         }
     }
 
-    async load_and_render_table() {
+    async refresh() {
         try {
             const list_rows = await frappe.db.get_list("GRM Project Role", {
                 filters: { project: this.project.name },
-                fields: ["name", "role_name", "admin_level", "is_active", "description"],
+                fields: ["name", "role_name", "admin_level", "is_active"],
                 limit: 0,
                 order_by: "role_name asc",
             });
-            // Pull full docs in parallel to get child rows (duties)
             const docs = await Promise.all(
                 list_rows.map((r) => frappe.db.get_doc("GRM Project Role", r.name).catch(() => null)),
             );
             this.rows = list_rows.map((r, i) => {
                 const doc = docs[i];
-                const duties = doc && Array.isArray(doc.duties)
-                    ? doc.duties.map((d) => d.duty).filter(Boolean)
-                    : [];
+                const duties = new Set(
+                    doc && Array.isArray(doc.duties) ? doc.duties.map((d) => d.duty).filter(Boolean) : [],
+                );
                 return Object.assign({}, r, { duties });
             });
         } catch (e) {
@@ -979,223 +1628,353 @@ class GRMWizardStep4ProjectRoles {
     }
 
     render_table() {
-        const $w = this.$body.find("#grm-step4-table-wrap").empty();
         if (!this.rows.length) {
-            $w.html(`<p class="text-muted">${__("No project roles yet — click \"Add Role\" to create the first one.")}</p>`);
+            this.body.html(`
+                <p class="text-muted">${__("No roles yet — click \"+ Add Role\" below to create the first one.")}</p>
+            `);
+            this.selected = new Set();
             return;
         }
-        const head = `
-            <thead>
-              <tr>
-                <th>${__("Role Name")}</th>
-                <th style="width:180px;">${__("Admin Level")}</th>
-                <th>${__("Duties")}</th>
-                <th style="width:80px;">${__("Active")}</th>
-                <th style="width:140px;">${__("Actions")}</th>
-              </tr>
-            </thead>
-        `;
-        const body_rows = this.rows.map((r) => {
-            const duty_labels = (r.duties || [])
-                .map((d) => {
-                    const found = this.duties.find((x) => x.name === d);
-                    return found ? found.label : d;
-                })
-                .map((s) => frappe.utils.escape_html(s))
-                .join(", ");
+        // Mirror Frappe's child-table grid markup + .form-grid-container.column-limit-reached
+        // wrapper (see /app/doctype/<X>#permissions_tab):
+        //   .form-grid-container.column-limit-reached > .form-grid > .grid-heading-row > .grid-row >
+        //     .data-row.row.m-0 > [.row-check, .row-index, .col.grid-static-col[.col-xs-N]...]
+        // Using these classes lets us inherit ALL of Frappe's grid CSS
+        // (common/grid.scss + element/checkbox.scss) — including the per-col-xs-N
+        // explicit widths and 31/40px sticky structural cols — without redefining anything.
+        // (No trailing decorative cog — `_actions` is the last child; the
+        // `:last-child → 30px sticky` rule is unset for `.grm-perm-table` in
+        // grm_project_wizard.css.)
+        if (!this.selected) this.selected = new Set();
+        // Drop selected names that no longer exist (e.g., after a delete).
+        const existing = new Set(this.rows.map((r) => r.name));
+        for (const n of [...this.selected]) if (!existing.has(n)) this.selected.delete(n);
+
+        const esc = frappe.utils.escape_html;
+        const duty_heads = (this.duties || []).map((d) => {
+            const tip = d.lifecycle_phase ? `title="${esc(d.lifecycle_phase)}"` : "";
             return `
-              <tr data-name="${frappe.utils.escape_html(r.name)}">
-                <td>${frappe.utils.escape_html(r.role_name || "")}</td>
-                <td>${frappe.utils.escape_html(r.admin_level || "")}</td>
-                <td>${duty_labels}</td>
-                <td>${r.is_active ? __("Yes") : __("No")}</td>
-                <td>
-                  <button class="btn btn-xs btn-default grm-edit-role" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
-                  <button class="btn btn-xs btn-danger grm-delete-role" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
-                </td>
-              </tr>
-            `;
+                <div class="col grid-static-col text-center grm-duty-col" ${tip} data-fieldname="duty:${esc(d.name)}" data-fieldtype="Check">
+                  <div class="static-area ellipsis">${esc(d.label)}</div>
+                </div>`;
         }).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
 
-        $w.find("button.grm-edit-role").on("click", (ev) => {
-            const name = $(ev.currentTarget).data("name");
-            this.start_edit(name);
-        });
-        $w.find("button.grm-delete-role").on("click", (ev) => {
-            const name = $(ev.currentTarget).data("name");
-            this.confirm_delete(name);
-        });
-    }
-
-    admin_level_options(selected) {
-        const opts = [`<option value="">${__("(none)")}</option>`];
-        for (const lvl of this.admin_levels) {
-            const sel = lvl.name === selected ? " selected" : "";
-            opts.push(`<option value="${frappe.utils.escape_html(lvl.name)}"${sel}>${frappe.utils.escape_html(lvl.level_name || lvl.name)}</option>`);
-        }
-        return opts.join("");
-    }
-
-    duty_checkboxes_html(selected_set, prefix) {
-        return this.duties
-            .map((d) => {
-                const checked = selected_set.has(d.name) ? "checked" : "";
-                const id = `${prefix}-${d.name.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
-                return `
-                  <label class="checkbox" style="display:inline-block; margin-right:14px;">
-                    <input type="checkbox" class="grm-duty-cb" data-duty="${frappe.utils.escape_html(d.name)}" id="${id}" ${checked}>
-                    ${frappe.utils.escape_html(d.label)}
-                  </label>
-                `;
-            })
-            .join("");
-    }
-
-    start_add() {
-        this.adding = true;
-        this.editing = null;
-        this.render_form(null);
-    }
-
-    start_edit(name) {
-        const row = this.rows.find((x) => x.name === name);
-        if (!row) return;
-        this.editing = name;
-        this.adding = false;
-        this.render_form(row);
-    }
-
-    render_form(row) {
-        const is_edit = !!row;
-        const role_name = row ? (row.role_name || "") : "";
-        const admin_level = row ? (row.admin_level || "") : "";
-        const description = row ? (row.description || "") : "";
-        const is_active = row ? !!row.is_active : true;
-        const selected_duties = new Set((row && row.duties) ? row.duties : []);
-
-        const $w = this.$body.find("#grm-step4-form-wrap").empty();
-        $w.html(`
-            <div class="grm-step4-form card" style="border:1px solid var(--border-color, #d1d8dd); padding:12px; border-radius:6px;">
-              <h5 style="margin-top:0;">${is_edit ? __("Edit Role") : __("New Role")}</h5>
-              <div class="row">
-                <div class="col-md-5">
-                  <label class="control-label reqd">${__("Role Name")}</label>
-                  <input type="text" class="form-control" id="grm-rf-role_name" value="${frappe.utils.escape_html(role_name)}">
+        this.body.html(`
+            <div class="grm-bulk-actions" data-grm-bulk-for="perm" hidden>
+              <span class="grm-bulk-count"></span>
+              <button type="button" class="btn btn-xs btn-danger grm-bulk-delete">${__("Delete")}</button>
+              <button type="button" class="btn btn-xs btn-secondary grm-bulk-clear">${__("Clear selection")}</button>
+            </div>
+            <div class="form-grid-container column-limit-reached">
+              <div class="form-grid grm-perm-table">
+                <div class="grid-heading-row">
+                  <div class="grid-row">
+                    <div class="data-row row m-0">
+                      <div class="row-check sortable-handle col">
+                        <input type="checkbox" class="grid-row-check grm-row-check-all" tabindex="-1">
+                      </div>
+                      <div class="row-index sortable-handle grid-static-col col"><span>${__("No.")}</span></div>
+                      <div class="col grid-static-col col-xs-3" data-fieldname="role_name" data-fieldtype="Data">
+                        <div class="static-area ellipsis reqd">${__("Role")}</div>
+                      </div>
+                      <div class="col grid-static-col col-xs-2" data-fieldname="admin_level" data-fieldtype="Link">
+                        <div class="static-area ellipsis">${__("Admin Level")}</div>
+                      </div>
+                      ${duty_heads}
+                      <div class="col grid-static-col text-right" data-fieldname="_actions"></div>
+                    </div>
+                  </div>
                 </div>
-                <div class="col-md-5">
-                  <label class="control-label">${__("Admin Level")}</label>
-                  <select class="form-control" id="grm-rf-admin_level">
-                    ${this.admin_level_options(admin_level)}
-                  </select>
+                <div class="grid-body">
+                  <div class="rows"></div>
                 </div>
-                <div class="col-md-2">
-                  <label class="control-label">${__("Active")}</label>
-                  <div><label class="checkbox"><input type="checkbox" id="grm-rf-is_active" ${is_active ? "checked" : ""}> ${__("Is Active")}</label></div>
-                </div>
-              </div>
-              <div class="form-group" style="margin-top:8px;">
-                <label class="control-label reqd">${__("Duties")}</label>
-                <div id="grm-rf-duties">${this.duty_checkboxes_html(selected_duties, "grm-rf-duty")}</div>
-                <small class="text-muted">${__("Select at least one duty.")}</small>
-              </div>
-              <div class="form-group">
-                <label class="control-label">${__("Description")}</label>
-                <textarea class="form-control" id="grm-rf-description" rows="2">${frappe.utils.escape_html(description)}</textarea>
-              </div>
-              <div style="margin-top:8px;">
-                <button class="btn btn-primary btn-sm" id="grm-rf-save">${__("Save Role")}</button>
-                <button class="btn btn-default btn-sm" id="grm-rf-cancel">${__("Cancel")}</button>
               </div>
             </div>
         `);
-        $w.find("#grm-rf-save").on("click", () => this.save_form(is_edit ? row.name : null));
-        $w.find("#grm-rf-cancel").on("click", () => {
-            this.adding = false;
-            this.editing = null;
-            $w.empty();
+        const $rows = this.body.find(".grid-body > .rows");
+        this.rows.forEach((row, idx) => {
+            const $r = $(`
+                <div class="grid-row" data-name="${esc(row.name)}">
+                  <div class="data-row row m-0"></div>
+                </div>
+            `).appendTo($rows);
+            const $dr = $r.find(".data-row");
+            const checked = this.selected.has(row.name) ? "checked" : "";
+            $(`<div class="row-check sortable-handle col"><input type="checkbox" class="grid-row-check" tabindex="-1" ${checked}></div>`).appendTo($dr);
+            $(`<div class="row-index sortable-handle grid-static-col col"><span>${idx + 1}</span></div>`).appendTo($dr);
+            this.add_static_col($dr, row.role_name || row.name, "col-xs-3");
+            this.add_admin_level_col($dr, row);
+            for (const d of this.duties) {
+                this.add_duty_check_col($dr, row, d);
+            }
+            this.add_delete_col($dr, row);
         });
+        this.bind_bulk_select();
+        this.refresh_bulk_actions();
     }
 
-    read_form() {
-        const $w = this.$body.find("#grm-step4-form-wrap");
-        const role_name = ($w.find("#grm-rf-role_name").val() || "").trim();
-        const admin_level = ($w.find("#grm-rf-admin_level").val() || "").trim() || null;
-        const description = ($w.find("#grm-rf-description").val() || "").trim();
-        const is_active = $w.find("#grm-rf-is_active").is(":checked") ? 1 : 0;
-        const duties = [];
-        $w.find(".grm-duty-cb:checked").each(function () {
-            duties.push($(this).data("duty"));
-        });
-        return { role_name, admin_level, description, is_active, duties };
-    }
-
-    async save_form(existing_name) {
-        const v = this.read_form();
-        if (!v.role_name) {
-            frappe.show_alert({ message: __("Role Name is required."), indicator: "red" });
-            return;
-        }
-        if (!v.duties.length) {
-            frappe.show_alert({ message: __("Select at least one duty."), indicator: "red" });
-            return;
-        }
-        // Local uniqueness on role_name within project
-        const dup = this.rows.find(
-            (x) => x.name !== existing_name && (x.role_name || "").toLowerCase() === v.role_name.toLowerCase(),
-        );
-        if (dup) {
-            frappe.show_alert({ message: __("Role '{0}' already exists for this project.", [v.role_name]), indicator: "red" });
-            return;
-        }
-
-        try {
-            if (existing_name) {
-                const doc = await frappe.db.get_doc("GRM Project Role", existing_name);
-                doc.role_name = v.role_name;
-                doc.admin_level = v.admin_level;
-                doc.description = v.description;
-                doc.is_active = v.is_active;
-                doc.duties = v.duties.map((d) => ({ duty: d }));
-                await frappe.call({ method: "frappe.client.save", args: { doc } });
-                frappe.show_alert({ message: __("Role updated."), indicator: "green" });
+    bind_bulk_select() {
+        // Idempotent: re-bound on every render. Use a namespaced delegated
+        // handler so re-renders don't double-fire.
+        this.body.off("change.grm-bulk").on("change.grm-bulk", ".grid-row-check", (e) => {
+            const $chk = $(e.currentTarget);
+            const $headRow = $chk.closest(".grid-heading-row");
+            const isHeader = $headRow.length > 0;
+            const checked = $chk.prop("checked");
+            if (isHeader) {
+                this.selected = checked ? new Set(this.rows.map((r) => r.name)) : new Set();
+                this.body.find(".grid-body .grid-row-check").prop("checked", checked);
             } else {
-                const payload = {
-                    doctype: "GRM Project Role",
-                    project: this.project.name,
-                    role_name: v.role_name,
-                    admin_level: v.admin_level,
-                    description: v.description,
-                    is_active: v.is_active,
-                    duties: v.duties.map((d) => ({ duty: d })),
-                };
-                if (payload.admin_level == null) delete payload.admin_level;
-                await frappe.db.insert(payload);
-                frappe.show_alert({ message: __("Role created."), indicator: "green" });
+                const name = $chk.closest(".grid-row").attr("data-name");
+                if (!name) return;
+                if (checked) this.selected.add(name);
+                else this.selected.delete(name);
             }
-            this.editing = null;
-            this.adding = false;
-            this.$body.find("#grm-step4-form-wrap").empty();
-            await this.load_and_render_table();
-        } catch (e) {
-            // frappe surfaces the error
+            this.refresh_bulk_actions();
+        });
+        this.body.off("click.grm-bulk").on("click.grm-bulk", ".grm-bulk-delete", () => this.confirm_bulk_delete());
+        this.body.on("click.grm-bulk", ".grm-bulk-clear", () => {
+            this.selected = new Set();
+            this.body.find(".grid-row-check").prop("checked", false);
+            this.refresh_bulk_actions();
+        });
+    }
+
+    refresh_bulk_actions() {
+        const n = this.selected.size;
+        const $bar = this.body.find(".grm-bulk-actions[data-grm-bulk-for='perm']");
+        $bar.attr("hidden", n === 0 ? "hidden" : null);
+        $bar.find(".grm-bulk-count").text(
+            n === 0 ? "" : (n === 1 ? __("1 row selected") : __("{0} rows selected", [n])),
+        );
+        $bar.find(".grm-bulk-delete").text(n === 1 ? __("Delete row") : __("Delete {0} rows", [n]));
+        const total = this.rows.length;
+        const $all = this.body.find(".grm-row-check-all");
+        if (total > 0) {
+            $all.prop("checked", n === total);
+            $all.prop("indeterminate", n > 0 && n < total);
         }
     }
 
-    confirm_delete(name) {
-        frappe.confirm(__("Delete role {0}?", [name]), async () => {
+    async confirm_bulk_delete() {
+        const names = [...this.selected];
+        if (!names.length) return;
+        const msg = names.length === 1
+            ? __("Delete role {0}?", [names[0]])
+            : __("Delete {0} selected roles?", [names.length]);
+        const proceed = await new Promise((res) => frappe.confirm(msg, () => res(true), () => res(false)));
+        if (!proceed) return;
+        const errs = [];
+        frappe.dom.freeze(__("Deleting…"));
+        for (const name of names) {
             try {
-                await frappe.db.delete_doc("GRM Project Role", name);
-                frappe.show_alert({ message: __("Role deleted."), indicator: "green" });
-                if (this.editing === name) this.editing = null;
-                await this.load_and_render_table();
+                await new Promise((resolve, reject) => {
+                    frappe.call({
+                        method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.project_role_delete",
+                        args: { role: name },
+                        callback: (r) => (r && r.exc ? reject(r.exc) : resolve()),
+                        error: (e) => reject(e),
+                    });
+                });
             } catch (e) {
-                // frappe surfaces the error
+                errs.push(name);
+            }
+        }
+        frappe.dom.unfreeze();
+        this.selected = new Set();
+        if (errs.length) {
+            frappe.show_alert({
+                message: __("Could not delete {0} role(s) — they may still be referenced.", [errs.length]),
+                indicator: "red",
+            });
+        } else {
+            frappe.show_alert({ message: __("{0} role(s) deleted.", [names.length]), indicator: "green" });
+        }
+        await this.refresh();
+    }
+
+    add_static_col($dr, text, sizing = "") {
+        const cls = `col grid-static-col ${sizing}`.trim();
+        return $(`<div class="${cls}"><div class="static-area ellipsis"></div></div>`)
+            .appendTo($dr)
+            .find(".static-area")
+            .text(text || "")
+            .end();
+    }
+
+    format_admin_level(value) {
+        if (!value) return "";
+        const found = (this.admin_levels || []).find((l) => l.name === value);
+        return found ? (found.level_name || value) : value;
+    }
+
+    add_admin_level_col($dr, row) {
+        const $col = $(`
+            <div class="col grid-static-col col-xs-2 grm-edit-cell" data-fieldname="admin_level">
+              <div class="static-area ellipsis"></div>
+            </div>
+        `).appendTo($dr);
+        const $sa = $col.find(".static-area");
+        const label = this.format_admin_level(row.admin_level);
+        if (label) {
+            $sa.text(label);
+        } else {
+            $sa.html(`<span class="grm-edit-placeholder">${__("Click to set")}</span>`);
+        }
+        $col.on("click", () => this.show_admin_level_dialog(row));
+        return $col;
+    }
+
+    add_duty_check_col($dr, row, duty) {
+        const checked = row.duties.has(duty.name) ? "checked" : "";
+        // Frappe-native check cell: <div class='col grid-static-col text-center'>
+        //   <div class='static-area ellipsis'><input type='checkbox'></div></div>
+        // The <input> inherits Frappe's --checkbox-size from element/checkbox.scss.
+        const $col = $(`
+            <div class="col grid-static-col text-center grm-duty-cell" data-fieldname="duty:${frappe.utils.escape_html(duty.name)}" data-fieldtype="Check">
+              <div class="static-area ellipsis">
+                <input type="checkbox" ${checked}>
+              </div>
+            </div>
+        `).appendTo($dr);
+        $col.find("input")
+            .attr("data-role", row.name)
+            .attr("data-duty", duty.name)
+            .attr("aria-label", duty.label);
+        return $col;
+    }
+
+    show_admin_level_dialog(row) {
+        const options = ["", ...(this.admin_levels || []).map((l) => l.name)].join("\n");
+        const d = new frappe.ui.Dialog({
+            title: __("Edit Admin Level — {0}", [row.role_name || row.name]),
+            fields: [
+                {
+                    fieldtype: "Select",
+                    label: __("Administrative Level"),
+                    fieldname: "admin_level",
+                    options: options,
+                    default: row.admin_level || "",
+                    description: __("Leave blank for project-wide roles."),
+                },
+            ],
+        });
+        d.set_primary_action(__("Save"), async () => {
+            const v = d.get_value("admin_level") || null;
+            try {
+                await frappe.db.set_value("GRM Project Role", row.name, "admin_level", v);
+                row.admin_level = v;
+                d.hide();
+                this.render_table();
+            } catch (e) {
+                frappe.msgprint({ title: __("Error"), message: e.message || e, indicator: "red" });
             }
         });
+        d.show();
+    }
+
+    add_delete_col($dr, row) {
+        const $col = $(`<div class="col grid-static-col text-right" data-fieldname="_actions"></div>`).appendTo($dr);
+        $(`<button class="grm-row-action grm-row-action-danger btn-remove-perm" title="${__("Delete role")}">${frappe.utils.icon("close", "sm")}</button>`)
+            .appendTo($col)
+            .attr("data-name", row.name)
+            .on("click", (e) => {
+                e.stopPropagation();
+                this.confirm_delete(row);
+            });
+        return $col;
+    }
+
+    add_check_events() {
+        // Single delegated handler — survives re-renders because it's bound on this.body.
+        const me = this;
+        this.body.on("click", "input[type='checkbox']", function () {
+            const $chk = $(this);
+            const role = $chk.attr("data-role");
+            const duty = $chk.attr("data-duty");
+            if (!role || !duty) return;
+            const value = $chk.prop("checked") ? 1 : 0;
+            frappe.dom.freeze();
+            frappe.call({
+                method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.project_role_toggle_duty",
+                args: { role, duty, value },
+                callback: (r) => {
+                    frappe.dom.unfreeze();
+                    if (r.exc) {
+                        $chk.prop("checked", !$chk.prop("checked"));
+                        return;
+                    }
+                    const row = me.rows.find((x) => x.name === role);
+                    if (row) {
+                        if (value) row.duties.add(duty);
+                        else row.duties.delete(duty);
+                    }
+                },
+            });
+        });
+    }
+
+    show_add_role_dialog() {
+        const d = new frappe.ui.Dialog({
+            title: __("Add User Type"),
+            fields: [
+                {
+                    fieldtype: "Data",
+                    label: __("Role Name"),
+                    fieldname: "role_name",
+                    reqd: 1,
+                    description: __("e.g. District GRM Officer"),
+                },
+                {
+                    fieldtype: "Select",
+                    label: __("Administrative Level (optional)"),
+                    fieldname: "admin_level",
+                    options: ["", ...this.admin_levels.map((l) => l.name)].join("\n"),
+                    description: __("Bind this role to an admin level (e.g. District). Leave blank for project-wide roles."),
+                },
+            ],
+        });
+        d.set_primary_action(__("Add"), () => {
+            const args = d.get_values();
+            if (!args || !args.role_name) return;
+            frappe.call({
+                method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.project_role_add",
+                args: {
+                    project: this.project.name,
+                    role_name: args.role_name,
+                    admin_level: args.admin_level || null,
+                },
+                callback: (r) => {
+                    if (r.exc) return;
+                    d.hide();
+                    this.refresh();
+                },
+            });
+        });
+        d.show();
+    }
+
+    confirm_delete(row) {
+        frappe.confirm(
+            __("Delete role {0}? This cannot be undone.", [row.role_name || row.name]),
+            () => {
+                frappe.call({
+                    method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.project_role_delete",
+                    args: { role: row.name },
+                    callback: (r) => {
+                        if (!r.exc) this.refresh();
+                    },
+                });
+            },
+        );
     }
 
     async save() {
+        // Grid is auto-saved per-click. Validate that at least one role exists with at least one duty.
+        const ok_rows = this.rows.filter((r) => r.duties && r.duties.size > 0);
+        if (!ok_rows.length) {
+            frappe.throw(__("Define at least one role with at least one duty before continuing."));
+        }
         return true;
     }
 }
@@ -1203,7 +1982,7 @@ class GRMWizardStep4ProjectRoles {
 // ---------------------------------------------------------------------------
 // Step 9 — SLAs
 // ---------------------------------------------------------------------------
-class GRMWizardStep9SLAs {
+class GRMWizardStep11SLAs {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
@@ -1266,7 +2045,7 @@ class GRMWizardStep9SLAs {
     render_table() {
         const $w = this.$body.find("#grm-step9-table-wrap").empty();
         if (!this.rows.length) {
-            $w.html(`<p class="text-muted">${__("No administrative levels defined yet — go back to Step 3 to add them.")}</p>`);
+            $w.html(`<p class="text-muted">${__("No administrative levels defined yet — go back to Step 2 to add them.")}</p>`);
             return;
         }
         const head = `
@@ -1289,7 +2068,7 @@ class GRMWizardStep9SLAs {
               <td><input type="checkbox" class="grm-s9-auto" ${r.auto_escalate ? "checked" : ""}></td>
             </tr>
         `).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+        $w.html(`<div class="form-grid"><table class="table table-borderless">${head}<tbody>${body_rows}</tbody></table></div>`);
     }
 
     read_table() {
@@ -1376,16 +2155,18 @@ class GRMWizardStep9SLAs {
 // ---------------------------------------------------------------------------
 // Step 5 — Issue Categories & Routing
 // ---------------------------------------------------------------------------
-class GRMWizardStep5IssueCategories {
+class GRMWizardStep3IssueCategories {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
         this.wizard = wizard;
         this.rows = [];
         this.departments = [];
+        this.project_roles = [];
         this.admin_levels = [];
         this.editing = null;
         this.adding = false;
+        this.selected = new Set();
         this.render();
     }
 
@@ -1401,8 +2182,8 @@ class GRMWizardStep5IssueCategories {
         this.$body.html(`
             <div class="grm-step5" style="max-width: 1100px;">
               <div class="grm-step5-intro" style="margin-bottom: 16px;">
-                <p>${__("Issue Categories define the kinds of grievances this project handles, plus the default routing (which department picks them up, escalation paths, and confidentiality).")}</p>
-                <p class="text-muted small">${__("Each category must be assigned to one of this project's departments. If you haven't created departments yet, set them up in Step 5 first.")}</p>
+                <p>${__("Issue Categories define the kinds of grievances this project handles, plus the default routing (which department or role picks them up, escalation paths, and confidentiality).")}</p>
+                <p class="text-muted small">${__("Each category routes to either a Department (organisational) or a Role (cross-department workflow). Step 10 lets you review and re-assign at the end.")}</p>
               </div>
               <div id="grm-step5-notice"></div>
               <div id="grm-step5-table-wrap"></div>
@@ -1423,7 +2204,7 @@ class GRMWizardStep5IssueCategories {
         if (!this.departments.length) {
             $n.html(`
                 <div class="alert alert-warning" style="margin-bottom:12px;">
-                  ${__("No departments defined yet — go to Step 5 first to add departments, then return to this step.")}
+                  ${__("No departments defined yet — go back to Step 4 first to add departments, then return to this step.")}
                 </div>
             `);
             this.$body.find("#grm-step5-add").prop("disabled", true);
@@ -1445,6 +2226,16 @@ class GRMWizardStep5IssueCategories {
             this.departments = [];
         }
         try {
+            this.project_roles = await frappe.db.get_list("GRM Project Role", {
+                filters: { project, is_active: 1 },
+                fields: ["name", "role_name"],
+                limit: 0,
+                order_by: "role_name asc",
+            });
+        } catch (e) {
+            this.project_roles = [];
+        }
+        try {
             this.admin_levels = await frappe.db.get_list("GRM Administrative Level Type", {
                 filters: { project },
                 fields: ["name", "level_name"],
@@ -1456,6 +2247,20 @@ class GRMWizardStep5IssueCategories {
         }
     }
 
+    role_options(selected) {
+        const opts = [`<option value="">${__("(select)")}</option>`];
+        for (const r of (this.project_roles || [])) {
+            const sel = r.name === selected ? " selected" : "";
+            opts.push(`<option value="${frappe.utils.escape_html(r.name)}"${sel}>${frappe.utils.escape_html(r.role_name || r.name)}</option>`);
+        }
+        return opts.join("");
+    }
+
+    role_label(name) {
+        const r = (this.project_roles || []).find((x) => x.name === name);
+        return r ? (r.role_name || r.name) : (name || "");
+    }
+
     async load_and_render_table() {
         try {
             this.rows = await frappe.db.get_list("GRM Issue Category", {
@@ -1465,7 +2270,9 @@ class GRMWizardStep5IssueCategories {
                     "category_name",
                     "label",
                     "abbreviation",
+                    "routing_target_type",
                     "assigned_department",
+                    "assigned_role",
                     "assigned_appeal_department",
                     "assigned_escalation_department",
                     "confidentiality_level",
@@ -1494,29 +2301,41 @@ class GRMWizardStep5IssueCategories {
         const head = `
             <thead>
               <tr>
+                <th class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-all" tabindex="-1"></th>
                 <th>${__("Name")}</th>
                 <th>${__("Label")}</th>
                 <th style="width:100px;">${__("Abbrev.")}</th>
-                <th>${__("Department")}</th>
+                <th>${__("Routes To")}</th>
                 <th style="width:140px;">${__("Confidentiality")}</th>
                 <th style="width:140px;">${__("Actions")}</th>
               </tr>
             </thead>
         `;
-        const body_rows = this.rows.map((r) => `
+        const body_rows = this.rows.map((r) => {
+            const tt = r.routing_target_type || "Department";
+            const target_label = tt === "Role"
+                ? this.role_label(r.assigned_role)
+                : dept_label(r.assigned_department);
+            const target_kind = tt === "Role" ? __("Role") : __("Dept");
+            const badge_class = tt === "Role" ? "badge-info" : "badge-secondary";
+            return `
             <tr data-name="${frappe.utils.escape_html(r.name)}">
+              <td class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-row-check" tabindex="-1"></td>
               <td>${frappe.utils.escape_html(r.category_name || "")}</td>
               <td>${frappe.utils.escape_html(r.label || "")}</td>
               <td>${frappe.utils.escape_html(r.abbreviation || "")}</td>
-              <td>${frappe.utils.escape_html(dept_label(r.assigned_department))}</td>
+              <td><span class="badge ${badge_class}">${target_kind}</span> ${frappe.utils.escape_html(target_label)}</td>
               <td>${frappe.utils.escape_html(r.confidentiality_level || "")}</td>
               <td>
-                <button class="btn btn-xs btn-default grm-edit-cat" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
-                <button class="btn btn-xs btn-danger grm-delete-cat" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+                <button class="grm-row-action grm-edit-cat" title="${__("Edit")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("edit", "sm")}</button>
+                <button class="grm-row-action grm-row-action-danger grm-delete-cat" title="${__("Delete")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("close", "sm")}</button>
               </td>
-            </tr>
-        `).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+            </tr>`;
+        }).join("");
+        $w.html(
+            grm_render_bulk_toolbar("categories")
+            + `<div class="form-grid"><table class="table table-borderless">${head}<tbody>${body_rows}</tbody></table></div>`,
+        );
 
         $w.find("button.grm-edit-cat").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
@@ -1525,6 +2344,19 @@ class GRMWizardStep5IssueCategories {
         $w.find("button.grm-delete-cat").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
             this.confirm_delete(name);
+        });
+
+        grm_wire_bulk_table($w, {
+            selected: this.selected,
+            row_names: this.rows.map((r) => r.name),
+            key: "categories",
+            singular: __("category"),
+            plural: __("categories"),
+            confirm_msg: (n) => n === 1
+                ? __("Delete the selected category?")
+                : __("Delete {0} selected categories?", [n]),
+            delete_one: (name) => frappe.db.delete_doc("GRM Issue Category", name),
+            on_done: () => this.load_and_render_table(),
         });
     }
 
@@ -1549,7 +2381,7 @@ class GRMWizardStep5IssueCategories {
 
     start_add() {
         if (!this.departments.length) {
-            frappe.show_alert({ message: __("Add a department in Step 5 first."), indicator: "red" });
+            frappe.show_alert({ message: __("Add a department in Step 4 first."), indicator: "red" });
             return;
         }
         this.adding = true;
@@ -1591,12 +2423,28 @@ class GRMWizardStep5IssueCategories {
               </div>
               <div class="row" style="margin-top:8px;">
                 <div class="col-md-6">
+                  <label class="control-label reqd">${__("Route To")}</label>
+                  <select class="form-control" id="grm-cf-routing_target_type">
+                    <option value="Department" ${(r.routing_target_type || "Department") === "Department" ? "selected" : ""}>${__("Department")}</option>
+                    <option value="Role"       ${r.routing_target_type === "Role" ? "selected" : ""}>${__("Role")}</option>
+                  </select>
+                  <small class="text-muted">${__("Choose Department for organisational routing or Role for cross-department workflows.")}</small>
+                </div>
+                <div class="col-md-6" id="grm-cf-target-dept-wrap" ${r.routing_target_type === "Role" ? `style="display:none"` : ""}>
                   <label class="control-label reqd">${__("Assigned Department")}</label>
                   <select class="form-control" id="grm-cf-assigned_department">
                     <option value="">${__("(select)")}</option>
                     ${this.department_options(r.assigned_department, false)}
                   </select>
                 </div>
+                <div class="col-md-6" id="grm-cf-target-role-wrap" ${r.routing_target_type !== "Role" ? `style="display:none"` : ""}>
+                  <label class="control-label reqd">${__("Assigned Role")}</label>
+                  <select class="form-control" id="grm-cf-assigned_role">
+                    ${this.role_options(r.assigned_role)}
+                  </select>
+                </div>
+              </div>
+              <div class="row" style="margin-top:8px;">
                 <div class="col-md-6">
                   <label class="control-label">${__("Appeal Department")}</label>
                   <select class="form-control" id="grm-cf-assigned_appeal_department">
@@ -1646,6 +2494,11 @@ class GRMWizardStep5IssueCategories {
             this.editing = null;
             $w.empty();
         });
+        $w.find("#grm-cf-routing_target_type").on("change", (ev) => {
+            const t = $(ev.target).val();
+            $w.find("#grm-cf-target-dept-wrap").toggle(t === "Department");
+            $w.find("#grm-cf-target-role-wrap").toggle(t === "Role");
+        });
     }
 
     read_form() {
@@ -1655,7 +2508,9 @@ class GRMWizardStep5IssueCategories {
             category_name: trim("grm-cf-category_name"),
             label: trim("grm-cf-label"),
             abbreviation: trim("grm-cf-abbreviation"),
+            routing_target_type: trim("grm-cf-routing_target_type") || "Department",
             assigned_department: trim("grm-cf-assigned_department") || null,
+            assigned_role: trim("grm-cf-assigned_role") || null,
             assigned_appeal_department: trim("grm-cf-assigned_appeal_department") || null,
             assigned_escalation_department: trim("grm-cf-assigned_escalation_department") || null,
             administrative_level: trim("grm-cf-administrative_level") || null,
@@ -1678,9 +2533,16 @@ class GRMWizardStep5IssueCategories {
             frappe.show_alert({ message: __("Abbreviation is required."), indicator: "red" });
             return;
         }
-        if (!v.assigned_department) {
-            frappe.show_alert({ message: __("Assigned Department is required."), indicator: "red" });
-            return;
+        if (v.routing_target_type === "Role") {
+            if (!v.assigned_role) {
+                frappe.show_alert({ message: __("Assigned Role is required when Route To = Role."), indicator: "red" });
+                return;
+            }
+        } else {
+            if (!v.assigned_department) {
+                frappe.show_alert({ message: __("Assigned Department is required when Route To = Department."), indicator: "red" });
+                return;
+            }
         }
         if (!existing_name) {
             const dup = this.rows.find(
@@ -1696,7 +2558,9 @@ class GRMWizardStep5IssueCategories {
                 const doc = await frappe.db.get_doc("GRM Issue Category", existing_name);
                 doc.label = v.label;
                 doc.abbreviation = v.abbreviation;
-                doc.assigned_department = v.assigned_department;
+                doc.routing_target_type = v.routing_target_type;
+                doc.assigned_department = v.routing_target_type === "Department" ? v.assigned_department : null;
+                doc.assigned_role       = v.routing_target_type === "Role"       ? v.assigned_role       : null;
                 doc.assigned_appeal_department = v.assigned_appeal_department;
                 doc.assigned_escalation_department = v.assigned_escalation_department;
                 doc.administrative_level = v.administrative_level;
@@ -1710,11 +2574,16 @@ class GRMWizardStep5IssueCategories {
                     category_name: v.category_name,
                     label: v.label,
                     abbreviation: v.abbreviation,
-                    assigned_department: v.assigned_department,
+                    routing_target_type: v.routing_target_type,
                     confidentiality_level: v.confidentiality_level,
                     redirection_protocol: v.redirection_protocol,
                     grm_project_link: [{ project: this.project.name }],
                 };
+                if (v.routing_target_type === "Role") {
+                    payload.assigned_role = v.assigned_role;
+                } else {
+                    payload.assigned_department = v.assigned_department;
+                }
                 if (v.assigned_appeal_department) payload.assigned_appeal_department = v.assigned_appeal_department;
                 if (v.assigned_escalation_department) payload.assigned_escalation_department = v.assigned_escalation_department;
                 if (v.administrative_level) payload.administrative_level = v.administrative_level;
@@ -1754,7 +2623,7 @@ class GRMWizardStep5IssueCategories {
 // ---------------------------------------------------------------------------
 // Step 6 — Issue Types
 // ---------------------------------------------------------------------------
-class GRMWizardStep6IssueTypes {
+class GRMWizardStep4IssueTypes {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
@@ -1762,6 +2631,7 @@ class GRMWizardStep6IssueTypes {
         this.rows = [];
         this.editing = null;
         this.adding = false;
+        this.selected = new Set();
         this.render();
     }
 
@@ -1814,6 +2684,7 @@ class GRMWizardStep6IssueTypes {
         const head = `
             <thead>
               <tr>
+                <th class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-all" tabindex="-1"></th>
                 <th>${__("Type Name")}</th>
                 <th style="width:140px;">${__("Actions")}</th>
               </tr>
@@ -1824,6 +2695,7 @@ class GRMWizardStep6IssueTypes {
             if (editing) {
                 return `
                   <tr data-name="${frappe.utils.escape_html(r.name)}">
+                    <td class="grm-bulk-cell"></td>
                     <td><input type="text" class="form-control input-xs grm-e-type_name" value="${frappe.utils.escape_html(r.type_name || "")}"></td>
                     <td>
                       <button class="btn btn-xs btn-primary grm-save-edit-type" data-name="${frappe.utils.escape_html(r.name)}">${__("Save")}</button>
@@ -1834,15 +2706,19 @@ class GRMWizardStep6IssueTypes {
             }
             return `
               <tr data-name="${frappe.utils.escape_html(r.name)}">
+                <td class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-row-check" tabindex="-1"></td>
                 <td>${frappe.utils.escape_html(r.type_name || "")}</td>
                 <td>
-                  <button class="btn btn-xs btn-default grm-edit-type" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
-                  <button class="btn btn-xs btn-danger grm-delete-type" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+                  <button class="grm-row-action grm-edit-type" title="${__("Edit")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("edit", "sm")}</button>
+                  <button class="grm-row-action grm-row-action-danger grm-delete-type" title="${__("Delete")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("close", "sm")}</button>
                 </td>
               </tr>
             `;
         }).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+        $w.html(
+            grm_render_bulk_toolbar("types")
+            + `<div class="form-grid"><table class="table table-borderless">${head}<tbody>${body_rows}</tbody></table></div>`,
+        );
 
         $w.find("button.grm-edit-type").on("click", (ev) => {
             this.editing = $(ev.currentTarget).data("name");
@@ -1859,6 +2735,19 @@ class GRMWizardStep6IssueTypes {
         $w.find("button.grm-delete-type").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
             this.confirm_delete(name);
+        });
+
+        grm_wire_bulk_table($w, {
+            selected: this.selected,
+            row_names: this.rows.map((r) => r.name),
+            key: "types",
+            singular: __("type"),
+            plural: __("types"),
+            confirm_msg: (n) => n === 1
+                ? __("Delete the selected issue type?")
+                : __("Delete {0} selected issue types?", [n]),
+            delete_one: (name) => frappe.db.delete_doc("GRM Issue Type", name),
+            on_done: () => this.load_and_render_table(),
         });
     }
 
@@ -1967,7 +2856,7 @@ class GRMWizardStep6IssueTypes {
 // ---------------------------------------------------------------------------
 // Step 7 — Issue Statuses
 // ---------------------------------------------------------------------------
-class GRMWizardStep7IssueStatuses {
+class GRMWizardStep12IssueStatuses {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
@@ -1975,6 +2864,7 @@ class GRMWizardStep7IssueStatuses {
         this.rows = [];
         this.editing = null;
         this.adding = false;
+        this.selected = new Set();
         this.render();
     }
 
@@ -2015,6 +2905,33 @@ class GRMWizardStep7IssueStatuses {
         } catch (e) {
             this.rows = [];
         }
+
+        // Auto-seed default statuses on first visit (idempotent on the server).
+        // Frappe-native lifecycle pattern: New → In Progress → Resolved → Closed,
+        // plus Rejected. The user can edit / delete / extend afterwards.
+        if (!this.rows.length && !this._seeded) {
+            this._seeded = true;
+            try {
+                const r = await frappe.call({
+                    method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.issue_status_seed_defaults",
+                    args: { project: this.project.name },
+                });
+                if (r && r.message && r.message.count) {
+                    frappe.show_alert({
+                        message: __("Seeded {0} default statuses. Tweak as needed.", [r.message.count]),
+                        indicator: "green",
+                    });
+                }
+                this.rows = await frappe.db.get_list("GRM Issue Status", {
+                    filters: [["GRM Project Link", "project", "=", this.project.name]],
+                    fields: ["name", "status_name", "initial_status", "open_status", "final_status", "rejected_status"],
+                    limit: 0,
+                    order_by: "status_name asc",
+                });
+            } catch (e) {
+                // surfaced by frappe; fall through to empty render
+            }
+        }
         this.render_table();
     }
 
@@ -2027,6 +2944,7 @@ class GRMWizardStep7IssueStatuses {
         const head = `
             <thead>
               <tr>
+                <th class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-all" tabindex="-1"></th>
                 <th>${__("Status Name")}</th>
                 <th style="width:80px;">${__("Initial?")}</th>
                 <th style="width:80px;">${__("Open?")}</th>
@@ -2038,18 +2956,22 @@ class GRMWizardStep7IssueStatuses {
         `;
         const body_rows = this.rows.map((r) => `
             <tr data-name="${frappe.utils.escape_html(r.name)}">
+              <td class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-row-check" tabindex="-1"></td>
               <td>${frappe.utils.escape_html(r.status_name || "")}</td>
               <td>${r.initial_status ? __("Yes") : __("No")}</td>
               <td>${r.open_status ? __("Yes") : __("No")}</td>
               <td>${r.final_status ? __("Yes") : __("No")}</td>
               <td>${r.rejected_status ? __("Yes") : __("No")}</td>
               <td>
-                <button class="btn btn-xs btn-default grm-edit-status" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
-                <button class="btn btn-xs btn-danger grm-delete-status" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+                <button class="grm-row-action grm-edit-status" title="${__("Edit")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("edit", "sm")}</button>
+                <button class="grm-row-action grm-row-action-danger grm-delete-status" title="${__("Delete")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("close", "sm")}</button>
               </td>
             </tr>
         `).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+        $w.html(
+            grm_render_bulk_toolbar("statuses")
+            + `<div class="form-grid"><table class="table table-borderless">${head}<tbody>${body_rows}</tbody></table></div>`,
+        );
 
         $w.find("button.grm-edit-status").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
@@ -2058,6 +2980,19 @@ class GRMWizardStep7IssueStatuses {
         $w.find("button.grm-delete-status").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
             this.confirm_delete(name);
+        });
+
+        grm_wire_bulk_table($w, {
+            selected: this.selected,
+            row_names: this.rows.map((r) => r.name),
+            key: "statuses",
+            singular: __("status"),
+            plural: __("statuses"),
+            confirm_msg: (n) => n === 1
+                ? __("Delete the selected status?")
+                : __("Delete {0} selected statuses?", [n]),
+            delete_one: (name) => frappe.db.delete_doc("GRM Issue Status", name),
+            on_done: () => this.load_and_render_table(),
         });
     }
 
@@ -2285,44 +3220,196 @@ class GRMWizardStep8Departments {
     }
 
     render_table() {
+        // Mirrors the Frappe `Grid` markup + `.form-grid-container.column-limit-reached`
+        // wrapper used on /app/doctype/<X>#fields_tab so we inherit:
+        //   - outer chrome (border, radius, bg) from grid.scss:742-746
+        //   - inner display:grid + border:unset from grid.scss:747-750
+        //   - explicit per-col-xs-N widths from grid.scss:757-803
+        //   - row-check / row-index 31/40px sticky cols from grid.scss:805-819
+        // No trailing decorative cog — `_actions` is the last child; the
+        // `:last-child → 30px sticky` rule is unset for `.grm-dept-table` in
+        // grm_project_wizard.css so the col-xs-2 actions cell keeps its width.
         const $w = this.$body.find("#grm-step8-table-wrap").empty();
         if (!this.rows.length) {
             $w.html(`<p class="text-muted">${__("No departments yet — click \"Add Department\" to create the first one.")}</p>`);
+            this.selected = new Set();
             return;
         }
+        if (!this.selected) this.selected = new Set();
+        const existing = new Set(this.rows.map((r) => r.name));
+        for (const n of [...this.selected]) if (!existing.has(n)) this.selected.delete(n);
+
+        const esc = frappe.utils.escape_html;
         const user_label = (u) => {
-            const found = this.users.find((x) => x.name === u);
+            const found = (this.users || []).find((x) => x.name === u);
             return found ? (found.full_name ? `${found.full_name} (${found.name})` : found.name) : (u || "");
         };
-        const head = `
-            <thead>
-              <tr>
-                <th>${__("Department")}</th>
-                <th>${__("Head")}</th>
-                <th style="width:140px;">${__("Actions")}</th>
-              </tr>
-            </thead>
-        `;
-        const body_rows = this.rows.map((r) => `
-            <tr data-name="${frappe.utils.escape_html(r.name)}">
-              <td>${frappe.utils.escape_html(r.department_name || "")}</td>
-              <td>${frappe.utils.escape_html(user_label(r.head))}</td>
-              <td>
-                <button class="btn btn-xs btn-default grm-edit-dept" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
-                <button class="btn btn-xs btn-danger grm-delete-dept" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
-              </td>
-            </tr>
-        `).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+        $w.html(`
+            <div class="grm-bulk-actions" data-grm-bulk-for="dept" hidden>
+              <span class="grm-bulk-count"></span>
+              <button type="button" class="btn btn-xs btn-danger grm-bulk-delete">${__("Delete")}</button>
+              <button type="button" class="btn btn-xs btn-secondary grm-bulk-clear">${__("Clear selection")}</button>
+            </div>
+            <div class="form-grid-container column-limit-reached">
+              <div class="form-grid grm-dept-table">
+                <div class="grid-heading-row">
+                  <div class="grid-row">
+                    <div class="data-row row m-0">
+                      <div class="row-check sortable-handle col">
+                        <input type="checkbox" class="grid-row-check grm-row-check-all" tabindex="-1">
+                      </div>
+                      <div class="row-index sortable-handle grid-static-col col"><span>${__("No.")}</span></div>
+                      <div class="col grid-static-col col-xs-5" data-fieldname="department_name" data-fieldtype="Data">
+                        <div class="static-area ellipsis reqd">${__("Department")}</div>
+                      </div>
+                      <div class="col grid-static-col col-xs-5" data-fieldname="head" data-fieldtype="Link">
+                        <div class="static-area ellipsis">${__("Head")}</div>
+                      </div>
+                      <div class="col grid-static-col col-xs-2 text-right" data-fieldname="_actions">
+                        <div class="static-area ellipsis">${__("Actions")}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="grid-body">
+                  <div class="rows"></div>
+                </div>
+              </div>
+            </div>
+        `);
+        const $rows = $w.find(".grid-body > .rows");
+        this.rows.forEach((r, idx) => {
+            const $row = $(`<div class="grid-row" data-name="${esc(r.name)}"><div class="data-row row m-0"></div></div>`).appendTo($rows);
+            const $dr = $row.find(".data-row");
 
-        $w.find("button.grm-edit-dept").on("click", (ev) => {
-            const name = $(ev.currentTarget).data("name");
-            this.start_edit(name);
+            // Structural cols (row-check is functional; row-index decorative)
+            const checked = this.selected.has(r.name) ? "checked" : "";
+            $(`<div class="row-check sortable-handle col"><input type="checkbox" class="grid-row-check" tabindex="-1" ${checked}></div>`).appendTo($dr);
+            $(`<div class="row-index sortable-handle grid-static-col col"><span>${idx + 1}</span></div>`).appendTo($dr);
+
+            // Department (read-only static)
+            $(`<div class="col grid-static-col col-xs-5" data-fieldname="department_name"><div class="static-area ellipsis"></div></div>`)
+                .appendTo($dr).find(".static-area").text(r.department_name || "");
+
+            // Head — click-to-edit cell (User Link dialog)
+            const $head = $(`<div class="col grid-static-col col-xs-5 grm-edit-cell" data-fieldname="head"><div class="static-area ellipsis"></div></div>`).appendTo($dr);
+            const $hsa = $head.find(".static-area");
+            const label = user_label(r.head);
+            if (label) $hsa.text(label);
+            else $hsa.html(`<span class="grm-edit-placeholder">${__("Click to set")}</span>`);
+            $head.on("click", () => this.show_head_dialog(r));
+
+            // Actions — discrete pencil + x icons (col-xs-2 → ~100px flex)
+            const $act = $(`<div class="col grid-static-col col-xs-2 text-right" data-fieldname="_actions"></div>`).appendTo($dr);
+            $(`<button class="grm-row-action grm-edit-dept" title="${__("Edit")}">${frappe.utils.icon("edit", "sm")}</button>`)
+                .appendTo($act).attr("data-name", r.name)
+                .on("click", (e) => { e.stopPropagation(); this.start_edit(r.name); });
+            $(`<button class="grm-row-action grm-row-action-danger grm-delete-dept" title="${__("Delete")}">${frappe.utils.icon("close", "sm")}</button>`)
+                .appendTo($act).attr("data-name", r.name)
+                .on("click", (e) => { e.stopPropagation(); this.confirm_delete(r.name); });
         });
-        $w.find("button.grm-delete-dept").on("click", (ev) => {
-            const name = $(ev.currentTarget).data("name");
-            this.confirm_delete(name);
+        this.bind_bulk_select();
+        this.refresh_bulk_actions();
+    }
+
+    bind_bulk_select() {
+        const $w = this.$body.find("#grm-step8-table-wrap");
+        $w.off("change.grm-bulk").on("change.grm-bulk", ".grid-row-check", (e) => {
+            const $chk = $(e.currentTarget);
+            const isHeader = $chk.closest(".grid-heading-row").length > 0;
+            const checked = $chk.prop("checked");
+            if (isHeader) {
+                this.selected = checked ? new Set(this.rows.map((r) => r.name)) : new Set();
+                $w.find(".grid-body .grid-row-check").prop("checked", checked);
+            } else {
+                const name = $chk.closest(".grid-row").attr("data-name");
+                if (!name) return;
+                if (checked) this.selected.add(name);
+                else this.selected.delete(name);
+            }
+            this.refresh_bulk_actions();
         });
+        $w.off("click.grm-bulk").on("click.grm-bulk", ".grm-bulk-delete", () => this.confirm_bulk_delete());
+        $w.on("click.grm-bulk", ".grm-bulk-clear", () => {
+            this.selected = new Set();
+            $w.find(".grid-row-check").prop("checked", false);
+            this.refresh_bulk_actions();
+        });
+    }
+
+    refresh_bulk_actions() {
+        const n = this.selected.size;
+        const $bar = this.$body.find(".grm-bulk-actions[data-grm-bulk-for='dept']");
+        $bar.attr("hidden", n === 0 ? "hidden" : null);
+        $bar.find(".grm-bulk-count").text(
+            n === 0 ? "" : (n === 1 ? __("1 row selected") : __("{0} rows selected", [n])),
+        );
+        $bar.find(".grm-bulk-delete").text(n === 1 ? __("Delete row") : __("Delete {0} rows", [n]));
+        const total = this.rows.length;
+        const $all = this.$body.find(".grm-row-check-all");
+        if (total > 0) {
+            $all.prop("checked", n === total);
+            $all.prop("indeterminate", n > 0 && n < total);
+        }
+    }
+
+    async confirm_bulk_delete() {
+        const names = [...this.selected];
+        if (!names.length) return;
+        const msg = names.length === 1
+            ? __("Delete department {0}?", [names[0]])
+            : __("Delete {0} selected departments?", [names.length]);
+        const proceed = await new Promise((res) => frappe.confirm(msg, () => res(true), () => res(false)));
+        if (!proceed) return;
+        const errs = [];
+        frappe.dom.freeze(__("Deleting…"));
+        for (const name of names) {
+            try {
+                await frappe.db.delete_doc("GRM Issue Department", name);
+            } catch (e) {
+                errs.push(name);
+            }
+        }
+        frappe.dom.unfreeze();
+        this.selected = new Set();
+        if (this.editing && names.includes(this.editing)) this.editing = null;
+        if (errs.length) {
+            frappe.show_alert({
+                message: __("Could not delete {0} department(s) — they may still be referenced by categories or issues.", [errs.length]),
+                indicator: "red",
+            });
+        } else {
+            frappe.show_alert({ message: __("{0} department(s) deleted.", [names.length]), indicator: "green" });
+        }
+        await this.load_and_render_table();
+    }
+
+    show_head_dialog(row) {
+        const d = new frappe.ui.Dialog({
+            title: __("Edit Head — {0}", [row.department_name || row.name]),
+            fields: [
+                {
+                    fieldtype: "Link",
+                    label: __("Head (User)"),
+                    fieldname: "head",
+                    options: "User",
+                    default: row.head || "",
+                    description: __("Optional. The user who oversees issues routed to this department."),
+                },
+            ],
+        });
+        d.set_primary_action(__("Save"), async () => {
+            const v = d.get_value("head") || null;
+            try {
+                await frappe.db.set_value("GRM Issue Department", row.name, "head", v);
+                row.head = v;
+                d.hide();
+                this.render_table();
+            } catch (e) {
+                frappe.msgprint({ title: __("Error"), message: e.message || e, indicator: "red" });
+            }
+        });
+        d.show();
     }
 
     user_options(selected) {
@@ -2460,7 +3547,7 @@ class GRMWizardStep8Departments {
 // ---------------------------------------------------------------------------
 // Step 10 — Citizen Lookups (Age Groups + Citizen Groups)
 // ---------------------------------------------------------------------------
-class GRMWizardStep10CitizenLookups {
+class GRMWizardStep5CitizenLookups {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
@@ -2471,6 +3558,8 @@ class GRMWizardStep10CitizenLookups {
         this.editing_group = null;
         this.adding_age = false;
         this.adding_group = false;
+        this.selected_age = new Set();
+        this.selected_group = new Set();
         this.render();
     }
 
@@ -2539,6 +3628,7 @@ class GRMWizardStep10CitizenLookups {
         const head = `
             <thead>
               <tr>
+                <th class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-all" tabindex="-1"></th>
                 <th>${__("Age Group")}</th>
                 <th style="width:140px;">${__("Actions")}</th>
               </tr>
@@ -2549,6 +3639,7 @@ class GRMWizardStep10CitizenLookups {
             if (editing) {
                 return `
                   <tr data-name="${frappe.utils.escape_html(r.name)}">
+                    <td class="grm-bulk-cell"></td>
                     <td><input type="text" class="form-control input-xs grm-e-age_group" value="${frappe.utils.escape_html(r.age_group || "")}"></td>
                     <td>
                       <button class="btn btn-xs btn-primary grm-save-edit-age" data-name="${frappe.utils.escape_html(r.name)}">${__("Save")}</button>
@@ -2559,15 +3650,19 @@ class GRMWizardStep10CitizenLookups {
             }
             return `
               <tr data-name="${frappe.utils.escape_html(r.name)}">
+                <td class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-row-check" tabindex="-1"></td>
                 <td>${frappe.utils.escape_html(r.age_group || "")}</td>
                 <td>
-                  <button class="btn btn-xs btn-default grm-edit-age" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
-                  <button class="btn btn-xs btn-danger grm-delete-age" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+                  <button class="grm-row-action grm-edit-age" title="${__("Edit")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("edit", "sm")}</button>
+                  <button class="grm-row-action grm-row-action-danger grm-delete-age" title="${__("Delete")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("close", "sm")}</button>
                 </td>
               </tr>
             `;
         }).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+        $w.html(
+            grm_render_bulk_toolbar("age")
+            + `<div class="form-grid"><table class="table table-borderless">${head}<tbody>${body_rows}</tbody></table></div>`,
+        );
 
         $w.find("button.grm-edit-age").on("click", (ev) => {
             this.editing_age = $(ev.currentTarget).data("name");
@@ -2584,6 +3679,19 @@ class GRMWizardStep10CitizenLookups {
         $w.find("button.grm-delete-age").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
             this.confirm_delete_age(name);
+        });
+
+        grm_wire_bulk_table($w, {
+            selected: this.selected_age,
+            row_names: this.age_rows.map((r) => r.name),
+            key: "age",
+            singular: __("age group"),
+            plural: __("age groups"),
+            confirm_msg: (n) => n === 1
+                ? __("Delete the selected age group?")
+                : __("Delete {0} selected age groups?", [n]),
+            delete_one: (name) => frappe.db.delete_doc("GRM Issue Age Group", name),
+            on_done: () => this.load_age_groups(),
         });
     }
 
@@ -2706,6 +3814,7 @@ class GRMWizardStep10CitizenLookups {
         const head = `
             <thead>
               <tr>
+                <th class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-all" tabindex="-1"></th>
                 <th>${__("Name")}</th>
                 <th style="width:120px;">${__("Type")}</th>
                 <th style="width:140px;">${__("Actions")}</th>
@@ -2714,15 +3823,19 @@ class GRMWizardStep10CitizenLookups {
         `;
         const body_rows = this.group_rows.map((r) => `
             <tr data-name="${frappe.utils.escape_html(r.name)}">
+              <td class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-row-check" tabindex="-1"></td>
               <td>${frappe.utils.escape_html(r.group_name || "")}</td>
               <td>${frappe.utils.escape_html(r.group_type || "")}</td>
               <td>
-                <button class="btn btn-xs btn-default grm-edit-group" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
-                <button class="btn btn-xs btn-danger grm-delete-group" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+                <button class="grm-row-action grm-edit-group" title="${__("Edit")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("edit", "sm")}</button>
+                <button class="grm-row-action grm-row-action-danger grm-delete-group" title="${__("Delete")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("close", "sm")}</button>
               </td>
             </tr>
         `).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+        $w.html(
+            grm_render_bulk_toolbar("groups")
+            + `<div class="form-grid"><table class="table table-borderless">${head}<tbody>${body_rows}</tbody></table></div>`,
+        );
 
         $w.find("button.grm-edit-group").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
@@ -2731,6 +3844,19 @@ class GRMWizardStep10CitizenLookups {
         $w.find("button.grm-delete-group").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
             this.confirm_delete_group(name);
+        });
+
+        grm_wire_bulk_table($w, {
+            selected: this.selected_group,
+            row_names: this.group_rows.map((r) => r.name),
+            key: "groups",
+            singular: __("citizen group"),
+            plural: __("citizen groups"),
+            confirm_msg: (n) => n === 1
+                ? __("Delete the selected citizen group?")
+                : __("Delete {0} selected citizen groups?", [n]),
+            delete_one: (name) => frappe.db.delete_doc("GRM Issue Citizen Group", name),
+            on_done: () => this.load_citizen_groups(),
         });
     }
 
@@ -2848,7 +3974,7 @@ class GRMWizardStep10CitizenLookups {
 // ---------------------------------------------------------------------------
 // Step 11 — Notification Templates
 // ---------------------------------------------------------------------------
-class GRMWizardStep11NotificationTemplates {
+class GRMWizardStep6NotificationTemplates {
     constructor($body, project, wizard) {
         this.$body = $body;
         this.project = project;
@@ -2857,6 +3983,7 @@ class GRMWizardStep11NotificationTemplates {
         this.email_templates = [];
         this.editing = null;
         this.adding = false;
+        this.selected = new Set();
         this.render();
     }
 
@@ -2922,6 +4049,7 @@ class GRMWizardStep11NotificationTemplates {
         const head = `
             <thead>
               <tr>
+                <th class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-all" tabindex="-1"></th>
                 <th>${__("Name")}</th>
                 <th style="width:170px;">${__("Type")}</th>
                 <th style="width:90px;">${__("Active")}</th>
@@ -2931,16 +4059,20 @@ class GRMWizardStep11NotificationTemplates {
         `;
         const body_rows = this.rows.map((r) => `
             <tr data-name="${frappe.utils.escape_html(r.name)}">
+              <td class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-row-check" tabindex="-1"></td>
               <td>${frappe.utils.escape_html(r.template_name || r.name)}</td>
               <td>${frappe.utils.escape_html(r.template_type || "")}</td>
               <td>${r.active ? __("Yes") : __("No")}</td>
               <td>
-                <button class="btn btn-xs btn-default grm-edit-tpl" data-name="${frappe.utils.escape_html(r.name)}">${__("Edit")}</button>
-                <button class="btn btn-xs btn-danger grm-delete-tpl" data-name="${frappe.utils.escape_html(r.name)}">${__("Delete")}</button>
+                <button class="grm-row-action grm-edit-tpl" title="${__("Edit")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("edit", "sm")}</button>
+                <button class="grm-row-action grm-row-action-danger grm-delete-tpl" title="${__("Delete")}" data-name="${frappe.utils.escape_html(r.name)}">${frappe.utils.icon("close", "sm")}</button>
               </td>
             </tr>
         `).join("");
-        $w.html(`<table class="table table-bordered table-sm">${head}<tbody>${body_rows}</tbody></table>`);
+        $w.html(
+            grm_render_bulk_toolbar("templates")
+            + `<div class="form-grid"><table class="table table-borderless">${head}<tbody>${body_rows}</tbody></table></div>`,
+        );
 
         $w.find("button.grm-edit-tpl").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
@@ -2949,6 +4081,19 @@ class GRMWizardStep11NotificationTemplates {
         $w.find("button.grm-delete-tpl").on("click", (ev) => {
             const name = $(ev.currentTarget).data("name");
             this.confirm_delete(name);
+        });
+
+        grm_wire_bulk_table($w, {
+            selected: this.selected,
+            row_names: this.rows.map((r) => r.name),
+            key: "templates",
+            singular: __("template"),
+            plural: __("templates"),
+            confirm_msg: (n) => n === 1
+                ? __("Delete the selected notification template?")
+                : __("Delete {0} selected notification templates?", [n]),
+            delete_one: (name) => frappe.db.delete_doc("GRM Notification Template", name),
+            on_done: () => this.load_and_render_table(),
         });
     }
 

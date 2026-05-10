@@ -12,7 +12,9 @@
   "confidentiality_level",
   "redirection_protocol",
   "section_break_1",
+  "routing_target_type",
   "assigned_department",
+  "assigned_role",
   "assigned_appeal_department",
   "assigned_escalation_department",
   "administrative_level",
@@ -47,11 +49,27 @@
    "reqd": 1
   },
   {
+   "default": "Department",
+   "fieldname": "routing_target_type",
+   "fieldtype": "Select",
+   "label": "Route To",
+   "options": "Department\nRole"
+  },
+  {
+   "depends_on": "eval:!doc.routing_target_type || doc.routing_target_type == 'Department'",
+   "mandatory_depends_on": "eval:!doc.routing_target_type || doc.routing_target_type == 'Department'",
    "fieldname": "assigned_department",
    "fieldtype": "Link",
    "label": "Assigned Department",
-   "options": "GRM Issue Department",
-   "reqd": 1
+   "options": "GRM Issue Department"
+  },
+  {
+   "depends_on": "eval:doc.routing_target_type == 'Role'",
+   "mandatory_depends_on": "eval:doc.routing_target_type == 'Role'",
+   "fieldname": "assigned_role",
+   "fieldtype": "Link",
+   "label": "Assigned Role",
+   "options": "GRM Project Role"
   },
   {
    "fieldname": "assigned_appeal_department",

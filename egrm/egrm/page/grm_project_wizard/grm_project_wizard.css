@@ -15,14 +15,16 @@
     margin-bottom: 28px;
 }
 
-/* ---- Numbered stepper ---- */
+/* ---- Stepper (Option C — pulsing halo on active dot) ----
+   Minimal row of 13 dots; the current step pulses gently to draw the eye.
+   No numbers; done = soft green; pending = light grey. */
 .grm-wizard-stepper {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 6px;
+    justify-content: center;
+    gap: 14px;
     margin-bottom: 20px;
-    padding: 16px 18px;
+    padding: 14px 18px;
     background: #ffffff;
     border: 1px solid #EDEDED;
     border-radius: 12px;
@@ -30,60 +32,56 @@
 }
 
 .grm-wizard-stepper .grm-step {
-    flex: 1;
-    height: 36px;
-    min-width: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    background: #F1F5F4;
-    color: #7C7C7C;
-    font-weight: 600;
-    font-size: 13px;
-    letter-spacing: 0.02em;
-    border: 1px solid #EDEDED;
-    transition: all 0.18s ease-in-out;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #DADCDC;
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    flex: 0 0 auto;
     position: relative;
+    /* Hide any text content (legacy step numbers) — purely visual now. */
+    font-size: 0;
+    line-height: 0;
+    color: transparent;
+    border: 0;
+    padding: 0;
+    /* Now an interactive <button>: clickable shortcut to that step. */
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
 }
-
-.grm-wizard-stepper .grm-step + .grm-step {
-    margin-left: 6px;
+.grm-wizard-stepper .grm-step:hover:not(:disabled) {
+    transform: scale(1.4);
 }
-
-.grm-wizard-stepper .grm-step.active {
-    background: linear-gradient(135deg, #24c38b 0%, #1da672 100%);
-    color: #ffffff;
-    border-color: #1da672;
-    box-shadow: 0 4px 14px rgba(36, 195, 139, 0.35);
-    transform: translateY(-1px);
+.grm-wizard-stepper .grm-step:focus-visible {
+    box-shadow: 0 0 0 3px rgba(36, 195, 139, 0.35);
+}
+.grm-wizard-stepper .grm-step:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
 }
 
 .grm-wizard-stepper .grm-step.done {
-    background: #e1f2eb;
-    color: #136949;
-    border-color: #b3e8d1;
+    background: #B9DECC;
 }
-
-.grm-wizard-stepper .grm-step.done::after {
-    content: "✓";
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #1da672;
-    color: #ffffff;
-    font-size: 10px;
-    line-height: 16px;
-    text-align: center;
-    border: 2px solid #ffffff;
-}
-
 .grm-wizard-stepper .grm-step.pending {
-    background: #ffffff;
-    color: #B0B0B0;
+    background: #E8EAEA;
+}
+.grm-wizard-stepper .grm-step.active {
+    background: #1da672;
+}
+.grm-wizard-stepper .grm-step.active::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(36, 195, 139, 0.45);
+    animation: grm-step-pulse 1.6s ease-in-out infinite;
+}
+@keyframes grm-step-pulse {
+    0%, 100% { transform: scale(1);    opacity: 0.7; }
+    50%      { transform: scale(1.15); opacity: 0.25; }
 }
 
 /* ---- Title ---- */
@@ -162,13 +160,26 @@
     color: #171717;
 }
 
-/* ---- Footer / actions ---- */
+/* ---- Footer / actions ----
+   Sticky to the bottom of the .main-section scroll viewport so Back/Continue
+   stay reachable when the body has lots of rows (Step 7 with many citizen
+   groups, Step 6 with many issue types, etc.). */
 .grm-wizard-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 12px 4px 0;
+    padding: 14px 16px;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: rgba(248, 248, 248, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-top: 1px solid #EDEDED;
+    border-radius: 12px;
+    margin-top: 16px;
+    box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.04);
 }
 
 .grm-wizard-footer .btn {
@@ -214,61 +225,161 @@
     font-weight: 500;
 }
 
-/* ---- Tables / repeating sections inside steps ---- */
-.grm-wizard-body table {
-    border: 1px solid #EDEDED;
-    border-radius: 10px;
-    overflow: hidden;
-    border-collapse: separate;
-    border-spacing: 0;
-    width: 100%;
+/* ---- Tables ----
+   Strategy: extend Frappe instead of duplicating it. Step 3 (User Types) emits
+   the same div-grid markup Frappe uses on /app/doctype/<X>#permissions_tab —
+   <div class='form-grid'><div class='grid-heading-row'>... — so it inherits
+   100% of common/grid.scss + element/checkbox.scss. The other steps wrap their
+   <table> in <div class='form-grid'> for the same chrome.
+
+   No values defined by Frappe (border-radius, --subtle-fg, --table-border-color,
+   --checkbox-size, etc.) are redefined here. */
+
+/* Allow our wizard form-grids to size to content (Frappe's default min-height
+   creates dead space when there are no rows). */
+.grm-wizard-body .form-grid {
+    min-height: 0;
 }
 
-.grm-wizard-body table thead th {
-    background: #F8F8F8;
-    color: #4A4A4A;
-    font-weight: 600;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    border-bottom: 1px solid #EDEDED;
-    padding: 10px 12px;
+/* Plain <table> inside our form-grid wrappers (Steps other than Step 3) sits
+   flush — Frappe's .form-grid owns the chrome, the table is just a layout. */
+.grm-wizard-body .form-grid > .table,
+.grm-wizard-body .form-grid > .table-responsive > .table {
+    margin: 0;
+    border: 0;
+    background: transparent;
+}
+.grm-wizard-body .form-grid .table thead th {
+    background: var(--subtle-fg);
+    border-bottom: 1px solid var(--table-border-color);
+    color: var(--gray-600);
+    font-weight: var(--weight-regular, 400);
+    font-size: var(--text-sm);
+    padding: 4px 8px;
+    height: 32px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.grm-wizard-body .form-grid .table tbody tr {
+    background: var(--card-bg, #ffffff);
+}
+.grm-wizard-body .form-grid .table tbody tr + tr {
+    border-top: 1px solid var(--table-border-color);
+}
+.grm-wizard-body .form-grid .table tbody td {
+    border: 0;
+    padding: 6px 8px;
+    vertical-align: middle;
+    background: transparent;
 }
 
-.grm-wizard-body table tbody td {
-    border-bottom: 1px solid #F2F2F2;
-    padding: 10px 12px;
-    color: #171717;
+/* ---- Step 3 (User Types) — duty matrix positional helpers ----
+   Step 3 uses the real Frappe grid markup (.form-grid > .grid-heading-row /
+   .grid-body > .rows > .grid-row > .data-row.row > .col.grid-static-col), so
+   sizing/typography come from common/grid.scss. We only add layout helpers. */
+.grm-wizard-body .grm-perm-table .grm-duty-col {
+    text-align: center;
+    white-space: normal;
+    line-height: 1.2;
+    min-width: 64px;
+    max-width: 96px;
+    flex: 0 0 auto;
+    font-size: var(--text-xs, 11px);
+}
+.grm-wizard-body .grm-perm-table .grm-duty-cell {
+    text-align: center;
+    min-width: 64px;
+    max-width: 96px;
+    flex: 0 0 auto;
 }
 
-.grm-wizard-body table tbody tr:last-child td {
-    border-bottom: none;
+/* Click-to-edit cell affordance (admin level) — reuses --subtle-fg for hover. */
+.grm-wizard-body .grm-edit-cell {
+    cursor: pointer;
+}
+.grm-wizard-body .grm-edit-cell:hover {
+    background: var(--subtle-fg);
+}
+.grm-wizard-body .grm-edit-cell .grm-edit-placeholder {
+    color: var(--text-muted);
+    font-style: italic;
 }
 
-.grm-wizard-body table tbody tr:hover {
-    background: #F8FCFA;
+/* ---- Discrete row-action icon buttons (Steps 4–12) ----
+   Mirrors Frappe's permissions_tab pencil/x affordance: no fill, subtle muted
+   icon, hover surfaces --subtle-fg for the chip. Reuse --text-muted /
+   --text-color / --red-500 so dark mode and theme switches work for free. */
+.grm-wizard-body .grm-row-action {
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    padding: 4px 6px;
+    border-radius: 6px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.grm-wizard-body .grm-row-action + .grm-row-action {
+    margin-left: 2px;
+}
+.grm-wizard-body .grm-row-action:hover {
+    background: var(--subtle-fg);
+    color: var(--text-color);
+}
+.grm-wizard-body .grm-row-action.grm-row-action-danger:hover {
+    color: var(--red-500);
+}
+.grm-wizard-body .grm-row-action .icon {
+    width: 14px;
+    height: 14px;
 }
 
-/* ---- Inline action buttons inside steps ---- */
-.grm-wizard-body .btn-xs,
-.grm-wizard-body .btn-sm {
-    border-radius: 8px;
-    font-weight: 500;
+/* ---- Override Frappe's `.column-limit-reached` `:last-child → 30px sticky` rule
+   for our wizard tables. Frappe uses that rule to reserve space for a trailing
+   settings cog; we don't render a cog (per UX), so the actual `_actions` col
+   would otherwise get clipped to 30px. Restore natural sizing — col-xs-N stays
+   in effect, and rows without col-xs simply size by content. */
+.grm-wizard-body .form-grid-container.column-limit-reached .form-grid.grm-perm-table .grid-row > .row .col:last-child,
+.grm-wizard-body .form-grid-container.column-limit-reached .form-grid.grm-dept-table .grid-row > .row .col:last-child {
+    max-width: none;
+    min-width: 0;
+    position: static;
+    z-index: auto;
 }
 
-.grm-wizard-body .btn-success {
-    background: #24c38b;
-    border-color: #1da672;
+/* ---- Bulk-action toolbar (Steps 3 + 4 + future) ----
+   Mirrors Frappe's grid-buttons row pattern: appears above the table when
+   one or more rows are selected via the row-check column. */
+.grm-wizard-body .grm-bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: var(--subtle-accent);
+    border: 1px solid var(--table-border-color);
+    border-radius: var(--border-radius-md);
+}
+.grm-wizard-body .grm-bulk-actions[hidden] {
+    display: none;
+}
+.grm-wizard-body .grm-bulk-actions .grm-bulk-count {
+    font-size: var(--text-sm, 12px);
+    color: var(--text-muted);
+    margin-right: auto;
 }
 
-.grm-wizard-body .btn-danger {
-    background: #ef6a78;
-    border-color: #ef6a78;
+/* ---- Checkbox column for HTML <table> wizard tables (Steps 5-12) ---- */
+.grm-wizard-body .grm-bulk-cell {
+    width: 32px;
+    padding: 4px 8px;
+    text-align: center;
+    vertical-align: middle;
 }
-
-.grm-wizard-body .btn-info,
-.grm-wizard-body .btn-link {
-    color: #2490EF;
+.grm-wizard-body .grm-bulk-cell input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
 }
 
 /* ---- Activation step accent ---- */
@@ -284,10 +395,13 @@
     .grm-wizard {
         padding: 16px 12px 32px;
     }
+    .grm-wizard-stepper {
+        gap: 10px;
+        padding: 12px 14px;
+    }
     .grm-wizard-stepper .grm-step {
-        height: 30px;
-        min-width: 30px;
-        font-size: 11px;
+        width: 7px;
+        height: 7px;
     }
     .grm-wizard-title {
         font-size: 20px;

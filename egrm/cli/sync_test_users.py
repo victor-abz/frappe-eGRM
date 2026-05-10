@@ -1,10 +1,33 @@
-"""Sync four eGRM test users + roles + passwords aligned to the
-duty-driven Phase-1 plan (6 duty-roles + 1 platform role).
+"""DEPRECATED — DO NOT USE.
 
-Run: bench --site egrm.local execute egrm.cli.sync_test_users.sync
+Test users are now created at runtime by the AQE ONBOARDING suite via
+the GRM Project Wizard Step 9 UI. The function bodies in this module
+are retained transiently but every CLI entry point hard-stops with a
+deprecation message; importers that still reference these symbols
+will fail loudly the moment they invoke them.
+
+Spec: docs/superpowers/specs/2026-05-09-no-seeding-wizard-driven-tests-design.md
 """
+import sys
+
 import frappe
 from frappe.utils.password import update_password
+
+
+_DEPRECATION_MSG = (
+    "ERROR: sync_test_users is DEPRECATED.\n"
+    "Test users are now created via the GRM Project Wizard Step 9 UI flow.\n"
+    "Run the AQE ONBOARDING suite instead "
+    "(docs/superpowers/plans/aqe-generated/run_onboarding_tests.py).\n"
+    "See: docs/superpowers/specs/2026-05-09-no-seeding-wizard-driven-tests-design.md\n"
+)
+
+
+def _hard_stop() -> None:
+    """Hard-stop every CLI entry point. Prints the deprecation banner to
+    stderr and exits non-zero so `bench execute` returns a failure."""
+    print(_DEPRECATION_MSG, file=sys.stderr)
+    sys.exit(2)
 
 
 USERS = [
@@ -119,6 +142,7 @@ def _sync_one(u):
 
 
 def sync():
+    _hard_stop()
     for u in USERS:
         _sync_one(u)
     frappe.db.commit()
@@ -133,6 +157,7 @@ def sync_subset(emails):
     Run: bench --site egrm.local execute \
       "frappe.get_attr('egrm.cli.sync_test_users.sync_subset')(['project-admin@egrm.test','triage-officer@egrm.test'])"
     """
+    _hard_stop()
     wanted = {e.strip().lower() for e in emails}
     for u in USERS:
         if u["email"].lower() in wanted:
@@ -148,6 +173,7 @@ def purge_users(emails):
     Run: bench --site egrm.local execute \
       "frappe.get_attr('egrm.cli.sync_test_users.purge_users')(['field-officer@egrm.test','resolver@egrm.test'])"
     """
+    _hard_stop()
     for email in emails:
         if frappe.db.exists("User", email):
             try:

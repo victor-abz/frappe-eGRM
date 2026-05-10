@@ -8,11 +8,27 @@ from frappe.utils import cint, getdate, now_datetime, nowdate
 log = logging.getLogger(__name__)
 
 
+def _coerce_pagination(start, page_len):
+    """Cast LIMIT bounds to int to harden against accidental injection.
+
+    Frappe always sends ints for these, but the typeahead protocol does
+    NOT enforce that — and even with parameterized queries we want a
+    defense-in-depth integer cast before interpolation into LIMIT.
+    """
+    try:
+        s = int(start) if start is not None else 0
+    except (TypeError, ValueError):
+        s = 0
+    try:
+        p = int(page_len) if page_len is not None else 20
+    except (TypeError, ValueError):
+        p = 20
+    return max(0, s), max(1, min(p, 500))
+
+
 @frappe.whitelist()
 def get_departments_by_projects(doctype, txt, searchfield, start, page_len, filters):
-    """
-    Get departments linked to specific projects
-    """
+    """Get departments linked to specific projects (typeahead)."""
     try:
         projects = filters.get("projects", [])
         if not projects:
@@ -22,186 +38,194 @@ def get_departments_by_projects(doctype, txt, searchfield, start, page_len, filt
         if isinstance(projects, str):
             projects = [projects]
 
-        # Build conditions for SQL
-        project_conditions = "', '".join(projects)
-        search_condition = f"AND d.department_name LIKE '%{txt}%'" if txt else ""
+        start, page_len = _coerce_pagination(start, page_len)
+        placeholders = ", ".join(["%s"] * len(projects))
+        params: list = list(projects)
+        search_condition = ""
+        if txt:
+            search_condition = "AND d.department_name LIKE %s"
+            params.append(f"%{txt}%")
 
-        # Query departments linked to the projects
-        departments = frappe.db.sql(
+        return frappe.db.sql(
             f"""
             SELECT d.name, d.department_name
             FROM `tabGRM Issue Department` d
             INNER JOIN `tabGRM Project Link` p ON p.parent = d.name
-            WHERE p.project IN ('{project_conditions}')
+            WHERE p.project IN ({placeholders})
             {search_condition}
             GROUP BY d.name
             ORDER BY d.department_name
             LIMIT {start}, {page_len}
-        """,
+            """,
+            tuple(params),
             as_list=1,
         )
-
-        return departments
     except Exception as e:
         frappe.log_error(f"Error getting departments by projects: {str(e)}")
         return []
 
 
 def get_status_by_project(doctype, txt, searchfield, start, page_len, filters):
-    """
-    Get statuses linked to a specific project
-    """
+    """Get statuses linked to a specific project (typeahead)."""
     try:
         project = filters.get("project", "")
         if not project:
             return []
 
-        search_condition = f"AND s.status_name LIKE '%{txt}%'" if txt else ""
+        start, page_len = _coerce_pagination(start, page_len)
+        params: list = [project]
+        search_condition = ""
+        if txt:
+            search_condition = "AND s.status_name LIKE %s"
+            params.append(f"%{txt}%")
 
-        # Query statuses linked to the project
-        statuses = frappe.db.sql(
+        return frappe.db.sql(
             f"""
             SELECT s.name, s.status_name
             FROM `tabGRM Issue Status` s
             INNER JOIN `tabGRM Project Link` p ON p.parent = s.name
-            WHERE p.project = '{project}'
+            WHERE p.project = %s
             {search_condition}
             ORDER BY s.status_name
             LIMIT {start}, {page_len}
-        """,
+            """,
+            tuple(params),
             as_list=1,
         )
-
-        return statuses
     except Exception as e:
         frappe.log_error(f"Error getting statuses by project: {str(e)}")
         return []
 
 
 def get_category_by_project(doctype, txt, searchfield, start, page_len, filters):
-    """
-    Get categories linked to a specific project
-    """
+    """Get categories linked to a specific project (typeahead)."""
     try:
         project = filters.get("project", "")
         if not project:
             return []
 
-        search_condition = f"AND c.category_name LIKE '%{txt}%'" if txt else ""
+        start, page_len = _coerce_pagination(start, page_len)
+        params: list = [project]
+        search_condition = ""
+        if txt:
+            search_condition = "AND c.category_name LIKE %s"
+            params.append(f"%{txt}%")
 
-        # Query categories linked to the project
-        categories = frappe.db.sql(
+        return frappe.db.sql(
             f"""
             SELECT c.name, c.category_name
             FROM `tabGRM Issue Category` c
             INNER JOIN `tabGRM Project Link` p ON p.parent = c.name
-            WHERE p.project = '{project}'
+            WHERE p.project = %s
             {search_condition}
             ORDER BY c.category_name
             LIMIT {start}, {page_len}
-        """,
+            """,
+            tuple(params),
             as_list=1,
         )
-
-        return categories
     except Exception as e:
         frappe.log_error(f"Error getting categories by project: {str(e)}")
         return []
 
 
 def get_issue_type_by_project(doctype, txt, searchfield, start, page_len, filters):
-    """
-    Get issue types linked to a specific project
-    """
+    """Get issue types linked to a specific project (typeahead)."""
     try:
         project = filters.get("project", "")
         if not project:
             return []
 
-        search_condition = f"AND t.type_name LIKE '%{txt}%'" if txt else ""
+        start, page_len = _coerce_pagination(start, page_len)
+        params: list = [project]
+        search_condition = ""
+        if txt:
+            search_condition = "AND t.type_name LIKE %s"
+            params.append(f"%{txt}%")
 
-        # Query issue types linked to the project
-        issue_types = frappe.db.sql(
+        return frappe.db.sql(
             f"""
             SELECT t.name, t.type_name
             FROM `tabGRM Issue Type` t
             INNER JOIN `tabGRM Project Link` p ON p.parent = t.name
-            WHERE p.project = '{project}'
+            WHERE p.project = %s
             {search_condition}
             ORDER BY t.type_name
             LIMIT {start}, {page_len}
-        """,
+            """,
+            tuple(params),
             as_list=1,
         )
-
-        return issue_types
     except Exception as e:
         frappe.log_error(f"Error getting issue types by project: {str(e)}")
         return []
 
 
 def get_age_group_by_project(doctype, txt, searchfield, start, page_len, filters):
-    """
-    Get age groups linked to a specific project
-    """
+    """Get age groups linked to a specific project (typeahead)."""
     try:
         project = filters.get("project", "")
         if not project:
             return []
 
-        search_condition = f"AND a.age_group LIKE '%{txt}%'" if txt else ""
+        start, page_len = _coerce_pagination(start, page_len)
+        params: list = [project]
+        search_condition = ""
+        if txt:
+            search_condition = "AND a.age_group LIKE %s"
+            params.append(f"%{txt}%")
 
-        # Query age groups linked to the project
-        age_groups = frappe.db.sql(
+        return frappe.db.sql(
             f"""
             SELECT a.name, a.age_group
             FROM `tabGRM Issue Age Group` a
             INNER JOIN `tabGRM Project Link` p ON p.parent = a.name
-            WHERE p.project = '{project}'
+            WHERE p.project = %s
             {search_condition}
             ORDER BY a.age_group
             LIMIT {start}, {page_len}
-        """,
+            """,
+            tuple(params),
             as_list=1,
         )
-
-        return age_groups
     except Exception as e:
         frappe.log_error(f"Error getting age groups by project: {str(e)}")
         return []
 
 
 def get_citizen_group_by_project(doctype, txt, searchfield, start, page_len, filters):
-    """
-    Get citizen groups linked to a specific project with optional filter by group type
-    """
+    """Get citizen groups linked to a specific project with optional group_type filter."""
     try:
         project = filters.get("project", "")
         if not project:
             return []
 
+        start, page_len = _coerce_pagination(start, page_len)
+        params: list = [project]
         group_type = filters.get("group_type", "")
-        group_type_condition = (
-            f"AND c.group_type = '{group_type}'" if group_type else ""
-        )
-        search_condition = f"AND c.group_name LIKE '%{txt}%'" if txt else ""
+        group_type_condition = ""
+        if group_type:
+            group_type_condition = "AND c.group_type = %s"
+            params.append(group_type)
+        search_condition = ""
+        if txt:
+            search_condition = "AND c.group_name LIKE %s"
+            params.append(f"%{txt}%")
 
-        # Query citizen groups linked to the project
-        citizen_groups = frappe.db.sql(
+        return frappe.db.sql(
             f"""
             SELECT c.name, c.group_name
             FROM `tabGRM Issue Citizen Group` c
             INNER JOIN `tabGRM Project Link` p ON p.parent = c.name
-            WHERE p.project = '{project}'
+            WHERE p.project = %s
             {group_type_condition}
             {search_condition}
             ORDER BY c.group_name
             LIMIT {start}, {page_len}
-        """,
+            """,
+            tuple(params),
             as_list=1,
         )
-
-        return citizen_groups
     except Exception as e:
         frappe.log_error(f"Error getting citizen groups by project: {str(e)}")
         return []
@@ -209,33 +233,34 @@ def get_citizen_group_by_project(doctype, txt, searchfield, start, page_len, fil
 
 @frappe.whitelist()
 def get_project_users(doctype, txt, searchfield, start, page_len, filters):
-    """
-    Get users assigned to a specific project
-    """
+    """Get users assigned to a specific project (typeahead)."""
     try:
         project = filters.get("project", "")
         if not project:
             return []
 
-        search_condition = f"AND u.full_name LIKE '%{txt}%'" if txt else ""
+        start, page_len = _coerce_pagination(start, page_len)
+        params: list = [project]
+        search_condition = ""
+        if txt:
+            search_condition = "AND u.full_name LIKE %s"
+            params.append(f"%{txt}%")
 
-        # Query users assigned to the project
-        users = frappe.db.sql(
+        return frappe.db.sql(
             f"""
             SELECT u.name, u.full_name
             FROM `tabUser` u
             INNER JOIN `tabGRM User Project Assignment` a ON a.user = u.name
-            WHERE a.project = '{project}'
+            WHERE a.project = %s
             AND a.is_active = 1
             {search_condition}
             GROUP BY u.name
             ORDER BY u.full_name
             LIMIT {start}, {page_len}
-        """,
+            """,
+            tuple(params),
             as_list=1,
         )
-
-        return users
     except Exception as e:
         frappe.log_error(f"Error getting project users: {str(e)}")
         return []
@@ -273,28 +298,40 @@ def get_initial_status(project):
 
 
 def get_department_for_category(category):
-    """
-    Get the assigned department and redirection protocol for a category
+    """Resolve where this category routes to (Department or Role).
+
+    Routing-aware return shape:
+        ``{"target_type": "Department" | "Role",
+            "department": <name|None>, "role": <name|None>,
+            "redirection": <protocol>}``
+
+    The legacy ``"department"`` key is preserved (None when role-routed)
+    so older callers that destructure it still work without crashes.
     """
     try:
         if not category:
             return None
 
-        # Get department and redirection protocol
-        category_info = frappe.db.get_value(
-            "GRM Issue Category",
-            category,
-            ["assigned_department", "redirection_protocol"],
-            as_dict=1,
+        from egrm.services.category_routing import resolve_category_routing
+
+        routing = resolve_category_routing(category)
+        redirection = frappe.db.get_value(
+            "GRM Issue Category", category, "redirection_protocol"
         )
-
-        if category_info:
-            return {
-                "department": category_info.assigned_department,
-                "redirection": category_info.redirection_protocol,
-            }
-
-        return None
+        return {
+            "target_type": routing["target_type"],
+            "department": (
+                routing["target_name"]
+                if routing["target_type"] == "Department"
+                else None
+            ),
+            "role": (
+                routing["target_name"]
+                if routing["target_type"] == "Role"
+                else None
+            ),
+            "redirection": redirection,
+        }
     except Exception as e:
         frappe.log_error(f"Error getting department for category: {str(e)}")
         return None

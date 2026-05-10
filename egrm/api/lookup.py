@@ -54,36 +54,46 @@ def categories(project_id=None):
                 "label",
                 "abbreviation",
                 "assigned_department",
+                "assigned_role",
+                "routing_target_type",
                 "confidentiality_level",
             ],
         )
 
-        # Enhance category data
+        from egrm.services.category_routing import resolve_category_routing
+
         enhanced_categories = []
         for category in categories:
-            # Get department name if assigned_department exists
-            if category.get("assigned_department"):
-                try:
-                    department_doc = frappe.get_doc(
-                        "GRM Issue Department", category["assigned_department"]
-                    )
-                    category["department_name"] = department_doc.department_name
-                except Exception as dept_error:
-                    frappe.log(f"Error getting department name: {str(dept_error)}")
-                    category["department_name"] = category["assigned_department"]
-            else:
+            # Resolve routing via the single source of truth so role-routed
+            # categories are surfaced correctly to mobile clients.
+            routing = resolve_category_routing(category["name"])
+            category["routing_target_type"] = routing["target_type"]
+            category["routing_target"] = routing["target_name"]
+
+            if routing["target_type"] == "Department" and routing["target_doc"]:
+                category["department"] = routing["target_name"]
+                category["department_name"] = routing["target_doc"].department_name
+                category["role"] = None
+                category["role_name"] = None
+            elif routing["target_type"] == "Role" and routing["target_doc"]:
+                category["role"] = routing["target_name"]
+                category["role_name"] = routing["target_doc"].role_name
+                category["department"] = None
                 category["department_name"] = None
+            else:
+                # No resolved target — fall back to whatever is on the row.
+                category["department"] = category.get("assigned_department")
+                category["department_name"] = None
+                category["role"] = category.get("assigned_role")
+                category["role_name"] = None
 
             # Set default values for missing fields
             category["description"] = category.get("label") or category.get(
                 "category_name"
             )
-            category["department"] = category.get("assigned_department")
             category["auto_assign"] = 0  # Default value
             category["active"] = 1  # Default value
 
-            # Log category data for debugging
-            frappe.log(f"Category data: {category}")
             enhanced_categories.append(category)
 
         frappe.log(f"Returning {len(enhanced_categories)} categories")

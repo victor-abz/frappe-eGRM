@@ -1094,7 +1094,7 @@ Verify the CLI command body now just calls `import_csv(project, highest_level, c
 
 ```bash
 cd /Users/victor/egrm && \
-  bench --site test.localhost execute egrm.services.admin_region_importer.import_csv \
+  bench --site egrm.local execute egrm.services.admin_region_importer.import_csv \
     --kwargs '{"project": "RW-WB", "highest_level": "Country", "csv_text": "Province,District\nKigali,Gasabo\n"}'
 ```
 
@@ -1104,7 +1104,7 @@ Then run the click command end-to-end against a temp file (this exercises the CL
 
 ```bash
 echo -e "Province,District\nKigali,Gasabo\n" > /tmp/sample_regions.csv
-bench --site test.localhost import-admin-regions Country RW-WB /tmp/sample_regions.csv
+bench --site egrm.local import-admin-regions Country RW-WB /tmp/sample_regions.csv
 ```
 
 Expected: same row counts as the service smoke.
@@ -1160,7 +1160,7 @@ def test_bulk_insert_admin_regions_creates_levels_and_regions(sample_project):
 
 - [ ] **Step 2: Run test (expect FAIL — endpoints not defined)**
 
-Run: `cd /Users/victor/egrm && bench --site test.localhost run-tests --module egrm.tests.test_wizard_admin_upload`
+Run: `cd /Users/victor/egrm && bench --site egrm.local run-tests --module egrm.tests.test_wizard_admin_upload`
 Expected: ImportError on `parse_admin_regions_csv`.
 
 - [ ] **Step 3: Add endpoints to grm_project_wizard.py**
@@ -1196,7 +1196,7 @@ def bulk_insert_admin_regions(project: str, highest_level: str, csv_text: str) -
 
 - [ ] **Step 4: Run test (expect PASS)**
 
-Run: `cd /Users/victor/egrm && bench --site test.localhost run-tests --module egrm.tests.test_wizard_admin_upload`
+Run: `cd /Users/victor/egrm && bench --site egrm.local run-tests --module egrm.tests.test_wizard_admin_upload`
 Expected: 2 passed.
 
 
@@ -1493,14 +1493,14 @@ from egrm.services.government_worker_importer import OptimizedBulkWorkerCreator 
 
 ```bash
 cd /Users/victor/egrm && \
-  bench --site test.localhost execute egrm.services.government_worker_importer.export_activation_codes \
+  bench --site egrm.local execute egrm.services.government_worker_importer.export_activation_codes \
     --kwargs '{"project": "RW-WB"}'
 ```
 
 Expected: CSV text. Then exercise the CLI façade from the shell:
 
 ```bash
-bench --site test.localhost export-activation-codes RW-WB
+bench --site egrm.local export-activation-codes RW-WB
 ```
 
 Expected: same content as the service smoke.
@@ -1553,7 +1553,7 @@ def test_bulk_create_users_inserts_and_returns_codes(project_with_regions):
 
 - [ ] **Step 2: Run test (expect FAIL)**
 
-Run: `cd /Users/victor/egrm && bench --site test.localhost run-tests --module egrm.tests.test_wizard_user_creation`
+Run: `cd /Users/victor/egrm && bench --site egrm.local run-tests --module egrm.tests.test_wizard_user_creation`
 Expected: ImportError.
 
 - [ ] **Step 3: Add endpoints**
@@ -1625,7 +1625,7 @@ def export_user_template() -> str:
 
 - [ ] **Step 4: Run test (expect PASS)**
 
-Run: `cd /Users/victor/egrm && bench --site test.localhost run-tests --module egrm.tests.test_wizard_user_creation`
+Run: `cd /Users/victor/egrm && bench --site egrm.local run-tests --module egrm.tests.test_wizard_user_creation`
 Expected: 2 passed.
 
 
@@ -1878,7 +1878,7 @@ def update_category_routing(project: str, category: str, target_type: str, targe
 
 - [ ] **Step 2: Smoke**
 
-Run: `cd /Users/victor/egrm && bench --site test.localhost execute "egrm.egrm.page.grm_project_wizard.grm_project_wizard.update_category_routing" --kwargs '{"project": "RW-WB", "category": "RW-WB-Water Access", "target_type": "Department", "target": "RW-WB-Water Dept"}'`
+Run: `cd /Users/victor/egrm && bench --site egrm.local execute "egrm.egrm.page.grm_project_wizard.grm_project_wizard.update_category_routing" --kwargs '{"project": "RW-WB", "category": "RW-WB-Water Access", "target_type": "Department", "target": "RW-WB-Water Dept"}'`
 Expected: returns dict with updated routing.
 
 
@@ -2195,7 +2195,7 @@ def test_resolve_legacy_category_falls_back_to_department(routed_category):
 
 - [ ] **Step 2: Run test (expect FAIL — module not found)**
 
-Run: `cd /Users/victor/egrm && bench --site test.localhost run-tests --module egrm.tests.test_category_routing`
+Run: `cd /Users/victor/egrm && bench --site egrm.local run-tests --module egrm.tests.test_category_routing`
 Expected: ImportError on `egrm.services.category_routing`.
 
 - [ ] **Step 3: Implement helper**
@@ -2258,7 +2258,7 @@ def resolve_routing_for_issue_creation(category_name: str) -> dict:
 
 - [ ] **Step 4: Run test (expect PASS)**
 
-Run: `cd /Users/victor/egrm && bench --site test.localhost run-tests --module egrm.tests.test_category_routing`
+Run: `cd /Users/victor/egrm && bench --site egrm.local run-tests --module egrm.tests.test_category_routing`
 Expected: 3 passed.
 
 ### Task E.6: Propagate routing target to all backend consumers
@@ -2394,7 +2394,7 @@ def test_caller_overrides_default_routing(routed_category):
     assert not issue.assigned_role  # role auto-assignment skipped because dept was provided
 ```
 
-Run: `bench --site test.localhost run-tests --module egrm.tests.test_category_routing`
+Run: `bench --site egrm.local run-tests --module egrm.tests.test_category_routing`
 Expected: 6 passed.
 
 #### E.6.a-bis — Update sensitive-data permission check for role routing
@@ -2524,7 +2524,7 @@ def test_lookup_returns_department_routing(routed_category):
     assert dept_cat["role"] is None
 ```
 
-Run: `bench --site test.localhost run-tests --module egrm.tests.test_lookup_routing`
+Run: `bench --site egrm.local run-tests --module egrm.tests.test_lookup_routing`
 Expected: 2 passed.
 
 #### E.6.c — `egrm/server_scripts/queries.py:318-324` (auto-routing query)

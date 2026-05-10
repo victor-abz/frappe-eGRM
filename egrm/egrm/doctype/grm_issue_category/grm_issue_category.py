@@ -12,11 +12,40 @@ class GRMIssueCategory(Document):
         try:
             self.sync_project_field()
             self.validate_project_links()
+            self.validate_routing_target()
             self.validate_departments()
             frappe.log(f"Validating GRM Issue Category {self.name}")
         except Exception as e:
             frappe.log_error(f"Error validating GRM Issue Category: {str(e)}")
             raise
+
+    def validate_routing_target(self):
+        """Enforce the Department-OR-Role routing contract.
+
+        - When ``routing_target_type == 'Role'``: ``assigned_role`` is
+          required and must belong to the same project.
+        - When ``routing_target_type == 'Department'`` (or NULL): an
+          ``assigned_department`` is required (the project-scope check
+          for the dept itself is handled by ``validate_departments``).
+        """
+        target = self.routing_target_type or "Department"
+        if target == "Role":
+            if not self.assigned_role:
+                frappe.throw(_("Assigned Role is required when Route To = Role"))
+            role_project = frappe.db.get_value(
+                "GRM Project Role", self.assigned_role, "project"
+            )
+            if role_project and self.project and role_project != self.project:
+                frappe.throw(
+                    _("Assigned Role {0} does not belong to project {1}").format(
+                        self.assigned_role, self.project
+                    )
+                )
+        else:
+            if not self.assigned_department:
+                frappe.throw(
+                    _("Assigned Department is required when Route To = Department")
+                )
 
     def sync_project_field(self):
         """Mirror the first child-table project into the top-level `project`

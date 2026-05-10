@@ -12,6 +12,8 @@
   "column_break_zvuc",
   "project",
   "category",
+  "assigned_department",
+  "assigned_role",
   "issue_type",
   "tracking_code",
   "_sync_name",
@@ -244,6 +246,20 @@
    "label": "Category",
    "options": "GRM Issue Category",
    "reqd": 1
+  },
+  {
+   "fieldname": "assigned_department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Assigned Department",
+   "options": "GRM Issue Department"
+  },
+  {
+   "fieldname": "assigned_role",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Assigned Role",
+   "options": "GRM Project Role"
   },
   {
    "fieldname": "issue_type",

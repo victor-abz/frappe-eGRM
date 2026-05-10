@@ -2,9 +2,12 @@ frappe.ui.form.on('GRM Issue Department', {
     refresh: function(frm) {
         // Add custom buttons
         if (!frm.is_new()) {
-            // View issues assigned to this department
+            // View issues assigned to this department.
+            // Lists categories whose snapshot ``assigned_department`` matches
+            // this department. Role-routed categories (routing_target_type =
+            // 'Role') are intentionally excluded — see
+            // egrm/services/category_routing.py for the routing model.
             frm.add_custom_button(__('View Assigned Issues'), function() {
-                // Find categories assigned to this department first
                 frappe.call({
                     method: 'frappe.client.get_list',
                     args: {
