@@ -217,12 +217,12 @@ This runs ONCE during `prepare_user_import` to:
 
 ### Phase E — Bulk import flow (Section B-Bulk)
 
-- [ ] **E.1** Build `GRMWizardStep9UserImport` inner class with 4 stages.
-- [ ] **E.2** Stage 1 (template): "Download CSV template" + "Download Excel template" buttons → `download_user_template(project, format)`.
-- [ ] **E.3** Stage 2 (upload): drag-drop zone + `<input type=file>`. After upload, call `upload_file` → file_url.
-- [ ] **E.4** Stage 3 (mapping): call `auto_detect_mapping`, render mapper table, allow dropdown overrides, render required-field-gate banner.
-- [ ] **E.5** Stage 4 (preview + import): call `prepare_user_import` → show first 50 resolved rows + warnings + "regions to create" checkbox + "Start import" button. Button calls `start_user_import` then polls `poll_user_import` every 1.5s, rendering progress bar + log tail. On completion, refresh the users list.
-- [ ] **E.6** Empty-state: when project has 0 assignments, show only Section B (collapsed Section A with "No users yet"), with bulk-import as the default tab.
+- [x] **E.1** Build `GRMWizardStep9UserImport` inner class with 4 stages.
+- [x] **E.2** Stage 1 (template): "Download CSV template" + "Download Excel template" buttons → `download_user_template(project, format)`.
+- [x] **E.3** Stage 2 (upload): drag-drop zone + `<input type=file>`. After upload, call `upload_file` → file_url.
+- [x] **E.4** Stage 3 (mapping): call `auto_detect_mapping`, render mapper table, allow dropdown overrides, render required-field-gate banner.
+- [x] **E.5** Stage 4 (preview + import): call `prepare_user_import` → show first 50 resolved rows + warnings + "regions to create" checkbox + "Start import" button. Button calls `start_user_import` then polls `poll_user_import` every 1.5s, rendering progress bar + log tail. On completion, refresh the users list.
+- [x] **E.6** Empty-state: when project has 0 assignments, show only Section B (collapsed Section A with "No users yet"), with bulk-import as the default tab.
 
 ### Phase F — Test plan
 

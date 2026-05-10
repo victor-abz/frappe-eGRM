@@ -28,6 +28,9 @@ from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_data_import impor
     poll_user_import,
     prepare_user_import,
 )
+from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_import import (
+    auto_detect_user_import_mapping,
+)
 
 PROJECT_CODE = "TEST-USER-DATA-IMPORT-A"
 
@@ -415,4 +418,110 @@ class DownloadUserTemplateTests(FrappeTestCase):
         self.assertTrue(
             bytes(content).startswith(b"PK"),
             "xlsx response must start with ZIP magic 'PK'",
+        )
+
+
+class AutoDetectUserImportMappingTests(FrappeTestCase):
+    """``auto_detect_user_import_mapping`` proposes a column mapping
+    from an uploaded CSV/XLSX so the Step 9 mapper UI doesn't need a
+    second round-trip after upload (Phase E.4)."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        _ProjectFixture.teardown()
+        _ProjectFixture.seed()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        _ProjectFixture.teardown()
+        super().tearDownClass()
+
+    def setUp(self) -> None:
+        super().setUp()
+        frappe.set_user("Administrator")
+
+    def test_auto_detect_user_import_mapping_csv(self) -> None:
+        """Headers map to the expected targets and project_meta is included."""
+        csv_content = (
+            f"{_STANDARD_HEADERS_LINE}\n"
+            "alice@example.com,Alice,Aaron,alice,GRM Officer,Kigali,Gasabo,Kacyiru\n"
+            "bob@example.com,Bob,Brown,bob,GRM Officer,Kigali,Nyarugenge,Nyamirambo\n"
+        )
+        file_url = _save_inline_csv(csv_content)
+
+        result = auto_detect_user_import_mapping(
+            project=PROJECT_CODE,
+            file_url=file_url,
+        )
+
+        # Top-level shape — every key the JS mapper UI expects.
+        for key in ("headers", "mapping", "validation", "project_meta",
+                    "preview_rows", "total_rows"):
+            self.assertIn(key, result, f"missing key {key!r}")
+
+        # Headers should match the CSV literally (no munging).
+        self.assertEqual(
+            result["headers"],
+            _STANDARD_HEADERS_LINE.split(","),
+        )
+
+        # Mapping must propose targets for at least the obvious user fields
+        # and the level columns.
+        m = result["mapping"]
+        self.assertEqual(m.get("Email", {}).get("target"), "User.email")
+        self.assertEqual(m.get("First Name", {}).get("target"), "User.first_name")
+        self.assertEqual(m.get("Last Name", {}).get("target"), "User.last_name")
+        # Province/District/Sector should be detected as administrative_region
+        # with the matching level_type sub-pick.
+        for header in ("Province", "District", "Sector"):
+            entry = m.get(header) or {}
+            self.assertEqual(
+                entry.get("target"), "administrative_region",
+                f"{header} should auto-map to administrative_region; got {entry!r}",
+            )
+            self.assertEqual(
+                entry.get("level_type"), header,
+                f"{header} should auto-map to level_type={header!r}; got {entry!r}",
+            )
+
+        # project_meta carries the same level types we seeded.
+        levels = result["project_meta"]["project_levels"]
+        self.assertEqual([lt["level_name"] for lt in levels], ["Province", "District", "Sector"])
+
+        # total_rows excludes the header row.
+        self.assertEqual(result["total_rows"], 2)
+        # preview_rows is up to 5 data rows.
+        self.assertLessEqual(len(result["preview_rows"]), 5)
+
+    def test_auto_detect_user_import_mapping_validates(self) -> None:
+        """Missing the required role column must surface in ``validation``.
+
+        ``Assignment.role`` is doctype-required (``reqd: 1``); when the
+        CSV lacks any column that maps to it, ``validation.ok`` must be
+        False and ``missing_required`` must include the Role label.
+        """
+        csv_content = (
+            "Email,First Name,Last Name,Username\n"
+            "x@example.com,X,Y,xy\n"
+        )
+        file_url = _save_inline_csv(csv_content)
+
+        result = auto_detect_user_import_mapping(
+            project=PROJECT_CODE,
+            file_url=file_url,
+        )
+
+        v = result["validation"]
+        self.assertFalse(
+            v["ok"],
+            f"validation should fail when no column maps to Assignment.role; got {v!r}",
+        )
+        # Some entry in missing_required must point at Role — the
+        # service uses doctype labels, so check by case-insensitive
+        # substring on each entry.
+        joined = " | ".join(v.get("missing_required") or []).lower()
+        self.assertIn(
+            "role", joined,
+            f"missing_required should mention Role; got {v.get('missing_required')!r}",
         )

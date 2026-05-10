@@ -85,7 +85,7 @@ def _coerce_list(value: Any, label: str = "value") -> list:
 
 # --- B.1 prepare_user_import -----------------------------------------------
 
-def _read_uploaded_file(file_url: str) -> tuple[list[str], list[list[str]]]:
+def read_uploaded_file(file_url: str) -> tuple[list[str], list[list[str]]]:
     """Read the CSV or XLSX at ``file_url`` and return ``(headers, rows)``.
 
     Raises ``frappe.ValidationError`` for unsupported extensions or empty files.
@@ -173,7 +173,7 @@ def prepare_user_import(
     auto_create = _coerce_bool(auto_create_regions)
 
     # 2. Read the uploaded file.
-    headers, rows = _read_uploaded_file(file_url)
+    headers, rows = read_uploaded_file(file_url)
 
     # 3. Build the canonical mapping.
     mapping = _build_mapping(headers, header_mapping_d, level_mapping_d)

@@ -1,11 +1,14 @@
-"""Whitelisted endpoints for Step 9 (Users) bulk-import flow — Phase A.
+"""Whitelisted endpoints for Step 9 (Users) bulk-import flow — Phase A + E.
 
-Hosts the doctype-introspection endpoint consumed by the Step 9
-column-mapper UI:
+Hosts the doctype-introspection + auto-detect endpoints consumed by the
+Step 9 column-mapper UI:
 
-- ``get_assignment_field_meta(project)`` — returns picker options for the
+- ``get_assignment_field_meta(project)`` — picker options for the
   source-header → target-field dropdown plus the project's level types
-  and active roles.
+  and active roles (Phase A).
+- ``auto_detect_user_import_mapping(project, file_url)`` — read the
+  uploaded CSV/XLSX and propose a starting mapping with validation
+  (Phase E.4).
 
 Sibling modules (kept under the 400-line cap, plan §Engineering
 Conventions clause 4):
@@ -107,4 +110,53 @@ def get_assignment_field_meta(project: str) -> dict:
         "assignment_fields": _serialize_field_meta("GRM User Project Assignment"),
         "project_levels": project_levels,
         "project_roles": project_roles,
+    }
+
+
+# --- Phase E.4 -------------------------------------------------------------
+
+@frappe.whitelist()
+def auto_detect_user_import_mapping(project: str, file_url: str) -> dict:
+    """Read the uploaded file's headers and propose a column mapping.
+
+    Returns ``{headers, mapping, validation, project_meta, preview_rows,
+    total_rows}`` so the Step 9 mapper UI can render the table without a
+    second round-trip. ``mapping`` follows the canonical
+    ``{header: {target, level_type, ...}}`` shape produced by
+    ``egrm.services.user_import.auto_detect_mapping`` so the user can
+    edit it inline before submitting to ``prepare_user_import``.
+
+    Imports are deferred to dodge the circular dependency on
+    ``grm_project_wizard_user_data_import`` (which imports us at
+    module load).
+    """
+    _require_wizard_role()
+
+    project = (project or "").strip()
+    if not project:
+        frappe.throw(frappe._("project is required"))
+    if not frappe.db.exists("GRM Project", project):
+        frappe.throw(frappe._("Project {0} not found").format(project))
+
+    from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_data_import import (
+        read_uploaded_file,
+    )
+    from egrm.services.user_import import auto_detect_mapping, validate_mapping
+
+    headers, rows = read_uploaded_file(file_url)
+    project_meta = get_assignment_field_meta(project)
+    mapping = auto_detect_mapping(headers, project_meta)
+    validation = validate_mapping(mapping, project_meta)
+
+    # Send a small preview (first 5 data rows) so the mapper UI can show
+    # a sample-cell column next to each source header.
+    preview_rows = rows[:5]
+
+    return {
+        "headers": headers,
+        "mapping": mapping,
+        "validation": validation,
+        "project_meta": project_meta,
+        "preview_rows": preview_rows,
+        "total_rows": len(rows),
     }

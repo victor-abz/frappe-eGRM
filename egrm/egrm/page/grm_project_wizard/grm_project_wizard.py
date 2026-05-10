@@ -604,6 +604,7 @@ def issue_status_seed_defaults(project: str) -> dict:
 # Re-exported here so frontend RPC paths stay stable.
 from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_import import (  # noqa: E402, F401
     get_assignment_field_meta,
+    auto_detect_user_import_mapping,
 )
 from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_data_import import (  # noqa: E402, F401
     prepare_user_import,
