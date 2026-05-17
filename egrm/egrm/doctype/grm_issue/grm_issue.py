@@ -234,6 +234,7 @@ class GRMIssue(Document):
             # Generate auto increment ID, internal code, and tracking code
             self.generate_codes()
             self._apply_default_routing_from_category()
+            self._apply_default_assignee()
             frappe.log(
                 f"Generated codes + applied default routing for GRM Issue {self.name}"
             )
@@ -242,22 +243,46 @@ class GRMIssue(Document):
             raise
 
     def _apply_default_routing_from_category(self) -> None:
-        """Populate ``assigned_department`` / ``assigned_role`` from the category
-        when neither was explicitly set on the incoming payload.
+        """Populate ``assigned_role`` from the category when not explicitly set.
 
         Caller-provided values take precedence so manual overrides
-        (mobile API, admin desk) are respected.
+        (mobile API, admin desk) are respected. Departments are not consulted
+        — routing is role-based.
         """
-        if self.assigned_department or self.assigned_role:
+        if self.assigned_role:
             return
         if not self.category:
             return
         from egrm.services.category_routing import resolve_routing_for_issue_creation
         routing = resolve_routing_for_issue_creation(self.category)
-        if routing["assigned_department"]:
-            self.assigned_department = routing["assigned_department"]
         if routing["assigned_role"]:
             self.assigned_role = routing["assigned_role"]
+
+    def _apply_default_assignee(self) -> None:
+        """Resolve ``assignee`` from the reporter or the category routing.
+
+        Runs AFTER ``_apply_default_routing_from_category`` so the resolver
+        sees the populated ``assigned_department`` / ``assigned_role``. The
+        resolver respects an explicitly supplied assignee — sync push,
+        mobile, and admin-desk overrides pass through untouched.
+        """
+        from egrm.services.assignee_routing import resolve_assignee
+        user, reason = resolve_assignee(self)
+        if user:
+            self.assignee = user
+        # Always stamp a log row so orphans (user is None) are observable
+        # in the issue history. Bypass-permission paths still log.
+        if reason and reason != "EXPLICIT_OVERRIDE":
+            timestamp = now_datetime()
+            text = (
+                f"Auto-assigned to {user} ({reason})" if user
+                else f"No eligible assignee at insert: {reason}"
+            )
+            self.append("grm_issue_log", {
+                "text": text,
+                "user": frappe.session.user,
+                "timestamp": timestamp,
+            })
 
     def after_insert(self):
         try:
@@ -266,6 +291,13 @@ class GRMIssue(Document):
             frappe.log(f"After insert completed for GRM Issue {self.name}")
         except Exception as e:
             frappe.log(f"Error in after_insert for GRM Issue: {str(e)}")
+
+    def before_update_after_submit(self):
+        # Frappe's update_after_submit path does NOT run validate(), so the
+        # field-duty checks in _enforce_duty_field_constraints would otherwise
+        # be silently bypassed for post-submit set_value / db_update calls.
+        # Re-run them here so the duty matrix applies to every save path.
+        self._enforce_duty_field_constraints()
 
     def on_update(self):
         try:

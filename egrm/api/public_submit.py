@@ -48,6 +48,44 @@ def get_submission_config():
 
 
 @frappe.whitelist(allow_guest=True)
+def get_home_listings():
+    """Active projects + distinct categories for the public portal home page.
+
+    The React SPA's HomePage previously hit /api/resource/GRM Project and
+    /api/resource/GRM Issue Category directly, which 403 for Guest because
+    neither doctype grants Guest a Read perm. We expose the same data as
+    a Guest-safe whitelisted method so the public landing populates.
+    """
+    try:
+        projects = frappe.db.sql(
+            """
+            SELECT name, title, description
+            FROM `tabGRM Project`
+            WHERE is_active = 1
+            ORDER BY title
+            """,
+            as_dict=True,
+        )
+
+        categories = frappe.db.sql(
+            """
+            SELECT name, category_name
+            FROM `tabGRM Issue Category`
+            ORDER BY category_name
+            """,
+            as_dict=True,
+        )
+
+        return {
+            "status": "success",
+            "data": {"projects": projects, "categories": categories},
+        }
+    except Exception as e:
+        frappe.log_error(title="Home Listings Error", message=str(e))
+        return {"status": "error", "message": _("Failed to load home listings")}
+
+
+@frappe.whitelist(allow_guest=True)
 def get_submission_options(project=None):
     """Return form lookup data. If project is given, returns filtered categories/types."""
     try:

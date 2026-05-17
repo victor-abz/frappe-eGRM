@@ -657,11 +657,14 @@ class GRMUserProjectAssignment(Document):
             self.activated_on = now()
             self.activation_attempts = 0  # Reset attempts on successful activation
 
-            # Update user password if provided
+            # Update user password if provided. Activation is a Guest-callable
+            # flow (the activation code itself is the auth token), so bypass
+            # User doctype's role-based write permission.
             if new_password:
                 user_doc = frappe.get_doc("User", self.user)
                 user_doc.new_password = new_password
-                user_doc.save()
+                user_doc.flags.ignore_permissions = True
+                user_doc.save(ignore_permissions=True)
 
             self.save()
 

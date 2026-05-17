@@ -25,7 +25,7 @@ _AQE_TEST_PROJECT_CODES = {
 
 
 _DEFAULT_STATUSES = (
-    {"status_name": "Open", "initial_status": 1},
+    {"status_name": "New", "initial_status": 1},
     {"status_name": "In Progress", "open_status": 1},
     {"status_name": "Resolved", "final_status": 1},
     {"status_name": "Closed", "final_status": 1},
@@ -84,7 +84,7 @@ def _ensure_default_catalog(project: str) -> None:
     needs_final = not _project_has_status_flag(project, "final_status")
     needs_rejected = not _project_has_status_flag(project, "rejected_status")
     fill_map = {
-        "initial_status": ("Open", needs_initial),
+        "initial_status": ("New", needs_initial),
         "open_status": ("In Progress", needs_open),
         "final_status": ("Resolved", needs_final),
         "rejected_status": ("Rejected", needs_rejected),
@@ -247,10 +247,22 @@ def activate_project(project: str) -> dict:
     if issues:
         frappe.throw("\n".join(issues))
 
+    # Every region must have at least one user covering Intake, Review,
+    # and Investigate & Resolve duties. Without this the lifecycle stalls
+    # (citizen submissions route to a Resolver who can't be Accepted, or
+    # to nobody at all).
+    from egrm.services.duty_coverage import assert_full_coverage
+    assert_full_coverage(project)
+
     _ensure_default_catalog(project)
 
     frappe.db.set_value(
-        "GRM Project", project, {"is_setup_complete": 1, "current_setup_step": TOTAL_SETUP_STEPS},
+        "GRM Project", project,
+        {
+            "is_setup_complete": 1,
+            "is_active": 1,
+            "current_setup_step": TOTAL_SETUP_STEPS,
+        },
         update_modified=False,
     )
     frappe.db.commit()
@@ -264,6 +276,216 @@ def activate_project(project: str) -> dict:
     _maybe_bridge_aqe_test_assignments(project)
 
     return {"ok": True, "project": project}
+
+
+@frappe.whitelist()
+def preview_duty_coverage(project: str) -> dict:
+    """Return per-region duty-coverage gaps for the wizard UI.
+
+    The wizard can render the result on Step 9 (Users) as a live preview
+    so the operator sees which regions still need a user before they hit
+    "Activate". This endpoint is read-only and does not mutate state.
+    """
+    _require_wizard_role()
+    if not frappe.db.exists("GRM Project", project):
+        frappe.throw(frappe._("Project {0} not found").format(project))
+    from egrm.services.duty_coverage import compute_coverage
+    return compute_coverage(project)
+
+
+@frappe.whitelist()
+def preview_remove_regions(project: str, regions) -> dict:
+    """Compute the exact impact of removing ``regions`` *without* deleting.
+
+    Returns a per-target row describing what would be touched plus rolled-up
+    totals, so the wizard can render an explicit confirm dialog like
+    "Remove X regions + Y descendants, unassigning Z users".
+    """
+    _require_wizard_role()
+    if not frappe.db.exists("GRM Project", project):
+        frappe.throw(frappe._("Project {0} not found").format(project))
+    if isinstance(regions, str):
+        regions = frappe.parse_json(regions) or []
+    if not isinstance(regions, list):
+        frappe.throw(frappe._("regions must be a list of region IDs"))
+
+    def _collect_descendants(root: str) -> list[str]:
+        out: list[str] = []
+        frontier: list[str] = [root]
+        seen: set[str] = {root}
+        while frontier:
+            children = frappe.get_all(
+                "GRM Administrative Region",
+                filters={"project": project, "parent_region": ("in", frontier)},
+                pluck="name",
+            )
+            frontier = []
+            for c in children:
+                if c in seen:
+                    continue
+                seen.add(c)
+                out.append(c)
+                frontier.append(c)
+        return out
+
+    rows: list[dict] = []
+    seen_targets: set[str] = set()
+    total_regions = 0
+    total_descendants = 0
+    total_users = 0
+    invalid: list[str] = []
+    for r in regions:
+        r = (r or "").strip()
+        if not r or r in seen_targets:
+            continue
+        seen_targets.add(r)
+        owner = frappe.db.get_value("GRM Administrative Region", r, ["project", "region_name"], as_dict=True)
+        if not owner or owner.project != project:
+            invalid.append(r)
+            continue
+        descendants = _collect_descendants(r)
+        deletion_set = descendants + [r]
+        users = frappe.get_all(
+            "GRM User Project Assignment",
+            filters={"project": project, "administrative_region": ("in", deletion_set), "is_active": 1},
+            pluck="name",
+        )
+        rows.append({
+            "region": r,
+            "region_name": owner.region_name,
+            "descendants": len(descendants),
+            "users": len(users),
+        })
+        total_regions += 1
+        total_descendants += len(descendants)
+        total_users += len(users)
+
+    return {
+        "rows": rows,
+        "totals": {
+            "regions": total_regions,
+            "descendants": total_descendants,
+            "users": total_users,
+        },
+        "invalid": invalid,
+    }
+
+
+@frappe.whitelist()
+def remove_regions(project: str, regions, cascade_users: bool = False) -> dict:
+    """Bulk-delete ``GRM Administrative Region`` rows in ``project``.
+
+    Used by the Step 9 coverage banner so the operator can drop scaffolding
+    regions that have no users (and therefore block the activation gate).
+
+    Pruning is *complete*: every descendant of a selected region is also
+    deleted, so the project never ends up with orphan-parent regions.
+
+    By default, if any region in the deletion set (selected or descendant)
+    has active ``GRM User Project Assignment`` rows, the whole batch is
+    aborted with ``has_active_users`` so the operator can confirm. When
+    ``cascade_users`` is true (a second confirmation in the UI), those
+    assignments are deleted first. Returns
+    ``{"deleted": [...], "skipped": [...], "cascaded_users": N, "cascaded_regions": N}``.
+    """
+    _require_wizard_role()
+    if not frappe.db.exists("GRM Project", project):
+        frappe.throw(frappe._("Project {0} not found").format(project))
+
+    if isinstance(regions, str):
+        regions = frappe.parse_json(regions) or []
+    if not isinstance(regions, list):
+        frappe.throw(frappe._("regions must be a list of region IDs"))
+    if isinstance(cascade_users, str):
+        cascade_users = cascade_users.lower() in ("1", "true", "yes")
+
+    def _collect_descendants(root: str) -> list[str]:
+        """BFS collect every descendant of ``root`` in this project."""
+        out: list[str] = []
+        frontier: list[str] = [root]
+        seen: set[str] = {root}
+        while frontier:
+            parents = frontier
+            frontier = []
+            for batch_start in range(0, len(parents), 200):
+                batch = parents[batch_start:batch_start + 200]
+                children = frappe.get_all(
+                    "GRM Administrative Region",
+                    filters={"project": project, "parent_region": ("in", batch)},
+                    pluck="name",
+                )
+                for c in children:
+                    if c in seen:
+                        continue
+                    seen.add(c)
+                    out.append(c)
+                    frontier.append(c)
+        return out
+
+    deleted: list[str] = []
+    skipped: list[dict] = []
+    cascaded_users = 0
+    cascaded_regions = 0
+
+    for region in regions:
+        region = (region or "").strip()
+        if not region:
+            continue
+        owner = frappe.db.get_value("GRM Administrative Region", region, "project")
+        if owner != project:
+            skipped.append({"region": region, "reason": "not_in_project"})
+            continue
+
+        # Build the full deletion set: the region itself + every descendant.
+        descendants = _collect_descendants(region)
+        # Deepest-first: descendants are appended in BFS order, so reverse
+        # the descendant list and put the selected region last to satisfy
+        # any parent-FK checks Frappe might apply.
+        deletion_order = list(reversed(descendants)) + [region]
+
+        # Gather all active assignments in the deletion set in one pass.
+        active_assignments = []
+        if deletion_order:
+            active_assignments = frappe.get_all(
+                "GRM User Project Assignment",
+                filters={
+                    "project": project,
+                    "administrative_region": ("in", deletion_order),
+                    "is_active": 1,
+                },
+                pluck="name",
+            )
+        if active_assignments and not cascade_users:
+            skipped.append({
+                "region": region,
+                "reason": "has_active_users",
+                "descendants": len(descendants),
+                "users": len(active_assignments),
+            })
+            continue
+
+        for assignment in active_assignments:
+            frappe.delete_doc(
+                "GRM User Project Assignment", assignment,
+                ignore_permissions=True, force=True, delete_permanently=True,
+            )
+            cascaded_users += 1
+
+        for r in deletion_order:
+            frappe.delete_doc(
+                "GRM Administrative Region", r,
+                ignore_permissions=True, force=True, delete_permanently=True,
+            )
+        deleted.append(region)
+        cascaded_regions += len(descendants)
+
+    frappe.db.commit()
+    return {
+        "deleted": deleted,
+        "skipped": skipped,
+        "cascaded_users": cascaded_users,
+        "cascaded_regions": cascaded_regions,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -307,13 +529,13 @@ def project_role_add(
 ) -> dict:
     """Create a new GRM Project Role row.
 
-    ``duties`` may be a list of duty names (or a JSON-encoded list when
-    posted via REST form-encoding). The role is created with those duties
-    attached atomically — required because GRM Project Role's validator
-    rejects empty duty lists. Pre-existing callers that don't pass
-    ``duties`` get a single-duty default (`Supervise`) so the role lands
-    valid; the wizard UI's "Add" dialog then lets the operator toggle the
-    real composition before assigning users.
+    ``duties`` is a list of duty names (or a JSON-encoded list when posted
+    via REST form-encoding) that MUST contain at least one entry. The role
+    is created with those duties attached atomically. We do NOT default to
+    a placeholder duty: silently injecting one would pollute the role with
+    an unintended responsibility (the doctype's
+    ``_validate_at_least_one_duty`` would still pass but the operator's
+    intent is lost). Callers must collect the duty list up-front.
     """
     _require_wizard_role()
     project = (project or "").strip()
@@ -329,9 +551,7 @@ def project_role_add(
         except Exception:
             frappe.throw(frappe._("duties must be a JSON-encoded list of duty names"))
     if not duties:
-        # Default: bind to Supervise so the role lands valid; the operator
-        # can toggle the real composition immediately after creation.
-        duties = ["Supervise"]
+        frappe.throw(frappe._("Pick at least one duty for this role."))
     doc = frappe.get_doc({
         "doctype": "GRM Project Role",
         "project": project,
@@ -491,13 +711,15 @@ def update_category_routing(
     Args:
         project: GRM Project name. Used to verify the category belongs here.
         category: GRM Issue Category name (the row being updated).
-        target_type: Either ``"Department"`` or ``"Role"``.
-        target: GRM Issue Department name (for Department) or
-                GRM Project Role name (for Role).
+        target_type: Must be ``"Role"`` — department routing is no longer
+            supported.
+        target: GRM Project Role name.
     """
     _require_wizard_role()
-    if target_type not in ("Department", "Role"):
-        frappe.throw(frappe._("target_type must be Department or Role"))
+    if target_type != "Role":
+        frappe.throw(frappe._(
+            "Only Role routing is supported. Update the category to route to a Role."
+        ))
     if not (project and category and target):
         frappe.throw(frappe._("project, category, and target are required"))
 
@@ -505,17 +727,13 @@ def update_category_routing(
     if cat.project != project:
         frappe.throw(frappe._("Category does not belong to this project"))
 
-    cat.routing_target_type = target_type
-    if target_type == "Department":
-        cat.assigned_department = target
-        cat.assigned_role = None
-    else:
-        cat.assigned_role = target
-        cat.assigned_department = None
+    cat.routing_target_type = "Role"
+    cat.assigned_role = target
+    cat.assigned_department = None
     cat.save(ignore_permissions=True)
     return {
         "category": category,
-        "routing_target_type": target_type,
+        "routing_target_type": "Role",
         "target": target,
     }
 
@@ -543,11 +761,11 @@ def export_user_template() -> str:
 # "Rejected" for dismissed cases). Idempotent — only inserts statuses missing
 # for the project.
 _DEFAULT_ISSUE_STATUSES = [
-    {"status_name": "New",         "initial_status": 1, "open_status": 1, "final_status": 0, "rejected_status": 0},
+    {"status_name": "New",         "initial_status": 1, "open_status": 0, "final_status": 0, "rejected_status": 0},
     {"status_name": "In Progress", "initial_status": 0, "open_status": 1, "final_status": 0, "rejected_status": 0},
-    {"status_name": "Resolved",    "initial_status": 0, "open_status": 1, "final_status": 1, "rejected_status": 0},
+    {"status_name": "Resolved",    "initial_status": 0, "open_status": 0, "final_status": 1, "rejected_status": 0},
     {"status_name": "Closed",      "initial_status": 0, "open_status": 0, "final_status": 1, "rejected_status": 0},
-    {"status_name": "Rejected",    "initial_status": 0, "open_status": 0, "final_status": 1, "rejected_status": 1},
+    {"status_name": "Rejected",    "initial_status": 0, "open_status": 0, "final_status": 0, "rejected_status": 1},
 ]
 
 

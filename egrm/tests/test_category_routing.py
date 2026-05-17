@@ -1,9 +1,10 @@
 """Tests for ``egrm.services.category_routing`` and the GRM Issue
 ``before_insert`` auto-routing path.
 
-Each test seeds a project, a department, a role, and two categories
-(one routed to the department, one to the role) so we can exercise both
-sides of the helper.
+Categories now route only to a Role; department routing is rejected at
+validation time. Legacy (NULL or "Department"-typed) rows are returned as
+``target_name=None`` so the assignee resolver records a structured "no
+routing target" reason and leaves the issue unassigned.
 """
 
 import frappe
@@ -13,10 +14,9 @@ from egrm.services.category_routing import resolve_category_routing
 
 
 PROJECT = "TEST-ROUTING"
-DEPT_NAME = "DeptA"
 ROLE_NAME = "RoleA"
-CAT_DEPT = "C-Dept"
 CAT_ROLE = "C-Role"
+CAT_LEGACY = "C-Legacy"
 
 
 def _ensure(doctype: str, filters: dict, payload: dict) -> str:
@@ -36,14 +36,6 @@ def routed_category():
             "title": "T",
         }).insert(ignore_permissions=True)
 
-    dept = _ensure(
-        "GRM Issue Department",
-        {"department_name": DEPT_NAME},
-        {
-            "department_name": DEPT_NAME,
-            "grm_project_link": [{"project": PROJECT}],
-        },
-    )
     role = _ensure(
         "GRM Project Role",
         {"project": PROJECT, "role_name": ROLE_NAME},
@@ -51,21 +43,6 @@ def routed_category():
             "project": PROJECT,
             "role_name": ROLE_NAME,
             "is_active": 1,
-        },
-    )
-    cat_dept = _ensure(
-        "GRM Issue Category",
-        {"category_name": CAT_DEPT},
-        {
-            "project": PROJECT,
-            "category_name": CAT_DEPT,
-            "label": CAT_DEPT,
-            "abbreviation": "CDP",
-            "routing_target_type": "Department",
-            "assigned_department": dept,
-            "confidentiality_level": "Public",
-            "redirection_protocol": "0",
-            "grm_project_link": [{"project": PROJECT}],
         },
     )
     cat_role = _ensure(
@@ -84,18 +61,10 @@ def routed_category():
         },
     )
     yield {
-        "dept_cat": cat_dept,
         "role_cat": cat_role,
-        "dept": dept,
         "role": role,
         "project": PROJECT,
     }
-
-
-def test_resolve_returns_department(routed_category):
-    r = resolve_category_routing(routed_category["dept_cat"])
-    assert r["target_type"] == "Department"
-    assert r["target_name"] == routed_category["dept"]
 
 
 def test_resolve_returns_role(routed_category):
@@ -104,22 +73,30 @@ def test_resolve_returns_role(routed_category):
     assert r["target_name"] == routed_category["role"]
 
 
-def test_resolve_legacy_category_falls_back_to_department(routed_category):
-    """Pre-migration row: ``routing_target_type`` NULL must default to Department."""
+def test_resolve_legacy_null_returns_no_target(routed_category):
+    """Pre-migration row: ``routing_target_type`` NULL must surface as
+    ``target_name=None`` so callers treat it as misconfigured."""
     frappe.db.set_value(
         "GRM Issue Category",
-        routed_category["dept_cat"],
+        routed_category["role_cat"],
         "routing_target_type",
         None,
     )
-    r = resolve_category_routing(routed_category["dept_cat"])
-    assert r["target_type"] == "Department"
-    assert r["target_name"] == routed_category["dept"]
+    r = resolve_category_routing(routed_category["role_cat"])
+    assert r["target_type"] == "Role"
+    assert r["target_name"] is None
+    # restore for any later assertions in the same session
+    frappe.db.set_value(
+        "GRM Issue Category",
+        routed_category["role_cat"],
+        "routing_target_type",
+        "Role",
+    )
 
 
 def test_resolve_unknown_category_returns_safe_default():
     r = resolve_category_routing("ZZZ-DOES-NOT-EXIST")
-    assert r["target_type"] == "Department"
+    assert r["target_type"] == "Role"
     assert r["target_name"] is None
     assert r["target_doc"] is None
 
@@ -136,27 +113,12 @@ def test_new_issue_inherits_role_routing(routed_category):
     assert not issue.assigned_department
 
 
-def test_new_issue_inherits_department_routing(routed_category):
-    issue = frappe.get_doc({
-        "doctype": "GRM Issue",
-        "project": routed_category["project"],
-        "category": routed_category["dept_cat"],
-        "title": "T",
-        "description": "D",
-    }).insert(ignore_permissions=True)
-    assert issue.assigned_department == routed_category["dept"]
-    assert not issue.assigned_role
-
-
-def test_caller_overrides_default_routing(routed_category):
-    """Caller-supplied ``assigned_department`` wins over the category default."""
-    other_dept = _ensure(
-        "GRM Issue Department",
-        {"department_name": "OverrideDept"},
-        {
-            "department_name": "OverrideDept",
-            "grm_project_link": [{"project": routed_category["project"]}],
-        },
+def test_caller_role_override_wins(routed_category):
+    """Caller-supplied ``assigned_role`` wins over the category default."""
+    other_role = _ensure(
+        "GRM Project Role",
+        {"project": PROJECT, "role_name": "OverrideRole"},
+        {"project": PROJECT, "role_name": "OverrideRole", "is_active": 1},
     )
     issue = frappe.get_doc({
         "doctype": "GRM Issue",
@@ -164,8 +126,22 @@ def test_caller_overrides_default_routing(routed_category):
         "category": routed_category["role_cat"],
         "title": "T",
         "description": "D",
-        "assigned_department": other_dept,
+        "assigned_role": other_role,
     }).insert(ignore_permissions=True)
-    assert issue.assigned_department == other_dept
-    # role auto-assignment skipped because the caller already set a routing target
-    assert not issue.assigned_role
+    assert issue.assigned_role == other_role
+
+
+def test_category_rejects_department_target(routed_category):
+    """Saving a category with ``routing_target_type='Department'`` must throw."""
+    with pytest.raises(frappe.ValidationError):
+        frappe.get_doc({
+            "doctype": "GRM Issue Category",
+            "project": PROJECT,
+            "category_name": "C-RejectDept",
+            "label": "C-RejectDept",
+            "abbreviation": "RDP",
+            "routing_target_type": "Department",
+            "confidentiality_level": "Public",
+            "redirection_protocol": "0",
+            "grm_project_link": [{"project": PROJECT}],
+        }).insert(ignore_permissions=True)

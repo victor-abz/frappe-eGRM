@@ -20,6 +20,74 @@ from egrm.api.sync import create_record as _sync_create_record
 log = logging.getLogger(__name__)
 
 
+# Drafts (docstatus=0 GRM Issues) are private to their owner. Bypass roles
+# can still see other users' drafts via the API; everyone else gets the
+# same "not found" response whether the draft doesn't exist or simply
+# belongs to another duty-holder. This mirrors permission_query_conditions
+# / has_permission in server_scripts/grm_issue_permissions.py so the desk
+# and the API layer agree on visibility.
+_DRAFT_BYPASS_ROLES = frozenset(
+    {"System Manager", "GRM Platform Administrator", "GRM Supervise"}
+)
+
+
+def _user_can_see_others_drafts(user):
+    if user == "Administrator":
+        return True
+    return bool(_DRAFT_BYPASS_ROLES.intersection(frappe.get_roles(user)))
+
+
+def _validate_creator_scope(issue_data: dict, user: str) -> dict | None:
+    """Reject create() when staff raise an issue outside their region scope.
+
+    Returns ``None`` when the create may proceed, or an error envelope
+    when the user does not have an active assignment in the issue's
+    administrative region (or any ancestor). Bypass roles skip the gate.
+    """
+    if user == "Administrator":
+        return None
+    if _DRAFT_BYPASS_ROLES.intersection(frappe.get_roles(user)):
+        return None
+    project = issue_data.get("project")
+    region = issue_data.get("administrative_region")
+    if not project or not region:
+        # Let the downstream sync.create_record raise a normal validation
+        # error so the missing-fields message stays consistent.
+        return None
+    from egrm.services.assignee_routing import is_user_in_scope
+    if not is_user_in_scope(user, project, region):
+        return {
+            "status": "error",
+            "message": _(
+                "You can only raise issues inside your assigned region(s)."
+            ),
+            "code": "OUT_OF_SCOPE",
+        }
+    return None
+
+
+def _draft_or_filters(user):
+    """Return an or_filters list that hides other users' drafts, or None
+    when the user is allowed to see everything."""
+    if _user_can_see_others_drafts(user):
+        return None
+    return [["docstatus", ">", 0], ["owner", "=", user]]
+
+
+def _draft_blocks_access(issue_id, user):
+    """True when this issue is a draft owned by someone else and the user
+    is not a bypass role. Callers should return a 'not found' response so
+    the existence of another user's draft is not leaked."""
+    if _user_can_see_others_drafts(user):
+        return False
+    row = frappe.db.get_value(
+        "GRM Issue", issue_id, ("docstatus", "owner"), as_dict=True
+    )
+    if not row:
+        return False
+    return (row.get("docstatus") or 0) == 0 and row.get("owner") != user
+
+
 @frappe.whitelist()
 def list(
     project_id=None, status=None, assignee=None, reporter=None, limit=50, offset=0
@@ -62,19 +130,22 @@ def list(
                 # User has no project access
                 return {"status": "success", "data": []}
 
-        # Get issues
+        # Get issues. or_filters keeps drafts private to their owner —
+        # frappe.get_all bypasses permission_query_conditions, so without
+        # this another user's draft would leak through the API even though
+        # the desk list correctly hides it.
         issues = frappe.get_all(
             "GRM Issue",
             filters=filters,
+            or_filters=_draft_or_filters(user),
             fields=[
                 "name",
                 "tracking_code",
-                "title",
                 "description",
                 "status",
                 "assignee",
                 "reporter",
-                "citizen_name",
+                "citizen",
                 "citizen_type",
                 "citizen_age_group",
                 "citizen_group_1",
@@ -82,7 +153,6 @@ def list(
                 "gender",
                 "category",
                 "issue_type",
-                "created_date",
                 "resolution_days",
                 "resolution_date",
                 "intake_date",
@@ -95,8 +165,9 @@ def list(
                 "project",
                 "contact_information",
                 "contact_medium",
-                "ongoing_issue",
-                "auto_increment_id",
+                "creation",
+                "owner",
+                "docstatus",
             ],
             limit=limit,
             start=offset,
@@ -139,35 +210,30 @@ def list(
                 issue.region_details = {
                     "administrative_id": region_doc.name,
                     "name": region_doc.region_name,
-                    "latitude": region_doc.latitude,
-                    "longitude": region_doc.longitude,
+                    "latitude": getattr(region_doc, "latitude", None),
+                    "longitude": getattr(region_doc, "longitude", None),
                 }
 
-            # Get attachments
-            attachments = frappe.get_all(
+            # Get attachments / logs / comments (field names match the
+            # current child doctype schema — see grm_issue_attachment.json,
+            # grm_issue_log.json, grm_issue_comment.json).
+            issue.attachments = frappe.get_all(
                 "GRM Issue Attachment",
                 filters={"parent": issue.name},
-                fields=["name", "file", "description", "uploaded_by", "upload_date"],
+                fields=["name", "attachment", "file_name", "local_url", "uploaded"],
             )
-            issue.attachments = attachments
-
-            # Get logs
-            logs = frappe.get_all(
+            issue.logs = frappe.get_all(
                 "GRM Issue Log",
                 filters={"parent": issue.name},
-                fields=["log_type", "log_by", "log_date", "description"],
-                order_by="log_date desc",
+                fields=["text", "user", "timestamp", "action_taken"],
+                order_by="timestamp desc",
             )
-            issue.logs = logs
-
-            # Get comments
-            comments = frappe.get_all(
+            issue.comments = frappe.get_all(
                 "GRM Issue Comment",
                 filters={"parent": issue.name},
-                fields=["comment_by", "comment_text", "comment_date"],
-                order_by="comment_date desc",
+                fields=["name", "user", "comment", "creation"],
+                order_by="creation desc",
             )
-            issue.comments = comments
 
         frappe.log(f"Returning {len(issues)} issues")
         return {"status": "success", "data": issues}
@@ -196,6 +262,12 @@ def get(issue_id):
         # Check if issue exists
         if not frappe.db.exists("GRM Issue", issue_id):
             log.warning(f"Issue {issue_id} not found")
+            return {"status": "error", "message": _("Issue not found")}
+
+        # Drafts are private to their owner — return the same 'not found'
+        # response a non-existent issue would yield so the existence of
+        # another user's draft is not leaked through the API.
+        if _draft_blocks_access(issue_id, user):
             return {"status": "error", "message": _("Issue not found")}
 
         # Check if user has permission to read the issue
@@ -270,6 +342,13 @@ def create(issue_data):
                 "message": _("Missing 'id' on issue payload"),
             }
 
+        # Staff raising an issue must do so inside their assigned region(s).
+        # Bypass roles (Administrator / System Manager / Platform Admin /
+        # Supervise) skip the gate so admin-desk creation isn't blocked.
+        scope_error = _validate_creator_scope(issue_data, user)
+        if scope_error:
+            return scope_error
+
         try:
             _sync_create_record("GRM Issue", issue_data)
         except frappe.PermissionError as pe:
@@ -313,6 +392,10 @@ def update(issue_id, issue_data):
         # Check if issue exists
         if not frappe.db.exists("GRM Issue", issue_id):
             log.warning(f"Issue {issue_id} not found")
+            return {"status": "error", "message": _("Issue not found")}
+
+        # Drafts owned by another user are invisible — surface as not found.
+        if _draft_blocks_access(issue_id, user):
             return {"status": "error", "message": _("Issue not found")}
 
         # Check if user has permission to update the issue
@@ -428,6 +511,10 @@ def assign(issue_id, assignee_id):
             log.warning(f"Issue {issue_id} not found")
             return {"status": "error", "message": _("Issue not found")}
 
+        # Drafts owned by another user are invisible — surface as not found.
+        if _draft_blocks_access(issue_id, user):
+            return {"status": "error", "message": _("Issue not found")}
+
         # Check if assignee exists
         if not frappe.db.exists("User", assignee_id):
             log.warning(f"Assignee {assignee_id} not found")
@@ -518,6 +605,10 @@ def resolve(issue_id, resolution_text=None):
             log.warning(f"Issue {issue_id} not found")
             return {"status": "error", "message": _("Issue not found")}
 
+        # Drafts owned by another user are invisible — surface as not found.
+        if _draft_blocks_access(issue_id, user):
+            return {"status": "error", "message": _("Issue not found")}
+
         # Check if user has permission to resolve the issue
         if not frappe.has_permission("GRM Issue", "write", issue_id):
             log.warning(
@@ -600,6 +691,10 @@ def reopen(issue_id, reason=None):
             log.warning(f"Issue {issue_id} not found")
             return {"status": "error", "message": _("Issue not found")}
 
+        # Drafts owned by another user are invisible — surface as not found.
+        if _draft_blocks_access(issue_id, user):
+            return {"status": "error", "message": _("Issue not found")}
+
         # Check if user has permission to reopen the issue
         if not frappe.has_permission("GRM Issue", "write", issue_id):
             log.warning(
@@ -668,6 +763,10 @@ def escalate(issue_id, reason=None):
         # Check if issue exists
         if not frappe.db.exists("GRM Issue", issue_id):
             log.warning(f"Issue {issue_id} not found")
+            return {"status": "error", "message": _("Issue not found")}
+
+        # Drafts owned by another user are invisible — surface as not found.
+        if _draft_blocks_access(issue_id, user):
             return {"status": "error", "message": _("Issue not found")}
 
         # Check if user has permission to escalate the issue
@@ -780,28 +879,41 @@ def get_latest_issues(last_sync_timestamp=None, limit=50, offset=0):
                 "data": {"issues": [], "total_count": 0, "has_more": False},
             }
 
-        # Build filters
-        filters = {"project": ["in", accessible_projects]}
+        # Build filters. List form lets us add the draft-visibility AND
+        # clause alongside the OR of (docstatus>0, owner=user) via or_filters
+        # below, which matches frappe.get_all's compound-where semantics.
+        filters = [["project", "in", accessible_projects]]
         if last_sync:
-            filters["creation"] = [">", last_sync]
+            filters.append(["creation", ">", last_sync])
 
-        # Get total count first
-        total_count = frappe.db.count("GRM Issue", filters=filters)
+        draft_or = _draft_or_filters(user)
+
+        # Get total count first (mirror the same filter shape so the
+        # "has_more" computation doesn't lie when drafts are hidden).
+        if draft_or:
+            total_count = frappe.db.count(
+                "GRM Issue",
+                filters=filters + [["docstatus", ">", 0]],
+            ) + frappe.db.count(
+                "GRM Issue",
+                filters=filters + [["docstatus", "=", 0], ["owner", "=", user]],
+            )
+        else:
+            total_count = frappe.db.count("GRM Issue", filters=filters)
 
         # Get paginated issues with minimal fields for efficiency
         issues = frappe.get_all(
             "GRM Issue",
             filters=filters,
+            or_filters=draft_or,
             fields=[
                 "name",
-                "title",
                 "description",
                 "status",
                 "assignee",
                 "reporter",
                 "category",
                 "issue_type",
-                "created_date",
                 "creation",
                 "modified",
                 "administrative_region",
@@ -809,6 +921,8 @@ def get_latest_issues(last_sync_timestamp=None, limit=50, offset=0):
                 "confirmed",
                 "resolution_accepted",
                 "escalate_flag",
+                "owner",
+                "docstatus",
             ],
             limit=cint(limit),
             start=cint(offset),
@@ -1063,6 +1177,10 @@ def upload_attachment(issue_id=None, attachment_data=None):
             }
 
         if not frappe.db.exists("GRM Issue", issue_id):
+            return {"status": "error", "message": _("Issue not found")}
+
+        # Drafts owned by another user are invisible — surface as not found.
+        if _draft_blocks_access(issue_id, user):
             return {"status": "error", "message": _("Issue not found")}
 
         if not frappe.has_permission("GRM Issue", "write", issue_id):

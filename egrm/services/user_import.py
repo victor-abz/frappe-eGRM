@@ -44,6 +44,189 @@ PREVIEW_LIMIT = 50
 TARGET_SKIP = "(skip)"
 TARGET_REGION = "administrative_region"
 
+# Excel formula-error tokens that leak into XLSX cells when the source
+# spreadsheet has a broken/unsupported formula. We treat them as empty
+# strings so synthesis fallbacks (e.g. email derivation from first/last
+# name) can kick in instead of writing literal "#NAME?" into the DB.
+_EXCEL_ERROR_TOKENS = frozenset({
+    "#NAME?", "#REF!", "#DIV/0!", "#VALUE!", "#N/A", "#NULL!", "#NUM!",
+})
+
+
+def _clean_cell(val: str) -> str:
+    """Strip Excel formula-error tokens — return ``""`` for those cells."""
+    s = (val or "").strip()
+    return "" if s in _EXCEL_ERROR_TOKENS else s
+
+
+# Smart-quote → ASCII map. Excel and Word frequently autocorrect typed
+# apostrophes/double quotes into curly variants (U+2018/2019/201C/201D).
+# When the operator types a role like "Digital ambassador's supervisor"
+# into Step 3 with a straight quote and the imported file contains the
+# curly variant (or vice versa), naive lower-cased equality misses the
+# match and the row gets dropped as an unknown role. Normalize both
+# directions through the same transform before comparing.
+_QUOTE_NORMALIZE = str.maketrans({
+    "‘": "'",  # left single quotation mark
+    "’": "'",  # right single quotation mark / curly apostrophe
+    "‚": "'",  # single low-9 quotation mark
+    "‛": "'",  # single high-reversed-9 quotation mark
+    "“": '"',  # left double quotation mark
+    "”": '"',  # right double quotation mark
+    "„": '"',  # double low-9 quotation mark
+    "‟": '"',  # double high-reversed-9 quotation mark
+})
+
+
+def _normalize_label(s: str) -> str:
+    """Case-fold, trim, and ASCII-fold curly quotes for label comparisons."""
+    return (s or "").translate(_QUOTE_NORMALIZE).strip().lower()
+
+
+def _synthesize_email(first: str, last: str, domain: str) -> str:
+    """Build ``firstname.lastname@<domain>`` for rows missing emails.
+
+    Used when the source file had an empty / errored email cell AND the
+    operator opted in to synthesis. ``domain`` is operator-supplied (e.g.
+    ``yopmail.com``); no implicit default — callers must provide one.
+    """
+    import re as _re
+    def _slug(s: str) -> str:
+        s = (s or "").strip().lower()
+        s = _re.sub(r"[^a-z0-9]+", "", s)
+        return s
+
+    fn, ln = _slug(first), _slug(last)
+    local = ".".join([p for p in (fn, ln) if p]) or "user"
+    return f"{local}@{(domain or '').strip()}"
+
+
+def _duty_roles_for_project_role(project_role: str) -> list[str]:
+    """Return the Frappe Role names mapped to the given GRM Project Role's duties.
+
+    Duty rows live on ``GRM Project Role.duties`` (Link to ``Duty``); the
+    corresponding Frappe Role follows the convention ``"GRM <duty>"`` (mirrors
+    ``_frappe_role_for_duty`` in the assignment doctype). Only roles that
+    actually exist in ``tabRole`` are returned — silently skipping any that
+    haven't been created yet keeps user-creation forgiving when a project's
+    duty taxonomy outpaces its role provisioning.
+    """
+    if not project_role or not frappe.db.exists("GRM Project Role", project_role):
+        return []
+    duties = frappe.get_all(
+        "GRM Project Role Duty",
+        filters={"parent": project_role},
+        pluck="duty",
+    )
+    out: list[str] = []
+    for duty in duties:
+        target = f"GRM {duty}"
+        if frappe.db.exists("Role", target):
+            out.append(target)
+    return out
+
+
+def _ensure_user(
+    email: str,
+    first_name: str,
+    last_name: str,
+    gender: str = "",
+    phone: str = "",
+    project_role: str = "",
+) -> tuple[str, bool]:
+    """Find-or-create a Frappe User keyed by email; return ``(name, created)``.
+
+    Frappe Users are auto-named to their email, so ``frappe.db.exists`` on the
+    email gives O(1) presence detection. New users are inserted with welcome
+    emails muted (this is a bulk import path) and ``send_welcome_email=0`` so
+    the wizard does not flood inboxes during a 24-row test run.
+
+    ``project_role`` (when supplied) is the resolved ``GRM Project Role.name``
+    for the assignment that needs this user. We map its duties to the
+    convention-named Frappe Roles (``GRM <duty>``) and seed the User's
+    ``roles`` child table at insert time so Frappe's ``before_insert`` hook
+    does not raise the "No Roles Specified" msgprint. As a baseline (e.g.
+    when no duties resolve), we always grant ``Desk User`` so the warning
+    never fires and the user can authenticate against the desk.
+    """
+    email = (email or "").strip().lower()
+    if not email:
+        raise frappe.ValidationError("Email is required to create a User")
+    if frappe.db.exists("User", email):
+        return email, False
+    # Gender is a Link to Gender doctype. Normalize ALLCAPS source values
+    # ("FEMALE") to title case ("Female") and silently drop unknown values
+    # rather than failing the whole row — gender is non-essential metadata
+    # and the rest of the user record (email/name/phone) is what we care
+    # about for the wizard's bulk import.
+    gender_norm = (gender or "").strip()
+    if gender_norm:
+        gender_norm = gender_norm.title()
+        if not frappe.db.exists("Gender", gender_norm):
+            gender_norm = ""
+
+    duty_roles = _duty_roles_for_project_role(project_role)
+    # Always seed at least one role so Frappe's "No Roles Specified" warning
+    # does not block the import. ``Desk User`` is the standard zero-permission
+    # baseline; duty roles below add the actual GRM access the user needs.
+    role_set: list[str] = []
+    if frappe.db.exists("Role", "Desk User"):
+        role_set.append("Desk User")
+    for role in duty_roles:
+        if role not in role_set:
+            role_set.append(role)
+
+    doc = frappe.get_doc({
+        "doctype": "User",
+        "email": email,
+        "first_name": (first_name or "").strip() or email.split("@", 1)[0],
+        "last_name": (last_name or "").strip(),
+        "gender": gender_norm or None,
+        "phone": (phone or "").strip(),
+        "send_welcome_email": 0,
+        "user_type": "System User",
+        "enabled": 1,
+        "roles": [{"role": r} for r in role_set],
+    })
+    doc.flags.ignore_permissions = True
+    doc.insert(ignore_permissions=True)
+    return doc.name, True
+
+
+def _region_breadcrumb(region_id: str, cache: dict[str, str]) -> str:
+    """Return ``"Country / Province / District / ..."`` for a region.
+
+    Walks ``parent_region`` recursively until the root. Memoizes via the
+    caller-supplied ``cache`` so a deeply-nested hierarchy costs O(depth)
+    queries the first time, O(1) thereafter.
+    """
+    if not region_id:
+        return ""
+    if region_id in cache:
+        return cache[region_id]
+
+    chain: list[str] = []
+    current: str | None = region_id
+    seen: set[str] = set()  # cycle guard, just in case
+    while current and current not in seen:
+        seen.add(current)
+        if current in cache:
+            chain.insert(0, cache[current])
+            current = None
+            break
+        row = frappe.db.get_value(
+            "GRM Administrative Region", current,
+            ["region_name", "parent_region"], as_dict=True,
+        )
+        if not row:
+            break
+        chain.insert(0, row.region_name or current)
+        current = row.parent_region
+
+    label = " / ".join(chain) if chain else region_id
+    cache[region_id] = label
+    return label
+
 
 # ---------------------------------------------------------------------------
 # A.1 — resolve_region
@@ -286,7 +469,9 @@ def _required_targets() -> list[tuple[str, str]]:
 
     Required = the wizard's User minima (email/first_name/last_name) plus
     every ``GRM User Project Assignment`` field with ``reqd: 1`` *except*
-    ``project`` (the wizard supplies that out-of-band).
+    fields the operator cannot map: ``project`` (wizard supplies it),
+    ``administrative_region`` (handled via the TARGET_REGION sentinel + level
+    sub-picker), and ``user`` (auto-derived from ``User.email`` at import time).
     """
     required: list[tuple[str, str]] = []
     user_meta = frappe.get_meta("User")
@@ -296,10 +481,11 @@ def _required_targets() -> list[tuple[str, str]]:
         label = (f.label if f else fname) or fname
         required.append((f"User.{fname}", label))
 
+    non_mappable_assignment = {"project", "administrative_region", "user"}
     for f in frappe.get_meta("GRM User Project Assignment").fields:
         if not getattr(f, "reqd", 0):
             continue
-        if f.fieldname == "project":
+        if f.fieldname in non_mappable_assignment:
             continue
         label = f.label or f.fieldname
         required.append((f"Assignment.{f.fieldname}", label))
@@ -417,6 +603,8 @@ def materialize_staged_csv(
     mapping: dict,
     project: str,
     auto_create_regions: bool = True,
+    synthesize_emails: bool = False,
+    synthesize_email_domain: str = "",
 ) -> dict:
     """Apply mapping + region resolution to every row, write a staged CSV.
 
@@ -450,22 +638,65 @@ def materialize_staged_csv(
             if fname not in asgn_targets:
                 asgn_targets.append(fname)
 
-    out_headers = list(user_targets) + list(asgn_targets)
+    # The staged CSV imports into ``GRM User Project Assignment`` ONLY —
+    # User records are created up-front per row, before the row is written,
+    # and the resulting User name (== email) is what we persist on the
+    # Assignment via the ``user`` link field. This avoids the chicken-and-egg
+    # problem where Frappe Data Import would try to insert an Assignment
+    # whose ``user`` doesn't yet exist (and whose ``before_insert`` hook
+    # tries to read ``User.email`` to mint an activation code).
+    out_headers = ["user"] + list(asgn_targets)
     if level_columns:
         out_headers.append("administrative_region")
+    # The Assignment doctype requires `project`, but `_required_targets`
+    # excludes it from the user-facing mapping (the wizard supplies the
+    # project context out-of-band). Frappe Data Import has no out-of-band
+    # mechanism, so we inject the project value into every row of the
+    # staged CSV here.
+    out_headers.append("project")
 
     # ------------------------------------------------------------------
     # Caches built ONCE per call (vs per-row × per-target previously).
     # ------------------------------------------------------------------
-    # 1) Level-name → level-doc-name. Saves N_rows × N_levels DB lookups.
-    level_lookup: dict[str, str] = {
-        row.level_name: row.name
-        for row in frappe.get_all(
-            "GRM Administrative Level Type",
-            filters={"project": project},
-            fields=["name", "level_name"],
-        )
-    }
+    # 1) Level-key → level-doc-name. Saves N_rows × N_levels DB lookups.
+    #    The wizard's mapper UI uses the level-type ``name`` (autoname like
+    #    ``131j7c1dkn``) as its <option value>, while CLI/API callers may
+    #    pass the human-readable ``level_name`` (e.g. ``"Province"``). Accept
+    #    both so the same `level_lookup` works for either wire format.
+    level_lookup: dict[str, str] = {}
+    level_label_by_id: dict[str, str] = {}
+    for row in frappe.get_all(
+        "GRM Administrative Level Type",
+        filters={"project": project},
+        fields=["name", "level_name"],
+    ):
+        level_lookup[row.name] = row.name
+        if row.level_name:
+            level_lookup[row.level_name] = row.name
+        level_label_by_id[row.name] = row.level_name or row.name
+    # Region breadcrumb cache: region_id -> "Province / District / Sector".
+    # Populated lazily by ``_region_breadcrumb`` as preview rows are built;
+    # walking parent_region in SQL each call is fine because PREVIEW_LIMIT
+    # caps the worst case at 50 rows.
+    region_breadcrumb_cache: dict[str, str] = {}
+    # Role label → role `name` (random hash). The Assignment.role link points
+    # at GRM Project Role.name; the operator's CSV carries the human label
+    # (`role_name`). Build a case-/whitespace-insensitive lookup scoped to
+    # the project so we can rewrite cells before handing the staged CSV to
+    # Frappe Data Import. Track distinct unresolved labels so the wizard
+    # can tell the operator exactly which roles need to be created in Step 8.
+    role_lookup: dict[str, str] = {}
+    role_label_by_name: dict[str, str] = {}
+    for row in frappe.get_all(
+        "GRM Project Role",
+        filters={"project": project},
+        fields=["name", "role_name"],
+    ):
+        role_lookup[_normalize_label(row.name)] = row.name
+        role_label_by_name[row.name] = row.role_name or row.name
+        if row.role_name:
+            role_lookup[_normalize_label(row.role_name)] = row.name
+    missing_roles: dict[str, str] = {}  # lower → original label as seen first
     # 2) Target token → source header. ``_find_source_for`` semantics:
     #    on duplicate mappings the *last* declared header wins; replicate
     #    by overwriting on iteration. Region target is many-to-one
@@ -541,32 +772,126 @@ def materialize_staged_csv(
                 rows_skipped += 1
                 continue
 
-            out_row: list[str] = []
             resolved: dict[str, Any] = {}
 
+            user_payload: dict[str, str] = {}
             for fname in user_targets:
                 src_header = target_to_source.get(f"User.{fname}")
-                val = (row_dict.get(src_header) or "").strip() if src_header else ""
-                out_row.append(val)
-                resolved[fname] = val
+                raw = row_dict.get(src_header) if src_header else ""
+                user_payload[fname] = _clean_cell(raw)
+                resolved[fname] = user_payload[fname]
+
+            # Email is required on the User doctype. Source cells that are
+            # blank or carry an Excel formula error (#NAME?, #REF!, …) are
+            # treated as missing. Default behaviour: error + skip the row so
+            # the operator sees what's broken in their file. Opt-in
+            # synthesis (``synthesize_emails=True``) builds
+            # ``firstname.lastname@<synthesize_email_domain>`` for missing
+            # rows — the domain is operator-supplied, never hardcoded.
+            if not user_payload.get("email"):
+                if synthesize_emails:
+                    synthetic = _synthesize_email(
+                        user_payload.get("first_name", ""),
+                        user_payload.get("last_name", ""),
+                        synthesize_email_domain,
+                    )
+                    user_payload["email"] = synthetic
+                    resolved["email"] = synthetic
+                else:
+                    errors.append(
+                        f"Row {row_num}: email is missing or unreadable "
+                        f"(source cell empty or contains an Excel formula error)."
+                    )
+                    rows_skipped += 1
+                    continue
+
+            # Resolve assignment fields (incl. role label → role name lookup)
+            # in a transient dict — only after BOTH role resolution and User
+            # creation succeed do we write to the staged CSV.
+            asgn_resolved: dict[str, str] = {}
+            row_role_missing = False
             for fname in asgn_targets:
                 src_header = target_to_source.get(f"Assignment.{fname}")
-                val = (row_dict.get(src_header) or "").strip() if src_header else ""
-                out_row.append(val)
+                raw = row_dict.get(src_header) if src_header else ""
+                val = _clean_cell(raw)
+                if fname == "role" and val:
+                    key = _normalize_label(val)
+                    resolved_name = role_lookup.get(key)
+                    if resolved_name:
+                        asgn_resolved[fname] = resolved_name
+                        resolved[fname] = val
+                        continue
+                    if key not in missing_roles:
+                        missing_roles[key] = val
+                    row_role_missing = True
+                    asgn_resolved[fname] = val
+                    resolved[fname] = val
+                    continue
+                asgn_resolved[fname] = val
                 resolved[fname] = val
+            if row_role_missing:
+                errors.append(
+                    f"Row {row_num}: role does not exist in this project "
+                    f"(create it in Step 8 first)."
+                )
+                rows_skipped += 1
+                continue
+
+            # Find-or-create the User. Failures here are logged per-row so
+            # the operator sees exactly which rows had bad user data; the
+            # whole import does not abort. Pass the resolved project-role
+            # name so ``_ensure_user`` can seed the matching Frappe duty
+            # roles at insert time (suppresses Frappe's "No Roles Specified"
+            # warning and gives the user immediate access on first login).
+            try:
+                user_name, _was_created = _ensure_user(
+                    email=user_payload.get("email", ""),
+                    first_name=user_payload.get("first_name", ""),
+                    last_name=user_payload.get("last_name", ""),
+                    gender=user_payload.get("gender", ""),
+                    phone=user_payload.get("phone", ""),
+                    project_role=asgn_resolved.get("role", ""),
+                )
+            except Exception as exc:
+                errors.append(f"Row {row_num}: could not create User: {exc}")
+                rows_skipped += 1
+                continue
+
+            # Now write the Assignment-only row: user + assignment fields
+            # + administrative_region + project.
+            out_row: list[str] = [user_name]
+            for fname in asgn_targets:
+                out_row.append(asgn_resolved.get(fname, ""))
             if level_columns:
                 out_row.append(region_id or "")
-                resolved["administrative_region"] = region_id or ""
+                # Preview surfaces the human-readable breadcrumb (e.g.
+                # ``Kigali city / Gasabo / Kacyiru``) so reviewers can
+                # eyeball-verify the resolution; the staged CSV keeps the
+                # opaque region_id (Frappe Data Import needs the link key).
+                resolved["administrative_region"] = (
+                    _region_breadcrumb(region_id, region_breadcrumb_cache)
+                    if region_id else ""
+                )
+            out_row.append(project)
+            resolved["project"] = project
+            resolved["user"] = user_name
 
             writer.writerow(out_row)
             rows_ready += 1
             if len(preview) < PREVIEW_LIMIT:
                 preview.append(resolved)
 
+    # Normalize level_type to human-readable form for display. The dry-run
+    # accumulator and `regions_created_global` may contain either autonames
+    # (when the wizard sends doctype `name`) or human labels (CLI/API
+    # callers); always surface the human label to the UI.
+    def _label(lt: str) -> str:
+        return level_label_by_id.get(lt, lt)
+
     regions_to_create = (
-        [(lt, val, new_id) for lt, val, new_id in regions_created_global]
+        [(_label(lt), val, new_id) for lt, val, new_id in regions_created_global]
         if auto_create_regions
-        else [(lt, val) for lt, val in sorted(regions_to_create_dryrun)]
+        else [(_label(lt), val) for lt, val in sorted(regions_to_create_dryrun)]
     )
 
     return {
@@ -575,6 +900,7 @@ def materialize_staged_csv(
         "rows_ready": rows_ready,
         "rows_skipped": rows_skipped,
         "regions_to_create": regions_to_create,
+        "missing_roles": sorted(missing_roles.values()),
         "warnings": warnings,
         "errors": errors,
         "preview": preview,

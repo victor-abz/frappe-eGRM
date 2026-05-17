@@ -58,7 +58,12 @@ def has_permission(doc, ptype, user):
 
     Routes ptype checks through the duty model used everywhere else in
     the controller (see grm_issue.py:_enforce_duty_field_constraints
-    and grm_user_project_assignment.GOVERNMENT_WORKER_DUTIES)."""
+    and grm_user_project_assignment.GOVERNMENT_WORKER_DUTIES).
+
+    Draft rule: a GRM Issue at docstatus=0 is private to its owner.
+    Non-owners (including duty-holders on the same project) cannot see
+    or fetch it via desk or API. Bypass roles still see everything.
+    """
     try:
         if not doc:
             return False
@@ -73,6 +78,14 @@ def has_permission(doc, ptype, user):
 
         project = getattr(doc, "project", None)
         if not project:
+            return False
+
+        # Drafts are private to their owner — hide from everyone else,
+        # even fellow duty-holders. The owner can still see/edit their
+        # own draft and submit it when intake is complete.
+        docstatus = getattr(doc, "docstatus", 0) or 0
+        owner = getattr(doc, "owner", None)
+        if docstatus == 0 and owner != user:
             return False
 
         required = PTYPE_DUTIES.get(ptype)
@@ -181,7 +194,14 @@ def permission_query_conditions(user):
             return "1=0"
 
         escaped = ", ".join("'" + p.replace("'", "''") + "'" for p in in_scope)
-        return f"(`tabGRM Issue`.project IN ({escaped}))"
+        # Drafts (docstatus=0) are private to the creator — duty-holders
+        # on the same project still don't see another user's draft. The
+        # creator can always see/edit their own draft until they submit.
+        user_safe = user.replace("'", "''")
+        return (
+            f"(`tabGRM Issue`.project IN ({escaped})"
+            f" AND (`tabGRM Issue`.docstatus > 0 OR `tabGRM Issue`.owner = '{user_safe}'))"
+        )
     except Exception as e:
         frappe.log_error(f"Error generating permission query conditions: {str(e)}")
         return "1=0"

@@ -20,32 +20,39 @@ class GRMIssueCategory(Document):
             raise
 
     def validate_routing_target(self):
-        """Enforce the Department-OR-Role routing contract.
+        """Enforce Role-only routing.
 
-        - When ``routing_target_type == 'Role'``: ``assigned_role`` is
-          required and must belong to the same project.
-        - When ``routing_target_type == 'Department'`` (or NULL): an
-          ``assigned_department`` is required (the project-scope check
-          for the dept itself is handled by ``validate_departments``).
+        Categories must route to a Role; ``assigned_role`` is required and
+        must belong to the same project. Department routing is no longer
+        supported — the resolver picks a User directly from the role +
+        region + duty matrix. Saving a Department-typed category surfaces a
+        clear error so the wizard can prompt the operator to migrate.
         """
-        target = self.routing_target_type or "Department"
-        if target == "Role":
-            if not self.assigned_role:
-                frappe.throw(_("Assigned Role is required when Route To = Role"))
-            role_project = frappe.db.get_value(
-                "GRM Project Role", self.assigned_role, "project"
+        # Coerce legacy NULL → Role so operators don't get a confusing
+        # "Department required" error on pre-migration rows; they still
+        # need to fill in a role before the row will save.
+        if not self.routing_target_type:
+            self.routing_target_type = "Role"
+        if self.routing_target_type != "Role":
+            frappe.throw(
+                _("Route To must be 'Role'. Department-based routing is no "
+                  "longer supported — pick a Role for this category.")
             )
-            if role_project and self.project and role_project != self.project:
-                frappe.throw(
-                    _("Assigned Role {0} does not belong to project {1}").format(
-                        self.assigned_role, self.project
-                    )
+        if not self.assigned_role:
+            frappe.throw(_("Assigned Role is required."))
+        role_project = frappe.db.get_value(
+            "GRM Project Role", self.assigned_role, "project"
+        )
+        if role_project and self.project and role_project != self.project:
+            frappe.throw(
+                _("Assigned Role {0} does not belong to project {1}").format(
+                    self.assigned_role, self.project
                 )
-        else:
-            if not self.assigned_department:
-                frappe.throw(
-                    _("Assigned Department is required when Route To = Department")
-                )
+            )
+        # Department field is no longer used for routing; clear it so the
+        # value can't drift back into stale UIs.
+        if self.assigned_department:
+            self.assigned_department = None
 
     def sync_project_field(self):
         """Mirror the first child-table project into the top-level `project`

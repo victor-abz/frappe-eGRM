@@ -2001,6 +2001,15 @@ class GRMWizardStep9UserImport {
                 <input type="checkbox" class="grm-auto-create-regions" checked>
                 ${__("Auto-create missing administrative regions")}
               </label>
+              <label class="ml-3">
+                <input type="checkbox" class="grm-synthesize-emails">
+                ${__("Generate emails for rows with a missing/invalid email column")}
+              </label>
+              <label class="ml-3 grm-synth-domain-wrap" style="display:none;">
+                ${__("Email domain")}:
+                <input type="text" class="form-control form-control-sm grm-synth-domain"
+                       placeholder="example.com" style="display:inline-block; width:auto;">
+              </label>
             </div>
             <div class="grm-step9-add-actions">
               <button type="button" class="btn btn-default grm-stage-back">${__("Back")}</button>
@@ -2030,17 +2039,24 @@ class GRMWizardStep9UserImport {
             // Re-render to update the validation banner / Continue button.
             this._render_mapping_stage($content);
         });
+        $content.on("change", ".grm-synthesize-emails", (e) => {
+            const checked = $(e.currentTarget).is(":checked");
+            $content.find(".grm-synth-domain-wrap").toggle(checked);
+        });
         $content.find(".grm-stage-back").on("click", () => this.set_stage("upload"));
         $content.find(".grm-stage-next").on("click", () => this._start_preview());
     }
 
     _revalidate() {
-        // Doctype-driven required set: Assignment.* with reqd=1 (excluding
-        // project) plus the User minimum (email/first/last OR full_name).
+        // Doctype-driven required set: Assignment.* with reqd=1, minus fields
+        // the operator cannot map (project is set from URL; administrative_region
+        // is its own sentinel target; user is auto-derived from User.email
+        // during import). Plus the User minimum (email/first/last OR full_name).
         const meta = this.project_meta || {};
         const assignment_fields = meta.assignment_fields || [];
+        const non_mappable_assignment = new Set(["project", "administrative_region", "user"]);
         const required = assignment_fields
-            .filter((f) => f.reqd && f.fieldname !== "project" && f.fieldname !== "administrative_region")
+            .filter((f) => f.reqd && !non_mappable_assignment.has(f.fieldname))
             .map((f) => `Assignment.${f.fieldname}`);
 
         const targets_in_use = new Set();
@@ -2103,6 +2119,28 @@ class GRMWizardStep9UserImport {
     async _start_preview() {
         const $content = this.$mount.find(".grm-step9-bulk-content");
         const auto_create = this.$mount.find(".grm-auto-create-regions").is(":checked");
+        const synthesize_emails = this.$mount.find(".grm-synthesize-emails").is(":checked");
+        const synthesize_email_domain = (this.$mount.find(".grm-synth-domain").val() || "").trim().toLowerCase();
+
+        if (synthesize_emails) {
+            const domain_re = /^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+            if (!synthesize_email_domain) {
+                frappe.msgprint({
+                    title: __("Email domain required"),
+                    message: __("Enter an email domain (e.g. example.com) to generate emails."),
+                    indicator: "orange",
+                });
+                return;
+            }
+            if (!domain_re.test(synthesize_email_domain)) {
+                frappe.msgprint({
+                    title: __("Invalid email domain"),
+                    message: __("Email domain '{0}' is not valid.", [synthesize_email_domain]),
+                    indicator: "orange",
+                });
+                return;
+            }
+        }
 
         // Build the wire-format mappings the server endpoint expects.
         const header_mapping = {};
@@ -2125,6 +2163,8 @@ class GRMWizardStep9UserImport {
                     header_mapping: JSON.stringify(header_mapping),
                     level_mapping: JSON.stringify(level_mapping),
                     auto_create_regions: auto_create ? 1 : 0,
+                    synthesize_emails: synthesize_emails ? 1 : 0,
+                    synthesize_email_domain: synthesize_email_domain,
                 },
             });
             this.preview = r.message || {};
@@ -2159,6 +2199,13 @@ class GRMWizardStep9UserImport {
               }).join(", ")}
             </div>` : "";
 
+        const missing_roles = p.missing_roles || [];
+        const missing_roles_html = missing_roles.length ? `
+            <div class="alert alert-danger">
+              <strong>${__("These roles must be created in Step 8 (Roles) first:")}</strong>
+              ${missing_roles.map((r) => `<code>${frappe.utils.escape_html(String(r))}</code>`).join(", ")}
+            </div>` : "";
+
         const errors_html = (p.errors && p.errors.length) ? `
             <div class="alert alert-warning">
               ${p.errors.map((e) => `<div>${frappe.utils.escape_html(String(e))}</div>`).join("")}
@@ -2179,6 +2226,7 @@ class GRMWizardStep9UserImport {
 
         $content.html(`
             <p><strong>${frappe.utils.escape_html(summary)}</strong></p>
+            ${missing_roles_html}
             ${regions_html}
             ${errors_html}
             ${warnings_html}
@@ -2289,8 +2337,9 @@ class GRMWizardStep9Users {
             this.$body.html(`<p class="text-muted">${__("Save Step 1 first to create the project.")}</p>`);
             return;
         }
-        // Composition: existing-users list + Add-users panel (Single + Bulk).
+        // Composition: coverage banner + existing-users list + Add-users panel.
         this.$body.html(`
+            <div class="grm-step9-coverage-banner"></div>
             <div class="grm-step9-users-panel"></div>
             <div class="grm-step9-add-section">
               <div class="grm-step9-add-toggle" role="tablist">
@@ -2314,6 +2363,188 @@ class GRMWizardStep9Users {
         );
 
         this.render_add_panel();
+        this.refresh_coverage();
+    }
+
+    async refresh_coverage() {
+        const $banner = this.$body.find(".grm-step9-coverage-banner").empty();
+        if (!this.project) return;
+        let coverage;
+        try {
+            const r = await frappe.call({
+                method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.preview_duty_coverage",
+                args: { project: this.project.name },
+            });
+            coverage = r.message;
+        } catch (e) {
+            return; // banner silent on error; activation step will block
+        }
+        if (!coverage || !coverage.total_regions) return;
+        const gaps = coverage.gaps || [];
+        if (!gaps.length) {
+            $banner.html(`
+                <div class="alert alert-success" style="margin-bottom:12px;">
+                  <strong>${__("Duty coverage complete")}</strong>
+                  — ${__("all {0} region(s) have Intake, Review, and Investigate & Resolve.", [coverage.total_regions])}
+                </div>
+            `);
+            return;
+        }
+        // Operator can either (a) add users to fix gaps or (b) remove the
+        // uncovered regions from the project. The list below renders one
+        // checkbox per gap with a master select-all + "Remove selected"
+        // action that wires to the ``remove_regions`` RPC.
+        const rows = gaps.map(g => `
+            <tr data-region="${frappe.utils.escape_html(g.region)}">
+              <td style="width:30px;"><input type="checkbox" class="grm-cov-gap-cb"/></td>
+              <td><code>${frappe.utils.escape_html(g.region_path || g.region_name)}</code></td>
+              <td class="text-muted small">${g.missing_duties.join(", ")}</td>
+            </tr>
+        `).join("");
+        $banner.html(`
+            <div class="alert alert-warning grm-cov-banner" style="margin-bottom:12px;">
+              <strong>${__("{0} of {1} region(s) missing duty coverage", [gaps.length, coverage.total_regions])}</strong>
+              <p class="text-muted small" style="margin:4px 0;">
+                ${__("Each region must cover Intake, Review, and Investigate & Resolve duties. Add users below, or remove regions you don't intend to use.")}
+              </p>
+              <div style="max-height:240px; overflow:auto; background:#fff; border:1px solid #e0e0e0; border-radius:4px; padding:6px 8px; margin-top:8px;">
+                <table class="table table-sm" style="margin:0;">
+                  <thead>
+                    <tr>
+                      <th><input type="checkbox" class="grm-cov-select-all"/></th>
+                      <th>${__("Region")}</th>
+                      <th>${__("Missing duties")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
+              <div style="margin-top:8px;">
+                <button type="button" class="btn btn-sm btn-danger grm-cov-remove" disabled>
+                  ${__("Remove selected regions from project")}
+                </button>
+                <span class="text-muted small" style="margin-left:8px;">
+                  ${__("Removal is blocked for any region that still has active users.")}
+                </span>
+              </div>
+            </div>
+        `);
+
+        const $select_all = $banner.find(".grm-cov-select-all");
+        const $cbs = $banner.find(".grm-cov-gap-cb");
+        const $btn = $banner.find(".grm-cov-remove");
+        const refresh_btn_state = () => {
+            const n = $banner.find(".grm-cov-gap-cb:checked").length;
+            $btn.prop("disabled", n === 0)
+                .text(n > 0
+                    ? __("Remove {0} selected region(s) from project", [n])
+                    : __("Remove selected regions from project"));
+        };
+        $select_all.on("change", (ev) => {
+            $cbs.prop("checked", ev.target.checked);
+            refresh_btn_state();
+        });
+        $cbs.on("change", refresh_btn_state);
+        $btn.on("click", async () => {
+            const ids = $banner.find(".grm-cov-gap-cb:checked")
+                .map(function() { return $(this).closest("tr").data("region"); })
+                .get()
+                .filter(Boolean);
+            if (!ids.length) return;
+
+            // Step 1 — preview the exact impact so the operator sees the
+            // full cascade before any deletion happens.
+            $btn.prop("disabled", true).text(__("Computing impact…"));
+            let preview;
+            try {
+                const pr = await frappe.call({
+                    method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.preview_remove_regions",
+                    args: { project: this.project.name, regions: ids },
+                });
+                preview = (pr && pr.message) || {};
+            } catch (e) {
+                frappe.show_alert({ message: __("Could not compute removal impact"), indicator: "red" });
+                $btn.prop("disabled", false);
+                refresh_btn_state();
+                return;
+            }
+            const totals = preview.totals || { regions: 0, descendants: 0, users: 0 };
+
+            // Build a per-row preview list (capped) so the operator can see
+            // *which* descendants get pulled in.
+            const sample = (preview.rows || [])
+                .map(row => {
+                    const parts = [`<strong>${frappe.utils.escape_html(row.region_name || row.region)}</strong>`];
+                    if (row.descendants) parts.push(__("{0} descendant region(s)", [row.descendants]));
+                    if (row.users) parts.push(__("{0} active user(s)", [row.users]));
+                    return "<li>" + parts.join(" — ") + "</li>";
+                })
+                .join("");
+
+            const cascade_needed = totals.users > 0;
+            const header = cascade_needed
+                ? __("Confirm cascade removal")
+                : __("Confirm removal");
+            const summary = __(
+                "You are about to remove {0} selected region(s). This will also remove {1} descendant region(s) and unassign {2} active user(s) from project '{3}'.",
+                [totals.regions, totals.descendants, totals.users, this.project.name]
+            );
+            const enforced = cascade_needed
+                ? __("There is no way to keep the descendants — descendants without an ancestor produce orphan regions, which the wizard refuses to create.")
+                : "";
+            const body_html = `
+                <div>
+                    <p>${frappe.utils.escape_html(summary)}</p>
+                    ${sample ? `<ul style="margin: 8px 0; padding-left: 18px;">${sample}</ul>` : ""}
+                    ${enforced ? `<p style="color:#9e3a3a; margin: 6px 0 0 0;">${frappe.utils.escape_html(enforced)}</p>` : ""}
+                </div>
+            `;
+
+            const confirmed = await new Promise((resolve) => {
+                const d = new frappe.ui.Dialog({
+                    title: header,
+                    primary_action_label: cascade_needed
+                        ? __("Yes, remove regions + descendants + unassign users")
+                        : __("Yes, remove"),
+                    primary_action: () => { d.hide(); resolve(true); },
+                    secondary_action_label: __("Cancel"),
+                    secondary_action: () => { d.hide(); resolve(false); },
+                });
+                d.$body.html(body_html);
+                d.show();
+                d.$wrapper.find(".btn-modal-secondary").on("click", () => { resolve(false); });
+            });
+            if (!confirmed) {
+                $btn.prop("disabled", false);
+                refresh_btn_state();
+                return;
+            }
+
+            $btn.prop("disabled", true).text(__("Removing…"));
+            try {
+                const r = await frappe.call({
+                    method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.remove_regions",
+                    args: { project: this.project.name, regions: ids, cascade_users: 1 },
+                });
+                const m = (r && r.message) || {};
+                const deleted = (m.deleted || []).length;
+                const skipped = (m.skipped || []).length;
+                const cascaded_users = m.cascaded_users || 0;
+                const cascaded_regions = m.cascaded_regions || 0;
+                let msg = __("Removed {0} region(s)", [deleted]);
+                if (cascaded_regions) msg += "; " + __("plus {0} descendant region(s)", [cascaded_regions]);
+                if (cascaded_users) msg += "; " + __("unassigned {0} user(s)", [cascaded_users]);
+                if (skipped) msg += "; " + __("skipped {0}", [skipped]);
+                frappe.show_alert({
+                    message: msg,
+                    indicator: skipped ? "orange" : "green",
+                });
+            } catch (e) {
+                frappe.show_alert({ message: __("Region removal failed"), indicator: "red" });
+            } finally {
+                this.refresh_coverage();
+            }
+        });
     }
 
     render_add_panel() {
@@ -2329,6 +2560,7 @@ class GRMWizardStep9Users {
                 if (this.list_panel && this.list_panel.refresh) {
                     this.list_panel.refresh();
                 }
+                this.refresh_coverage();
             },
         });
         this.import_panel = new GRMWizardStep9UserImport({
@@ -2338,6 +2570,7 @@ class GRMWizardStep9Users {
                 if (this.list_panel && this.list_panel.refresh) {
                     this.list_panel.refresh();
                 }
+                this.refresh_coverage();
             },
         });
 
@@ -2372,8 +2605,44 @@ class GRMWizardStep9Users {
     }
 
     async save() {
-        // User creation is optional per step. Continue freely.
-        return true;
+        // Gate: every region must have at least one user covering Intake,
+        // Review, and Investigate & Resolve. Step 13 already blocks the
+        // final "Activate" click — we enforce here too so the operator
+        // can't sail past Steps 10/11/12 only to be stopped at the end.
+        if (!this.project) return true;
+        let coverage;
+        try {
+            const r = await frappe.call({
+                method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.preview_duty_coverage",
+                args: { project: this.project.name },
+            });
+            coverage = r.message;
+        } catch (e) {
+            // Network/RPC failure — fall back to letting Step 13 catch it.
+            return true;
+        }
+        const gaps = (coverage && coverage.gaps) || [];
+        if (!gaps.length) return true;
+
+        const sample = gaps.slice(0, 5).map(g =>
+            `<li><code>${frappe.utils.escape_html(g.region_path || g.region_name)}</code>: ${g.missing_duties.join(", ")}</li>`
+        ).join("");
+        const more = gaps.length > 5
+            ? `<li class="text-muted">${__("...and {0} more", [gaps.length - 5])}</li>`
+            : "";
+        frappe.msgprint({
+            title: __("Duty coverage incomplete"),
+            indicator: "red",
+            message: `
+                <p>${__("Each region must have at least one user covering Intake, Review, and Investigate & Resolve.")}</p>
+                <p>${__("{0} of {1} region(s) are missing coverage:", [gaps.length, coverage.total_regions])}</p>
+                <ul>${sample}${more}</ul>
+                <p>${__("Add or reassign users above before continuing.")}</p>
+            `,
+        });
+        // Refresh the banner so the gaps stay visible while operator fixes them.
+        this.refresh_coverage();
+        return false;
     }
 }
 
@@ -2531,13 +2800,79 @@ class GRMWizardStep13Activate {
                 <h4 style="margin-top:0;">${__("Project Summary")}</h4>
                 <div id="grm-step12-summary"><p class="text-muted">${__("Loading counts...")}</p></div>
               </div>
+              <div class="grm-coverage-card" style="border:1px solid var(--border-color, #d1d8dd); border-radius:6px; padding:16px; margin-bottom:16px;">
+                <h4 style="margin-top:0;">${__("Region Duty Coverage")}</h4>
+                <p class="text-muted small" style="margin-bottom:8px;">${__("Each region must have at least one user covering Intake, Review, and Investigate & Resolve. Duties may be split across multiple users or held by one person.")}</p>
+                <div id="grm-step12-coverage"><p class="text-muted">${__("Loading coverage...")}</p></div>
+              </div>
               <div id="grm-step12-action"></div>
             </div>
         `);
 
         const counts = await this.load_counts();
         this.render_summary(counts);
-        this.render_action();
+        const coverage = await this.load_coverage();
+        this.render_coverage(coverage);
+        this.render_action(coverage);
+    }
+
+    async load_coverage() {
+        try {
+            const r = await frappe.call({
+                method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.preview_duty_coverage",
+                args: { project: this.project.name },
+            });
+            return r.message || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    render_coverage(coverage) {
+        const $c = this.$body.find("#grm-step12-coverage").empty();
+        if (!coverage) {
+            $c.html(`<p class="text-muted">${__("Coverage preview unavailable.")}</p>`);
+            return;
+        }
+        const total = coverage.total_regions || 0;
+        const covered = coverage.covered_regions || 0;
+        const gaps = coverage.gaps || [];
+        if (!total) {
+            $c.html(`<p class="text-muted">${__("No regions defined yet.")}</p>`);
+            return;
+        }
+        if (!gaps.length) {
+            $c.html(`
+                <div class="alert alert-success" style="margin:0;">
+                  <strong>${__("All regions covered")}</strong>
+                  — ${__("{0} of {1} regions have full duty coverage.", [covered, total])}
+                </div>
+            `);
+            return;
+        }
+        const rows = gaps.slice(0, 50).map(g => `
+            <tr>
+              <td>${frappe.utils.escape_html(g.region_path || g.region_name)}</td>
+              <td>${g.missing_duties.map(d => `<span class="indicator-pill orange">${frappe.utils.escape_html(d)}</span>`).join(" ")}</td>
+            </tr>
+        `).join("");
+        const more = gaps.length > 50 ? `<p class="text-muted small">${__("Showing 50 of {0} gaps.", [gaps.length])}</p>` : "";
+        $c.html(`
+            <div class="alert alert-warning" style="margin-bottom:8px;">
+              <strong>${__("{0} region(s) missing coverage", [gaps.length])}</strong>
+              — ${__("{0} of {1} regions fully covered.", [covered, total])}
+              ${__("Activation is blocked until every region has Intake, Review, and Investigate & Resolve.")}
+            </div>
+            <div style="max-height:240px; overflow:auto; border:1px solid var(--border-color, #d1d8dd); border-radius:4px;">
+              <table class="table table-sm" style="margin:0;">
+                <thead>
+                  <tr><th>${__("Region")}</th><th>${__("Missing duties")}</th></tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+            ${more}
+        `);
     }
 
     async load_counts() {
@@ -2606,9 +2941,10 @@ class GRMWizardStep13Activate {
         `);
     }
 
-    render_action() {
+    render_action(coverage) {
         const p = this.project;
         const $a = this.$body.find("#grm-step12-action").empty();
+        const hasGaps = !!(coverage && (coverage.gaps || []).length);
 
         // Pre-flight checkbox row — XD-FIDELITY: xd-links Step 11 specifies
         // the activation pre-flight as Frappe-style Yes/No checkboxes
@@ -2648,10 +2984,19 @@ class GRMWizardStep13Activate {
                 </div>
             `);
             $("#grm-next").prop("disabled", true).text(__("Already Active"));
+        } else if (hasGaps) {
+            $a.append(`
+                <div class="alert alert-danger" style="margin-bottom:0;">
+                  <strong>${__("Activation blocked")}</strong>
+                  — ${__("resolve the duty-coverage gaps above before activating the project.")}
+                </div>
+            `);
+            $("#grm-next").prop("disabled", true).text(__("Activate Project"));
         } else {
             $a.append(`
                 <p>${__("Tick the confirmation above, then click \"Activate Project\" to mark setup complete and switch to the Platform workspace.")}</p>
             `);
+            $("#grm-next").prop("disabled", false);
         }
     }
 
@@ -3404,34 +3749,66 @@ class GRMWizardStep7ProjectRoles {
     }
 
     show_add_role_dialog() {
+        // Build duty checkbox markup so the operator MUST pick at least one
+        // duty at create-time. Previously the dialog created the role with no
+        // duties and the server defaulted to ``["Supervise"]`` to satisfy the
+        // doctype validator — that polluted every role with an unintended
+        // duty. The right design is to require explicit duty selection here.
+        const duties = (this.duties || []);
+        const fields = [
+            {
+                fieldtype: "Data",
+                label: __("Role Name"),
+                fieldname: "role_name",
+                reqd: 1,
+                description: __("e.g. District GRM Officer"),
+            },
+            {
+                fieldtype: "Select",
+                label: __("Administrative Level (optional)"),
+                fieldname: "admin_level",
+                options: ["", ...this.admin_levels.map((l) => l.name)].join("\n"),
+                description: __("Bind this role to an admin level (e.g. District). Leave blank for project-wide roles."),
+            },
+            {
+                fieldtype: "Section Break",
+                label: __("Duties"),
+                description: __("Tick the duties this role performs in the case lifecycle. At least one is required."),
+            },
+        ];
+        for (const duty of duties) {
+            fields.push({
+                fieldtype: "Check",
+                label: duty.label || duty.name,
+                fieldname: `duty__${duty.name}`,
+                default: 0,
+            });
+        }
         const d = new frappe.ui.Dialog({
             title: __("Add User Type"),
-            fields: [
-                {
-                    fieldtype: "Data",
-                    label: __("Role Name"),
-                    fieldname: "role_name",
-                    reqd: 1,
-                    description: __("e.g. District GRM Officer"),
-                },
-                {
-                    fieldtype: "Select",
-                    label: __("Administrative Level (optional)"),
-                    fieldname: "admin_level",
-                    options: ["", ...this.admin_levels.map((l) => l.name)].join("\n"),
-                    description: __("Bind this role to an admin level (e.g. District). Leave blank for project-wide roles."),
-                },
-            ],
+            fields,
         });
         d.set_primary_action(__("Add"), () => {
-            const args = d.get_values();
-            if (!args || !args.role_name) return;
+            const args = d.get_values() || {};
+            if (!args.role_name) return;
+            const selected = duties
+                .map((duty) => (args[`duty__${duty.name}`] ? duty.name : null))
+                .filter(Boolean);
+            if (!selected.length) {
+                frappe.msgprint({
+                    title: __("Pick at least one duty"),
+                    message: __("A role must have at least one duty assigned."),
+                    indicator: "orange",
+                });
+                return;
+            }
             frappe.call({
                 method: "egrm.egrm.page.grm_project_wizard.grm_project_wizard.project_role_add",
                 args: {
                     project: this.project.name,
                     role_name: args.role_name,
                     admin_level: args.admin_level || null,
+                    duties: JSON.stringify(selected),
                 },
                 callback: (r) => {
                     if (r.exc) return;
@@ -3783,10 +4160,6 @@ class GRMWizardStep3IssueCategories {
             $w.html(`<p class="text-muted">${__("No categories yet — click \"Add Category\" to create the first one.")}</p>`);
             return;
         }
-        const dept_label = (n) => {
-            const d = this.departments.find((x) => x.name === n);
-            return d ? (d.department_name || d.name) : (n || "");
-        };
         const head = `
             <thead>
               <tr>
@@ -3801,12 +4174,12 @@ class GRMWizardStep3IssueCategories {
             </thead>
         `;
         const body_rows = this.rows.map((r) => {
-            const tt = r.routing_target_type || "Department";
-            const target_label = tt === "Role"
+            const is_role = r.routing_target_type === "Role" && r.assigned_role;
+            const target_label = is_role
                 ? this.role_label(r.assigned_role)
-                : dept_label(r.assigned_department);
-            const target_kind = tt === "Role" ? __("Role") : __("Dept");
-            const badge_class = tt === "Role" ? "badge-info" : "badge-secondary";
+                : `<span class="text-danger">${__("Needs role — edit to fix")}</span>`;
+            const badge_class = is_role ? "badge-info" : "badge-warning";
+            const target_kind = is_role ? __("Role") : __("Unrouted");
             return `
             <tr data-name="${frappe.utils.escape_html(r.name)}">
               <td class="grm-bulk-cell"><input type="checkbox" class="grm-bulk-row-check" tabindex="-1"></td>
@@ -3912,25 +4285,12 @@ class GRMWizardStep3IssueCategories {
               </div>
               <div class="row" style="margin-top:8px;">
                 <div class="col-md-6">
-                  <label class="control-label reqd">${__("Route To")}</label>
-                  <select class="form-control" id="grm-cf-routing_target_type">
-                    <option value="Department" ${(r.routing_target_type || "Department") === "Department" ? "selected" : ""}>${__("Department")}</option>
-                    <option value="Role"       ${r.routing_target_type === "Role" ? "selected" : ""}>${__("Role")}</option>
-                  </select>
-                  <small class="text-muted">${__("Choose Department for organisational routing or Role for cross-department workflows.")}</small>
-                </div>
-                <div class="col-md-6" id="grm-cf-target-dept-wrap" ${r.routing_target_type === "Role" ? `style="display:none"` : ""}>
-                  <label class="control-label reqd">${__("Assigned Department")}</label>
-                  <select class="form-control" id="grm-cf-assigned_department">
-                    <option value="">${__("(select)")}</option>
-                    ${this.department_options(r.assigned_department, false)}
-                  </select>
-                </div>
-                <div class="col-md-6" id="grm-cf-target-role-wrap" ${r.routing_target_type !== "Role" ? `style="display:none"` : ""}>
                   <label class="control-label reqd">${__("Assigned Role")}</label>
                   <select class="form-control" id="grm-cf-assigned_role">
                     ${this.role_options(r.assigned_role)}
                   </select>
+                  <small class="text-muted">${__("Issues in this category are routed to the user holding this role in the issue's region (or nearest ancestor) with the Investigate & Resolve duty.")}</small>
+                  <input type="hidden" id="grm-cf-routing_target_type" value="Role">
                 </div>
               </div>
               <div class="row" style="margin-top:8px;">
@@ -3983,11 +4343,6 @@ class GRMWizardStep3IssueCategories {
             this.editing = null;
             $w.empty();
         });
-        $w.find("#grm-cf-routing_target_type").on("change", (ev) => {
-            const t = $(ev.target).val();
-            $w.find("#grm-cf-target-dept-wrap").toggle(t === "Department");
-            $w.find("#grm-cf-target-role-wrap").toggle(t === "Role");
-        });
     }
 
     read_form() {
@@ -3997,8 +4352,7 @@ class GRMWizardStep3IssueCategories {
             category_name: trim("grm-cf-category_name"),
             label: trim("grm-cf-label"),
             abbreviation: trim("grm-cf-abbreviation"),
-            routing_target_type: trim("grm-cf-routing_target_type") || "Department",
-            assigned_department: trim("grm-cf-assigned_department") || null,
+            routing_target_type: "Role",
             assigned_role: trim("grm-cf-assigned_role") || null,
             assigned_appeal_department: trim("grm-cf-assigned_appeal_department") || null,
             assigned_escalation_department: trim("grm-cf-assigned_escalation_department") || null,
@@ -4022,16 +4376,9 @@ class GRMWizardStep3IssueCategories {
             frappe.show_alert({ message: __("Abbreviation is required."), indicator: "red" });
             return;
         }
-        if (v.routing_target_type === "Role") {
-            if (!v.assigned_role) {
-                frappe.show_alert({ message: __("Assigned Role is required when Route To = Role."), indicator: "red" });
-                return;
-            }
-        } else {
-            if (!v.assigned_department) {
-                frappe.show_alert({ message: __("Assigned Department is required when Route To = Department."), indicator: "red" });
-                return;
-            }
+        if (!v.assigned_role) {
+            frappe.show_alert({ message: __("Assigned Role is required."), indicator: "red" });
+            return;
         }
         if (!existing_name) {
             const dup = this.rows.find(
@@ -4047,9 +4394,9 @@ class GRMWizardStep3IssueCategories {
                 const doc = await frappe.db.get_doc("GRM Issue Category", existing_name);
                 doc.label = v.label;
                 doc.abbreviation = v.abbreviation;
-                doc.routing_target_type = v.routing_target_type;
-                doc.assigned_department = v.routing_target_type === "Department" ? v.assigned_department : null;
-                doc.assigned_role       = v.routing_target_type === "Role"       ? v.assigned_role       : null;
+                doc.routing_target_type = "Role";
+                doc.assigned_department = null;
+                doc.assigned_role = v.assigned_role;
                 doc.assigned_appeal_department = v.assigned_appeal_department;
                 doc.assigned_escalation_department = v.assigned_escalation_department;
                 doc.administrative_level = v.administrative_level;
@@ -4063,16 +4410,12 @@ class GRMWizardStep3IssueCategories {
                     category_name: v.category_name,
                     label: v.label,
                     abbreviation: v.abbreviation,
-                    routing_target_type: v.routing_target_type,
+                    routing_target_type: "Role",
+                    assigned_role: v.assigned_role,
                     confidentiality_level: v.confidentiality_level,
                     redirection_protocol: v.redirection_protocol,
                     grm_project_link: [{ project: this.project.name }],
                 };
-                if (v.routing_target_type === "Role") {
-                    payload.assigned_role = v.assigned_role;
-                } else {
-                    payload.assigned_department = v.assigned_department;
-                }
                 if (v.assigned_appeal_department) payload.assigned_appeal_department = v.assigned_appeal_department;
                 if (v.assigned_escalation_department) payload.assigned_escalation_department = v.assigned_escalation_department;
                 if (v.administrative_level) payload.administrative_level = v.administrative_level;

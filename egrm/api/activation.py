@@ -99,8 +99,14 @@ def activate_government_worker(email, activation_code, new_password=None):
                 "errors": ["Missing required parameters"],
             }
 
-        # Find user by email
-        user_name = frappe.db.get_value("User", {"email": email}, "name")
+        # Find user by email. Activation is a Guest endpoint, so we bypass
+        # User doctype's role-based read permission — the activation code
+        # itself is the auth token for this exchange.
+        _user_rows = frappe.get_all(
+            "User", filters={"email": email}, pluck="name",
+            limit=1, ignore_permissions=True,
+        )
+        user_name = _user_rows[0] if _user_rows else None
         if not user_name:
             log.warning(f"Activation attempt for non-existent user: {email}")
             return {
@@ -178,8 +184,14 @@ def resend_activation_code(email):
                 "errors": ["Missing email parameter"],
             }
 
-        # Find user by email
-        user_name = frappe.db.get_value("User", {"email": email}, "name")
+        # Find user by email. Activation is a Guest endpoint, so we bypass
+        # User doctype's role-based read permission — the activation code
+        # itself is the auth token for this exchange.
+        _user_rows = frappe.get_all(
+            "User", filters={"email": email}, pluck="name",
+            limit=1, ignore_permissions=True,
+        )
+        user_name = _user_rows[0] if _user_rows else None
         if not user_name:
             log.warning(f"Resend attempt for non-existent user: {email}")
             return {
@@ -257,8 +269,14 @@ def check_activation_status(email):
                 "errors": ["Missing email parameter"],
             }
 
-        # Find user by email
-        user_name = frappe.db.get_value("User", {"email": email}, "name")
+        # Find user by email. Activation is a Guest endpoint, so we bypass
+        # User doctype's role-based read permission — the activation code
+        # itself is the auth token for this exchange.
+        _user_rows = frappe.get_all(
+            "User", filters={"email": email}, pluck="name",
+            limit=1, ignore_permissions=True,
+        )
+        user_name = _user_rows[0] if _user_rows else None
         if not user_name:
             return {
                 "success": False,

@@ -14,6 +14,7 @@ import csv
 import io
 import logging
 import os
+import re
 from typing import Any
 
 import frappe
@@ -145,6 +146,9 @@ def _build_mapping(headers: list[str], header_mapping: dict, level_mapping: dict
     return out
 
 
+_EMAIL_DOMAIN_RE = re.compile(r"^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
+
+
 @frappe.whitelist()
 def prepare_user_import(
     project: str,
@@ -152,6 +156,8 @@ def prepare_user_import(
     header_mapping: Any,
     level_mapping: Any = None,
     auto_create_regions: Any = True,
+    synthesize_emails: Any = False,
+    synthesize_email_domain: str = "",
 ) -> dict:
     """Stage a user-import CSV and create the wrapping ``Data Import`` doc.
 
@@ -159,6 +165,12 @@ def prepare_user_import(
     ``materialize_staged_csv``, attaches the staged CSV to a freshly
     -created ``Data Import``, and returns preview + counts +
     region-creation summary + the ``data_import`` name.
+
+    ``synthesize_emails`` (default False): when False, rows with a missing
+    or Excel-error email are skipped with an explicit error so the operator
+    knows their file is broken. When True, the wizard auto-builds
+    ``firstname.lastname@<synthesize_email_domain>`` for those rows — the
+    domain is operator-supplied (e.g. ``yopmail.com``); never hardcoded.
     """
     _require_wizard_role()
 
@@ -171,6 +183,13 @@ def prepare_user_import(
     header_mapping_d = _coerce_dict(header_mapping, "header_mapping")
     level_mapping_d = _coerce_dict(level_mapping, "level_mapping")
     auto_create = _coerce_bool(auto_create_regions)
+    synth_emails = _coerce_bool(synthesize_emails)
+    synth_domain = (synthesize_email_domain or "").strip().lower()
+    if synth_emails:
+        if not synth_domain:
+            frappe.throw(_("Email domain is required when synthesizing emails."))
+        if not _EMAIL_DOMAIN_RE.match(synth_domain):
+            frappe.throw(_("Invalid email domain: {0}").format(synth_domain))
 
     # 2. Read the uploaded file.
     headers, rows = read_uploaded_file(file_url)
@@ -195,6 +214,8 @@ def prepare_user_import(
         mapping=mapping,
         project=project,
         auto_create_regions=auto_create,
+        synthesize_emails=synth_emails,
+        synthesize_email_domain=synth_domain,
     )
 
     # No ready rows (e.g. dry-run with all regions missing) → skip
@@ -207,6 +228,7 @@ def prepare_user_import(
             "rows_ready": 0,
             "rows_skipped": result["rows_skipped"],
             "regions_to_create": result["regions_to_create"],
+            "missing_roles": result.get("missing_roles") or [],
             "warnings": (result["warnings"] or []) + (validation["warnings"] or []),
             "errors": result["errors"],
             "preview": result["preview"],
@@ -260,6 +282,7 @@ def prepare_user_import(
         "rows_ready": result["rows_ready"],
         "rows_skipped": result["rows_skipped"],
         "regions_to_create": result["regions_to_create"],
+        "missing_roles": result.get("missing_roles") or [],
         "warnings": (result["warnings"] or []) + (validation["warnings"] or []),
         "errors": result["errors"],
         "preview": result["preview"],

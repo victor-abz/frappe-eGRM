@@ -226,10 +226,10 @@ This runs ONCE during `prepare_user_import` to:
 
 ### Phase F — Test plan
 
-- [ ] **F.1** Unit tests: `test_user_import.py` — region resolution, header auto-detect, mapping validation, missing-required-field rejection.
-- [ ] **F.2** Integration test: import the actual `eGRM users.xlsx` against RDAP — verify 24 users created, 8 regions auto-created, all linked to correct admin region, role/duty unmapped pills visible.
-- [ ] **F.3** Playwright walker `run_step9_user_import_tests.py` (visible browser) covering: empty-state → upload → mapping → preview → import-running → log → list-refresh-shows-new-users.
-- [ ] **F.4** Large-list test: import 1000 synthetic users; verify pagination + search + bulk-actions remain responsive.
+- [x] **F.1** Unit tests: `test_user_import.py` — region resolution, header auto-detect, mapping validation, missing-required-field rejection.
+- [x] **F.2** Integration test: import the actual `eGRM users.xlsx` against RDAP — verify 24 users created, 8 regions auto-created, all linked to correct admin region, role/duty unmapped pills visible. *(Implemented in `egrm/tests/integration/test_step9_user_import_xlsx.py`. Required a production fix to `materialize_staged_csv` in `egrm/services/user_import.py` to inject the `project` column into every staged CSV row — Frappe Data Import has no out-of-band default-value mechanism, so the previous "wizard supplies that out-of-band" comment was aspirational.)*
+- [x] **F.3** Playwright walker `run_step9_user_import_tests.py` (visible browser) covering: empty-state → upload → mapping → preview → import-running → log → list-refresh-shows-new-users.
+- [x] **F.4** Large-list test: import 1000 synthetic users; verify pagination + search + bulk-actions remain responsive. *(Implemented in `egrm/tests/integration/test_step9_large_list.py` — seeds 1000 assignments via direct ORM (importer would take >60s and drown the latency signal), then asserts every `list_project_users` call — pagination + search + level/role/status filters — returns under 2.0s wall-clock.)*
 
 ### Phase G — Migration / cleanup
 

@@ -447,10 +447,18 @@ class UserImportMaterializeTests(FrappeTestCase):
             reader = csv.reader(fh)
             header_row = next(reader)
             staged_rows = list(reader)
-        # Header must include the mapped target fieldnames + administrative_region.
-        for expected in ("email", "first_name", "last_name", "user", "role", "administrative_region"):
+        # Header must include the mapped target fieldnames + administrative_region + project.
+        for expected in (
+            "email", "first_name", "last_name", "user", "role",
+            "administrative_region", "project",
+        ):
             self.assertIn(expected, header_row, f"staged header missing {expected!r}: {header_row}")
         self.assertEqual(len(staged_rows), 2)
+        # Every staged row must carry the project value so Frappe Data Import
+        # can satisfy GRM User Project Assignment's required `project` link.
+        project_idx = header_row.index("project")
+        for r in staged_rows:
+            self.assertEqual(r[project_idx], PROJECT_CODE)
 
     def test_materialize_dryrun_lists_missing_regions(self) -> None:
         # auto_create_regions=False; no regions seeded → all rows unresolvable.

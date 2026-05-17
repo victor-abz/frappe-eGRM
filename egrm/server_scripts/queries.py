@@ -26,10 +26,71 @@ def _coerce_pagination(start, page_len):
     return max(0, s), max(1, min(p, 500))
 
 
+def _normalize_filters(filters):
+    """Coerce filters into a dict.
+
+    Frappe's typeahead pipeline normally parses JSON-string filters before
+    invoking the registered query (search.search_widget does this). Some
+    code paths (validate_link_and_fetch, direct frappe.client.get_list with
+    custom query) hand the JSON string straight through. Always normalize
+    so .get() works regardless of caller.
+    """
+    if isinstance(filters, str):
+        try:
+            return json.loads(filters)
+        except (TypeError, ValueError):
+            return {}
+    if filters is None:
+        return {}
+    if isinstance(filters, dict):
+        return filters
+    if isinstance(filters, (list, tuple)):
+        # Frappe also accepts list-of-list filter form. We only need the
+        # named-key form for these typeahead lookups; flatten to dict if
+        # possible, otherwise return empty.
+        out: dict = {}
+        for item in filters:
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                out[item[0]] = item[1]
+        return out
+    return {}
+
+
+def _ensure_project_typeahead_access(project):
+    """Gate project-scoped typeahead lookups by GRM duty on the project.
+
+    Mirrors the duty model used by GRM Issue permissions
+    (egrm.server_scripts.grm_issue_permissions): bypass roles or any
+    active duty on the project grants access; everyone else is denied
+    so we don't leak project configuration to logged-in users who hold
+    no operational role on that project.
+    """
+    from egrm.server_scripts.grm_issue_permissions import (
+        BYPASS_ROLES,
+        _user_duties_for_project,
+    )
+
+    user = frappe.session.user
+    if user == "Administrator":
+        return
+    if user == "Guest":
+        frappe.throw(_("Login required."), frappe.PermissionError)
+    if set(frappe.get_roles(user)) & set(BYPASS_ROLES):
+        return
+    if not project:
+        return
+    if not _user_duties_for_project(user, project):
+        frappe.throw(
+            _("You do not have an active GRM duty on this project."),
+            frappe.PermissionError,
+        )
+
+
 @frappe.whitelist()
 def get_departments_by_projects(doctype, txt, searchfield, start, page_len, filters):
     """Get departments linked to specific projects (typeahead)."""
     try:
+        filters = _normalize_filters(filters)
         projects = filters.get("projects", [])
         if not projects:
             return []
@@ -65,13 +126,16 @@ def get_departments_by_projects(doctype, txt, searchfield, start, page_len, filt
         return []
 
 
+@frappe.whitelist()
 def get_status_by_project(doctype, txt, searchfield, start, page_len, filters):
     """Get statuses linked to a specific project (typeahead)."""
     try:
+        filters = _normalize_filters(filters)
         project = filters.get("project", "")
         if not project:
             return []
 
+        _ensure_project_typeahead_access(project)
         start, page_len = _coerce_pagination(start, page_len)
         params: list = [project]
         search_condition = ""
@@ -97,13 +161,16 @@ def get_status_by_project(doctype, txt, searchfield, start, page_len, filters):
         return []
 
 
+@frappe.whitelist()
 def get_category_by_project(doctype, txt, searchfield, start, page_len, filters):
     """Get categories linked to a specific project (typeahead)."""
     try:
+        filters = _normalize_filters(filters)
         project = filters.get("project", "")
         if not project:
             return []
 
+        _ensure_project_typeahead_access(project)
         start, page_len = _coerce_pagination(start, page_len)
         params: list = [project]
         search_condition = ""
@@ -129,13 +196,16 @@ def get_category_by_project(doctype, txt, searchfield, start, page_len, filters)
         return []
 
 
+@frappe.whitelist()
 def get_issue_type_by_project(doctype, txt, searchfield, start, page_len, filters):
     """Get issue types linked to a specific project (typeahead)."""
     try:
+        filters = _normalize_filters(filters)
         project = filters.get("project", "")
         if not project:
             return []
 
+        _ensure_project_typeahead_access(project)
         start, page_len = _coerce_pagination(start, page_len)
         params: list = [project]
         search_condition = ""
@@ -161,13 +231,16 @@ def get_issue_type_by_project(doctype, txt, searchfield, start, page_len, filter
         return []
 
 
+@frappe.whitelist()
 def get_age_group_by_project(doctype, txt, searchfield, start, page_len, filters):
     """Get age groups linked to a specific project (typeahead)."""
     try:
+        filters = _normalize_filters(filters)
         project = filters.get("project", "")
         if not project:
             return []
 
+        _ensure_project_typeahead_access(project)
         start, page_len = _coerce_pagination(start, page_len)
         params: list = [project]
         search_condition = ""
@@ -193,13 +266,16 @@ def get_age_group_by_project(doctype, txt, searchfield, start, page_len, filters
         return []
 
 
+@frappe.whitelist()
 def get_citizen_group_by_project(doctype, txt, searchfield, start, page_len, filters):
     """Get citizen groups linked to a specific project with optional group_type filter."""
     try:
+        filters = _normalize_filters(filters)
         project = filters.get("project", "")
         if not project:
             return []
 
+        _ensure_project_typeahead_access(project)
         start, page_len = _coerce_pagination(start, page_len)
         params: list = [project]
         group_type = filters.get("group_type", "")
@@ -235,6 +311,7 @@ def get_citizen_group_by_project(doctype, txt, searchfield, start, page_len, fil
 def get_project_users(doctype, txt, searchfield, start, page_len, filters):
     """Get users assigned to a specific project (typeahead)."""
     try:
+        filters = _normalize_filters(filters)
         project = filters.get("project", "")
         if not project:
             return []
@@ -266,6 +343,7 @@ def get_project_users(doctype, txt, searchfield, start, page_len, filters):
         return []
 
 
+@frappe.whitelist()
 def get_initial_status(project):
     """
     Get the initial status for a project
@@ -274,6 +352,7 @@ def get_initial_status(project):
         if not project:
             return None
 
+        _ensure_project_typeahead_access(project)
         # Find initial status for the project
         initial_status = frappe.db.sql(
             """
@@ -297,6 +376,7 @@ def get_initial_status(project):
         return None
 
 
+@frappe.whitelist()
 def get_department_for_category(category):
     """Resolve where this category routes to (Department or Role).
 
@@ -311,6 +391,16 @@ def get_department_for_category(category):
     try:
         if not category:
             return None
+
+        # Gate by duty on any project this category is linked to.
+        project_links = frappe.get_all(
+            "GRM Project Link",
+            filters={"parent": category, "parenttype": "GRM Issue Category"},
+            pluck="project",
+            ignore_permissions=True,
+        )
+        if project_links:
+            _ensure_project_typeahead_access(project_links[0])
 
         from egrm.services.category_routing import resolve_category_routing
 
@@ -337,6 +427,7 @@ def get_department_for_category(category):
         return None
 
 
+@frappe.whitelist()
 def get_least_loaded_user(department, project):
     """
     Get the user with the least assigned issues in a department
@@ -345,6 +436,7 @@ def get_least_loaded_user(department, project):
         if not department or not project:
             return None
 
+        _ensure_project_typeahead_access(project)
         # Get department head as fallback
         department_head = frappe.db.get_value(
             "GRM Issue Department", department, "head"

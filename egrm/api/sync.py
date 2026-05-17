@@ -25,6 +25,40 @@ from egrm.api.lookup import get_user_accessible_regions, get_user_region_assignm
 # Configure logging
 log = logging.getLogger(__name__)
 
+
+# Drafts (docstatus=0 GRM Issues) are private to their owner. Same bypass
+# roles as egrm/server_scripts/grm_issue_permissions.py — these can still
+# pull other users' drafts via sync, everyone else cannot.
+_DRAFT_BYPASS_ROLES = frozenset(
+    {"System Manager", "GRM Platform Administrator", "GRM Supervise"}
+)
+
+
+def _user_can_see_others_drafts(user):
+    if user == "Administrator":
+        return True
+    return bool(_DRAFT_BYPASS_ROLES.intersection(frappe.get_roles(user)))
+
+
+def _strip_foreign_drafts(records, user):
+    """Filter out GRM Issue drafts that don't belong to `user`. Records
+    here come straight from frappe.get_all(..., fields=['*']) so each
+    dict carries `docstatus` and `owner`."""
+    if _user_can_see_others_drafts(user):
+        return records
+    visible = []
+    dropped = 0
+    for rec in records:
+        if (rec.get("docstatus") or 0) == 0 and rec.get("owner") != user:
+            dropped += 1
+            continue
+        visible.append(rec)
+    if dropped:
+        log.info(
+            f"[SYNC_BACKEND] Hid {dropped} foreign draft(s) from sync output for {user}"
+        )
+    return visible
+
 # WatermelonDB sync table mappings
 SYNC_TABLES = {
     "grm_issues": "GRM Issue",
@@ -484,6 +518,14 @@ def get_changes_since(last_sync_time):
             # Get deleted records from Frappe's deleted documents table
             deleted_ids = get_deleted_records(doctype, last_sync_time)
 
+            # Hide other users' drafts from the sync payload. Drafts are
+            # private to the creator across desk + REST + sync (matches
+            # has_permission / permission_query_conditions in
+            # server_scripts/grm_issue_permissions.py).
+            if doctype == "GRM Issue":
+                created_records = _strip_foreign_drafts(created_records, user)
+                updated_records = _strip_foreign_drafts(updated_records, user)
+
             # Track issue IDs for child table filtering
             if doctype == "GRM Issue":
                 for record in created_records + updated_records:
@@ -715,6 +757,32 @@ def validate_user_record_access(doctype, record_data, user):
         return False
 
     if doctype == "GRM Issue":
+        # Drafts are private to their owner. record_data may not carry
+        # docstatus/owner on every code path (e.g. partial WatermelonDB
+        # payloads on update), so re-read them from the DB when the
+        # record already exists. New-record creates always run as the
+        # current user, so the draft they produce is by definition owned
+        # by `user` and falls through the check.
+        record_id = record_data.get("id") or record_data.get("name")
+        if record_id and frappe.db.exists("GRM Issue", record_id):
+            row = frappe.db.get_value(
+                "GRM Issue",
+                record_id,
+                ("docstatus", "owner"),
+                as_dict=True,
+            )
+            if (
+                row
+                and (row.get("docstatus") or 0) == 0
+                and row.get("owner") != user
+                and not _user_can_see_others_drafts(user)
+            ):
+                log.warning(
+                    f"❌ [SYNC_BACKEND] User {user} cannot access draft "
+                    f"GRM Issue {record_id} owned by {row.get('owner')}"
+                )
+                return False
+
         # Check if issue belongs to user's accessible project
         issue_project = record_data.get("project")
 

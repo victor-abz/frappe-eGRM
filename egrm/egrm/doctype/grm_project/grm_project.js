@@ -1,16 +1,30 @@
 frappe.ui.form.on('GRM Project', {
     refresh: function(frm) {
-        // Add custom buttons
-        if (frm.doc.docstatus !== 2) { // Not cancelled
-            frm.add_custom_button(__('View Issues'), function() {
-                frappe.set_route('List', 'GRM Issue', {project: frm.doc.name});
-            }, __('Actions'));
-            
-            frm.add_custom_button(__('Create Issue'), function() {
-                frappe.new_doc('GRM Issue', {
-                    project: frm.doc.name
-                });
-            }, __('Actions'));
+        // Add custom buttons — every project that is not cancelled can be
+        // re-opened in the wizard (including projects that haven't been
+        // activated yet, i.e. still in setup / docstatus=0).
+        if (frm.doc.docstatus !== 2) {
+            const open_in_wizard = () => {
+                const name = frm.doc && frm.doc.name;
+                const url = name
+                    ? `/app/grm-project-wizard?project=${encodeURIComponent(name)}`
+                    : `/app/grm-project-wizard`;
+                window.location.href = url;
+            };
+            frm.page.set_primary_action(__('Edit in Wizard'), open_in_wizard);
+            frm.add_custom_button(__('Edit in Wizard'), open_in_wizard, __('Actions'));
+
+            if (!frm.is_new()) {
+                frm.add_custom_button(__('View Issues'), function() {
+                    frappe.set_route('List', 'GRM Issue', {project: frm.doc.name});
+                }, __('Actions'));
+
+                frm.add_custom_button(__('Create Issue'), function() {
+                    frappe.new_doc('GRM Issue', {
+                        project: frm.doc.name
+                    });
+                }, __('Actions'));
+            }
         }
         
         // Add a dashboard to show key metrics

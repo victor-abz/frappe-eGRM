@@ -11,8 +11,7 @@ import {
   Eye,
   CheckCircle,
 } from "lucide-react";
-import { useProjects } from "@/hooks/useProjects";
-import { useFrappeGetDocList } from "frappe-react-sdk";
+import { useHomeListings } from "@/hooks/useProjects";
 import { useTranslate } from "@/hooks/useTranslate";
 import { usePortalConfig } from "@/hooks/usePortalConfig";
 import { stripHtml } from "@/utils";
@@ -94,11 +93,7 @@ const projectColors = [
 export default function HomePage() {
   const { __ } = useTranslate();
   const { config } = usePortalConfig();
-  const { data: projects } = useProjects();
-  const { data: categories } = useFrappeGetDocList("GRM Issue Category", {
-    fields: ["name", "category_name"],
-    orderBy: { field: "category_name", order: "asc" },
-  });
+  const { projects, categories } = useHomeListings();
 
   const actions = ALL_ACTIONS.filter((action) => {
     if (action.gate === "dashboard") return config.show_dashboard;

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ShieldCheck, BarChart3, Search, Send, FileText, Globe, LogIn } from "lucide-react";
+import { ShieldCheck, BarChart3, Search, Send, FileText, Globe, LogIn, LayoutDashboard } from "lucide-react";
 import { useTranslate } from "@/hooks/useTranslate";
 import { usePortalConfig } from "@/hooks/usePortalConfig";
 
@@ -19,6 +19,7 @@ const ALL_LINKS: NavLink[] = [
 ];
 
 const LOGIN_URL = "/login";
+const STAFF_DASHBOARD_URL = "/app";
 
 export default function Navbar() {
   const location = useLocation();
@@ -59,14 +60,24 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* Login link — full page nav so Frappe handles auth + role redirect */}
-          <a
-            href={LOGIN_URL}
-            className="ml-2 flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors no-underline"
-          >
-            <LogIn className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{__("Login")}</span>
-          </a>
+          {/* Staff get a direct Desk link; everyone else (Guest, citizen) sees Login */}
+          {config.is_authenticated && config.is_staff ? (
+            <a
+              href={STAFF_DASHBOARD_URL}
+              className="ml-2 flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors no-underline"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{__("Go to Dashboard")}</span>
+            </a>
+          ) : (
+            <a
+              href={LOGIN_URL}
+              className="ml-2 flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors no-underline"
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{__("Login")}</span>
+            </a>
+          )}
 
           {/* Language Dropdown */}
           <div className="ml-2 flex items-center gap-1.5 border-l border-grm-border pl-2">
