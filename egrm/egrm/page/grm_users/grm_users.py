@@ -15,6 +15,11 @@ from typing import Any
 import frappe
 from frappe import _
 
+from egrm.utils.project_access import (
+    assert_assignment_admin,
+    assert_project_admin,
+)
+
 ALLOWED_PAGE_ROLES = {
     "System Manager",
     "GRM Platform Administrator",
@@ -271,12 +276,65 @@ def list_project_lookups(project: str) -> dict:
 
 
 @frappe.whitelist()
-def search_users(txt: str = "") -> list[dict]:
-    """Search active users by name/full_name/email. Limit 25 results."""
+def search_users(txt: str = "", project: str | None = None) -> list[dict]:
+    """Search active users by name/full_name/email. Limit 25 results.
+
+    Review fix B2: scope the user directory by project. Two modes:
+
+    - ``project`` supplied: assert the caller is project-admin on it
+      (cross-project enumeration block) and return ALL enabled users —
+      this is the "add a user to project P" affordance.
+    - ``project`` omitted (default): platform admins see everything;
+      non-platform admins see only users who already hold an assignment
+      on at least one of the caller's own admin projects (prevents a
+      project admin on P1 from enumerating the entire User table).
+    """
     _gate()
     txt = (txt or "").strip()
 
-    base_filters = {"enabled": 1, "name": ["!=", "Administrator"]}
+    if project:
+        # Reuse the project-admin gate from utils.project_access — this
+        # ensures the caller actually controls the project they're
+        # passing as a scope.
+        from egrm.utils.project_access import assert_project_admin
+        assert_project_admin(project)
+
+    base_filters: dict[str, Any] = {
+        "enabled": 1,
+        "name": ["!=", "Administrator"],
+    }
+
+    # For non-platform admins with no explicit ``project`` filter, scope
+    # the result set to users assigned to *some* project the caller
+    # supervises.
+    from egrm.utils.project_access import is_platform_admin
+
+    if not project and not is_platform_admin():
+        # Caller's admin projects (the ones where they hold Supervise
+        # duty). If they have none, return empty rather than leak the
+        # whole User table.
+        admin_projects = frappe.db.sql_list(
+            """
+            SELECT DISTINCT a.project FROM `tabGRM User Project Assignment` a
+            JOIN `tabGRM Project Role` r ON r.name = a.role
+            JOIN `tabGRM Project Role Duty` d ON d.parent = r.name
+            WHERE a.user = %s AND a.is_active = 1 AND d.duty = 'Supervise'
+            """,
+            (frappe.session.user,),
+        )
+        if not admin_projects:
+            return []
+        scoped_users = frappe.db.sql_list(
+            """
+            SELECT DISTINCT user FROM `tabGRM User Project Assignment`
+            WHERE project IN %s AND user IS NOT NULL AND user != ''
+            """,
+            (tuple(admin_projects),),
+        )
+        if not scoped_users:
+            return []
+        base_filters["name"] = ["in", scoped_users]
+
     kwargs: dict[str, Any] = {
         "filters": base_filters,
         "fields": ["name", "full_name", "email"],
@@ -312,6 +370,10 @@ def create_assignment(payload: Any) -> str:
     if not data.get("role"):
         frappe.throw(_("Project Role is required"))
 
+    # Scope: caller must hold Supervise duty on the *target* project, even
+    # if they hold it on another project.
+    assert_project_admin(data["project"])
+
     doc = frappe.new_doc("GRM User Project Assignment")
     for fieldname in (
         "user",
@@ -341,6 +403,7 @@ def update_assignment(name: str, payload: Any) -> None:
     _gate()
     if not name:
         frappe.throw(_("Assignment name is required"))
+    assert_assignment_admin(name)
     data = _coerce_payload(payload)
 
     doc = frappe.get_doc("GRM User Project Assignment", name)
@@ -365,6 +428,7 @@ def delete_assignment(name: str) -> None:
     _gate()
     if not name:
         frappe.throw(_("Assignment name is required"))
+    assert_assignment_admin(name)
     frappe.delete_doc("GRM User Project Assignment", name)
 
 
@@ -374,6 +438,7 @@ def resend_activation(name: str) -> None:
     _gate()
     if not name:
         frappe.throw(_("Assignment name is required"))
+    assert_assignment_admin(name)
     doc = frappe.get_doc("GRM User Project Assignment", name)
     doc.resend_activation_code()
 
@@ -384,5 +449,6 @@ def expire_activation(name: str) -> None:
     _gate()
     if not name:
         frappe.throw(_("Assignment name is required"))
+    assert_assignment_admin(name)
     doc = frappe.get_doc("GRM User Project Assignment", name)
     doc.expire_activation_code()

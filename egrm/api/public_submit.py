@@ -5,6 +5,7 @@ Guest-safe endpoints for submitting grievances through the public portal.
 Supports Cloudflare Turnstile verification and SMS OTP.
 """
 
+import hmac
 import re
 import secrets
 
@@ -315,7 +316,9 @@ def submit_grievance(**kwargs):
             # Handle bytes from Redis
             if isinstance(stored_otp, bytes):
                 stored_otp = stored_otp.decode()
-            if str(otp_code) != str(stored_otp):
+            # Review fix B3: hmac.compare_digest() for constant-time OTP
+            # comparison; defeats timing-side-channel inference.
+            if not hmac.compare_digest(str(otp_code), str(stored_otp)):
                 return {"status": "error", "message": _("Invalid verification code")}
             # Consume the OTP
             frappe.cache.delete(cache_key)

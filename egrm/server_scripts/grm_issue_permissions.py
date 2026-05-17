@@ -193,14 +193,21 @@ def permission_query_conditions(user):
         if not in_scope:
             return "1=0"
 
-        escaped = ", ".join("'" + p.replace("'", "''") + "'" for p in in_scope)
+        # Review fix B4: escape BOTH backslashes (MySQL string-literal
+        # escape character) AND single quotes. The previous version only
+        # escaped quotes, which left a backslash-injection vector if a
+        # project_code ever contained one (regex validator at wizard
+        # input now rejects such names too — defense in depth).
+        def _sql_quote(s: str) -> str:
+            return "'" + s.replace("\\", "\\\\").replace("'", "''") + "'"
+        escaped = ", ".join(_sql_quote(p) for p in in_scope)
         # Drafts (docstatus=0) are private to the creator — duty-holders
         # on the same project still don't see another user's draft. The
         # creator can always see/edit their own draft until they submit.
-        user_safe = user.replace("'", "''")
+        user_safe = _sql_quote(user)
         return (
             f"(`tabGRM Issue`.project IN ({escaped})"
-            f" AND (`tabGRM Issue`.docstatus > 0 OR `tabGRM Issue`.owner = '{user_safe}'))"
+            f" AND (`tabGRM Issue`.docstatus > 0 OR `tabGRM Issue`.owner = {user_safe}))"
         )
     except Exception as e:
         frappe.log_error(f"Error generating permission query conditions: {str(e)}")

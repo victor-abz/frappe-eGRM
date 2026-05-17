@@ -15,6 +15,8 @@ Appeal is only allowed when the issue status is "Resolved" or "Closed",
 and only once per issue (appeal_submitted gates repeat submissions).
 """
 
+import hmac
+
 import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
@@ -123,7 +125,9 @@ def submit_appeal(tracking_code: str, comment: str, code: str = ""):
             }
         if isinstance(stored, bytes):
             stored = stored.decode()
-        if str(code) != str(stored):
+        # Review fix B3: hmac.compare_digest() for constant-time OTP
+        # comparison (defeats timing-side-channel inference of the OTP).
+        if not hmac.compare_digest(str(code), str(stored)):
             return {"status": "error", "message": _("Invalid verification code")}
         frappe.cache.delete(cache_key)
 

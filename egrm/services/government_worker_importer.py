@@ -27,8 +27,8 @@ expected by the bulk machinery.
 import csv
 import io
 import logging
-import random
 import re
+import secrets
 import string
 
 import frappe
@@ -527,8 +527,13 @@ class OptimizedBulkWorkerCreator:
             .where(frappe.qb.Field("project") == self.project_code)
             .run(as_dict=True)
         )
+        # Tuple keys avoid string-collision ambiguity: if any of user /
+        # project / region contains an underscore (User names are emails,
+        # so they often contain underscores or dots), the f-string form
+        # is not bijective — ("a_b", "c", "d") and ("a", "b_c", "d") both
+        # serialize to "a_b_c_d". Tuples make the composite key safe.
         existing_assignment_keys = {
-            f"{a['user']}_{a['project']}_{a['administrative_region']}"
+            (a["user"], a["project"], a["administrative_region"])
             for a in existing_assignments
         }
 
@@ -551,7 +556,7 @@ class OptimizedBulkWorkerCreator:
                 validated["new_users"].append(user_data)
                 user_name = user_data["name"]
 
-            assignment_key = f"{user_name}_{self.project_code}_{worker_data['region_id']}"
+            assignment_key = (user_name, self.project_code, worker_data["region_id"])
             if assignment_key not in existing_assignment_keys:
                 validated["new_assignments"].append(
                     self._prepare_assignment_data(worker_data, user_name)
@@ -633,7 +638,7 @@ class OptimizedBulkWorkerCreator:
         return out
 
     def _prepare_assignment_data(self, worker_data: dict, user_name: str) -> dict:
-        import zlib
+        import secrets
         assignment_name = frappe.generate_hash(length=10)
         # Government-worker assignments (those needing activation) are
         # those whose Project Role grants any GOVERNMENT_WORKER_DUTIES.
@@ -643,8 +648,9 @@ class OptimizedBulkWorkerCreator:
         activation_status = "Activated"
         activation_expires_on = None
         if is_gov_worker:
-            seed = f"{worker_data.get('email','')}{assignment_name}{get_datetime()}"
-            activation_code = str(zlib.adler32(seed.encode("utf-8")))[:6]
+            # Review fix A2: replaced zlib.adler32(...) (non-cryptographic
+            # checksum, predictable seed) with CSPRNG-backed 6-digit code.
+            activation_code = f"{secrets.randbelow(10**6):06d}"
             activation_status = "Pending Activation"
             activation_expires_on = add_to_date(get_datetime(), hours=48)
         return {
@@ -685,6 +691,37 @@ class OptimizedBulkWorkerCreator:
         return True
 
     def _bulk_insert_users_sql(self, user_data_list: list[dict]) -> None:
+        """Bulk-INSERT raw User rows, skipping the User controller.
+
+        Review fix B13 documentation — this path intentionally bypasses
+        ``frappe.get_doc("User", ...).insert()`` for speed (10-100x
+        faster on multi-thousand-row imports). What we therefore SKIP and
+        what compensates for each skip is listed below; if you're adding
+        a new side-effect to the User controller, audit this list:
+
+        Skipped controller side-effects:
+          - ``User.before_insert`` (welcome-email, send_welcome_email
+            guard, etc.) — compensated by ``_bulk_set_passwords`` setting
+            a temporary password, and by the bulk import flow being a
+            non-self-service surface (no welcome email needed).
+          - ``User.validate`` (mandatory-field checks, email format,
+            uniqueness check) — compensated by ``_bulk_validate_and_prepare``
+            doing the equivalent checks up-front against the input list.
+          - Role grants from ``UserRole`` child rows — Role assignment is
+            duty-driven now: ``_post_insert_grant_duty_roles`` runs after
+            the assignment rows are inserted and walks each Project Role's
+            duties to grant the matching ``GRM <duty>`` Frappe Roles.
+          - Full-text search index refresh — the global search reindex
+            cron will pick the new rows up on its next scheduled run.
+          - User.on_update hooks subscribed by other apps — none are
+            critical for the duty-driven flow, but be aware.
+
+        Alternative: ``frappe.get_doc(...).insert(ignore_mandatory=True,
+        ignore_permissions=True)`` per row gets you back all the
+        controller side-effects at ~30x slower throughput. Use that
+        instead if a future side-effect can't be replicated outside the
+        controller.
+        """
         # NOTE: Frappe Role grants are NOT inserted here anymore.
         # Per the duty-driven architecture, the assignment doctype's
         # `assign_role_to_user()` hook walks the Project Role's duties
@@ -774,12 +811,20 @@ class OptimizedBulkWorkerCreator:
             frappe.db.sql(sql, flat)
 
     def _bulk_set_passwords(self, user_data_list: list[dict]) -> None:
+        """Set a temporary password on each freshly-bulk-inserted user.
+
+        Review fix A4: when no ``default_password`` is configured we
+        generate a *unique* CSPRNG password per user (the previous
+        implementation generated a single shared password for the whole
+        batch, which meant a leak of one row's hash cracked every account
+        in the import).
+        """
         try:
             from frappe.utils.password import update_password
         except Exception:
             return
-        password = self.default_password or self._generate_temp_password()
         for u in user_data_list:
+            password = self.default_password or self._generate_temp_password()
             try:
                 update_password(u["name"], password)
             except Exception as exc:
@@ -899,8 +944,11 @@ class OptimizedBulkWorkerCreator:
         return re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email) is not None
 
     def _generate_temp_password(self) -> str:
+        # Review fix A4: CSPRNG via secrets.choice (previous code used
+        # ``random.choice`` which is seedable from time and unsafe for
+        # generating credentials).
         chars = string.ascii_letters + string.digits + "@#$%&"
-        return "".join(random.choice(chars) for _ in range(12))
+        return "".join(secrets.choice(chars) for _ in range(12))
 
     def _slugify(self, text: str) -> str:
         text = re.sub(r"[^\w\s-]", "", (text or "").lower())

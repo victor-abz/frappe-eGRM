@@ -39,6 +39,18 @@ from pathlib import Path
 import frappe
 from frappe import _
 
+# Review fix A3: only these specific GRM duty roles may be granted via
+# CSV bulk-import. Any other value (e.g. "System Manager",
+# "Administrator") is rejected with frappe.throw so a malicious CSV can
+# never escalate privileges.
+_BULK_IMPORT_ALLOWED_ROLES: frozenset[str] = frozenset({
+    "GRM Intake",
+    "GRM Review",
+    "GRM Assignment",
+    "GRM Investigate & Resolve",
+    "GRM Feedback",
+})
+
 
 log = logging.getLogger(__name__)
 
@@ -234,6 +246,17 @@ def upload_workers(project: str | None = None) -> dict:
                 user.enabled = 1
                 user.user_type = "System User"
                 role_name = (row.get("Role") or "").strip() or "GRM Investigate & Resolve"
+                if role_name not in _BULK_IMPORT_ALLOWED_ROLES:
+                    # Hard-reject the row so a CSV cannot grant arbitrary
+                    # (e.g. platform-admin) roles via the bulk worker
+                    # import flow.
+                    frappe.throw(
+                        _("Role {0} is not allowed in bulk worker import. "
+                          "Allowed: {1}").format(
+                            role_name,
+                            ", ".join(sorted(_BULK_IMPORT_ALLOWED_ROLES)),
+                        )
+                    )
                 if frappe.db.exists("Role", role_name):
                     user.append("roles", {"role": role_name})
                 user.flags.ignore_permissions = True

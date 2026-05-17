@@ -25,6 +25,8 @@ from typing import Any
 import frappe
 from frappe import _
 
+from egrm.utils.project_access import assert_assignment_admin
+
 logger = logging.getLogger(__name__)
 
 
@@ -249,6 +251,11 @@ def update_assignment_field(name: str, fieldname: str, value: Any) -> dict:
     if fieldname not in _ASSIGNMENT_INLINE_EDIT_FIELDS:
         frappe.throw(_("Field {0} is not editable inline").format(fieldname))
 
+    # Scope: caller must hold Supervise duty on the assignment's project.
+    # Prevents cross-project tampering where a Project A admin passes a
+    # Project B assignment name.
+    assert_assignment_admin(name)
+
     # Empty-string Link clears go to None so Frappe stores NULL rather
     # than the literal "" (which would fail Link validation later).
     if isinstance(value, str) and value.strip() == "":
@@ -319,6 +326,10 @@ def bulk_update_assignments(
             # mid-batch failures, which is documented in the docstring.
             sp = None
         try:
+            # update_assignment_field also enforces this, but we keep the
+            # call explicit here so bulk_update surfaces a per-row
+            # permission error rather than aborting on the first throw.
+            assert_assignment_admin(name)
             update_assignment_field(name, fieldname, value)
             updated += 1
         except Exception as exc:  # noqa: BLE001 — per-row error capture
@@ -357,6 +368,10 @@ def bulk_remove_assignments(names: list | str) -> dict:
         except Exception:
             sp = None
         try:
+            # Scope check per row. Skip the assertion if the row was
+            # already removed (ignore_missing semantics).
+            if frappe.db.exists("GRM User Project Assignment", name):
+                assert_assignment_admin(name)
             frappe.delete_doc(
                 "GRM User Project Assignment", name,
                 ignore_missing=True, ignore_permissions=False,

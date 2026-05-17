@@ -1,5 +1,6 @@
 import logging
 import random
+import secrets
 import string
 import zlib
 
@@ -505,19 +506,24 @@ class GRMUserProjectAssignment(Document):
         )
 
     def generate_activation_code(self):
-        """Generate 6-digit activation code using zlib.adler32 like Django implementation"""
+        """Generate a cryptographically-secure 6-digit activation code.
+
+        The previous implementation used ``zlib.adler32(email|name|now)`` —
+        a non-cryptographic checksum with low entropy, easily predictable
+        given the seed shape. Switched to ``secrets.randbelow`` per
+        review fix A2.
+        """
         try:
-            # Use email as seed for consistent code generation (like Django implementation)
+            # Validate user has an email (still required so the code can be
+            # delivered downstream by ``send_activation_email``).
             user_email = frappe.db.get_value("User", self.user, "email")
             if not user_email:
                 frappe.throw(_("User email is required for activation code generation"))
 
-            # Generate code using zlib.adler32 (similar to Django implementation)
-            seed = f"{user_email}{self.name}{now()}"
-            raw_code = str(zlib.adler32(seed.encode("utf-8")))
-
-            # Take first 6 digits
-            self.activation_code = raw_code[:6]
+            # CSPRNG-backed 6-digit code (zero-padded; 1 in 10**6 collision
+            # space — fine given the rate-limited /activate endpoint and
+            # 48 h TTL).
+            self.activation_code = f"{secrets.randbelow(10**6):06d}"
 
             # Set expiration (48 hours from now)
             self.activation_expires_on = add_to_date(now(), hours=48)

@@ -46,10 +46,14 @@ from __future__ import annotations
 
 import frappe
 
+from egrm.services._constants import ACTIVE_ASSIGNMENT_STATUSES
 from egrm.services.category_routing import resolve_category_routing
 
 RESOLVE_DUTY = "Investigate & Resolve"
-ACTIVE_STATUSES = ("Activated", "")
+# Review fix B5: re-exported alias of the single-source-of-truth set in
+# ``egrm.services._constants``. Now includes "Pending Activation" so we
+# stay in lock-step with ``duty_coverage.compute_coverage``.
+ACTIVE_STATUSES = ACTIVE_ASSIGNMENT_STATUSES
 
 
 # --------------------------------------------------------------------------- #

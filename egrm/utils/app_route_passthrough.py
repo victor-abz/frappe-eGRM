@@ -37,8 +37,23 @@ import frappe
 _PASSTHROUGH_PREFIXES: tuple[str, ...] = ("app/", "app",)
 
 
+# Review fix B7: explicit deny list. The passthrough is only meant for
+# *workspace* paths like /app/<workspace_name>. Rewriting /app/api/...,
+# /app/method/..., or /app/files/... to /desk/api/... etc. would route
+# real API / method / file requests through the desk shell and silently
+# break them (or worse, expose unintended behavior). Reject these
+# prefixes explicitly even if a request happens to be shaped that way.
+_PASSTHROUGH_DENY_PREFIXES: tuple[str, ...] = (
+    "app/api/",
+    "app/method/",
+    "app/files/",
+)
+
+
 def _is_passthrough_path(path: str) -> bool:
     p = path.strip("/")
+    if any(p.startswith(deny) for deny in _PASSTHROUGH_DENY_PREFIXES):
+        return False
     if p == "app":
         return True
     return p.startswith("app/")

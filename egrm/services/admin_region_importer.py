@@ -157,7 +157,7 @@ class HierarchicalAdminProcessor:
                     break
         return errors
 
-    def _detect_level_columns(self, rows: Iterable[list[str]]) -> list[str]:
+    def _detect_level_columns(self) -> list[str]:
         """Compatibility helper used by the wizard preview pane."""
         return list(self.level_names)
 

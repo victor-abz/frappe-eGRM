@@ -13,6 +13,7 @@ Rating is only allowed when the issue status is "Resolved" or "Closed", and
 only once. Repeat submissions are rejected.
 """
 
+import hmac
 import re
 import secrets
 
@@ -187,7 +188,10 @@ def submit_rating(tracking_code: str, rating, comment: str = "", code: str = "")
             }
         if isinstance(stored, bytes):
             stored = stored.decode()
-        if str(code) != str(stored):
+        # Review fix B3: hmac.compare_digest() to defeat timing attacks
+        # on the OTP comparison. Both sides are coerced to str so we
+        # never compare bytes-to-str (which compare_digest rejects).
+        if not hmac.compare_digest(str(code), str(stored)):
             return {"status": "error", "message": _("Invalid verification code")}
         frappe.cache.delete(cache_key)
 

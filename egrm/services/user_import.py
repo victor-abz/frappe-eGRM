@@ -30,7 +30,6 @@ import csv
 import logging
 import os
 import re
-import time
 from typing import Any
 
 import frappe
@@ -618,6 +617,18 @@ def materialize_staged_csv(
     regions that were (or would be) created, warnings, errors, and a
     preview of the first ``PREVIEW_LIMIT`` resolved-row dicts.
     """
+    # Review fix B12: cap CSV rows at 10k. Beyond this the importer's
+    # per-row region resolution, user upsert, and assignment insert
+    # combine into a request that can blow request memory and lock
+    # tables for minutes. Larger imports should go through the bench
+    # CLI path which streams + chunks.
+    _MAX_ROWS = 10_000
+    if len(rows) > _MAX_ROWS:
+        frappe.throw(
+            f"CSV has {len(rows):,} rows; the in-request importer is capped at "
+            f"{_MAX_ROWS:,}. Split the file or run the bench CLI importer."
+        )
+
     header_index = {h: i for i, h in enumerate(headers)}
     level_columns = _ordered_level_columns(mapping)
 
@@ -717,7 +728,14 @@ def materialize_staged_csv(
     regions_created_global: list[tuple[str, str, str]] = []
     regions_to_create_dryrun: set[tuple[str, str]] = set()
 
-    out_path = os.path.join(_staged_dir(), f"users_{project}_{int(time.time())}.csv")
+    # Review fix B8: use frappe.generate_hash so concurrent imports for
+    # the same project in the same second can't collide on the staged
+    # filename (the previous ``int(time.time())`` suffix has 1-second
+    # granularity and is fully predictable, so two parallel CSV jobs
+    # could overwrite each other's staged file).
+    out_path = os.path.join(
+        _staged_dir(), f"users_{project}_{frappe.generate_hash(length=8)}.csv"
+    )
     with open(out_path, "w", encoding="utf-8", newline="") as fh:
         writer = csv.writer(fh)
         writer.writerow(out_headers)
@@ -905,20 +923,6 @@ def materialize_staged_csv(
         "errors": errors,
         "preview": preview,
     }
-
-
-def _find_source_for(mapping: dict, target: str) -> str | None:
-    """Reverse-lookup: which source header maps to ``target``?
-
-    On duplicate mappings (which ``validate_mapping`` flags as a warning),
-    the *last* declared header wins — same as Python dict iteration order
-    when the user's mapper UI rewrites the dict in place.
-    """
-    chosen: str | None = None
-    for header, m in mapping.items():
-        if m.get("target") == target:
-            chosen = header
-    return chosen
 
 
 def _resolve_region_dryrun(

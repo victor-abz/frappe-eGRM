@@ -2,6 +2,7 @@ import logging
 
 import frappe
 from frappe import _
+from frappe.rate_limiter import rate_limit
 from frappe.utils import get_datetime, now_datetime
 
 from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
@@ -12,6 +13,23 @@ from egrm.egrm.doctype.grm_user_project_assignment.grm_user_project_assignment i
 )
 
 log = logging.getLogger(__name__)
+
+
+def _redact_email(email: str) -> str:
+    """Mask an email for safe inclusion in error-log titles/messages.
+
+    Review fix B14: ``frappe.log_error`` titles surface in the
+    Error Log doctype which is visible to any user with the Error Log
+    read role. Emails are PII; we never want the full address there.
+    """
+    if not email or "@" not in email:
+        return "<redacted>"
+    local, domain = email.split("@", 1)
+    if len(local) <= 2:
+        masked_local = "*" * len(local)
+    else:
+        masked_local = local[0] + "*" * (len(local) - 2) + local[-1]
+    return f"{masked_local}@{domain}"
 
 
 def _find_pending_assignment_name(user_name: str) -> str | None:
@@ -148,7 +166,10 @@ def activate_government_worker(email, activation_code, new_password=None):
                     "errors": [],
                 }
         except Exception as activation_error:
-            frappe.log_error(f"Activation failed for {email}: {str(activation_error)}")
+            frappe.log_error(
+                title="Activation failed",
+                message=f"email={_redact_email(email)}: {activation_error}",
+            )
             return {
                 "success": False,
                 "message": str(activation_error),
@@ -156,7 +177,10 @@ def activate_government_worker(email, activation_code, new_password=None):
             }
 
     except Exception as e:
-        frappe.log_error(f"API activation error for {email}: {str(e)}")
+        frappe.log_error(
+            title="API activation error",
+            message=f"email={_redact_email(email)}: {e}",
+        )
         return {
             "success": False,
             "message": _("An error occurred during activation. Please try again."),
@@ -231,7 +255,10 @@ def resend_activation_code(email):
                     "errors": [],
                 }
         except Exception as resend_error:
-            frappe.log_error(f"Resend failed for {email}: {str(resend_error)}")
+            frappe.log_error(
+                title="Activation resend failed",
+                message=f"email={_redact_email(email)}: {resend_error}",
+            )
             return {
                 "success": False,
                 "message": str(resend_error),
@@ -239,7 +266,10 @@ def resend_activation_code(email):
             }
 
     except Exception as e:
-        frappe.log_error(f"API resend error for {email}: {str(e)}")
+        frappe.log_error(
+            title="API resend error",
+            message=f"email={_redact_email(email)}: {e}",
+        )
         return {
             "success": False,
             "message": _(
@@ -326,7 +356,10 @@ def check_activation_status(email):
         }
 
     except Exception as e:
-        frappe.log_error(f"API status check error for {email}: {str(e)}")
+        frappe.log_error(
+            title="API status check error",
+            message=f"email={_redact_email(email)}: {e}",
+        )
         return {
             "success": False,
             "message": _("An error occurred while checking status. Please try again."),
@@ -334,20 +367,27 @@ def check_activation_status(email):
         }
 
 
-# Enhanced API endpoints with rate limiting
+# Enhanced API endpoints with rate limiting (review fix A2).
+# Caps brute-force attempts on guest-callable activation surfaces: 20
+# attempts per IP per hour. The underlying activation_code is a CSPRNG
+# 6-digit string (10**6 search space) so 20/h => ~5,700 years for 50 %
+# success — well within OWASP "computationally expensive" guidance.
 @frappe.whitelist(allow_guest=True)
+@rate_limit(key="ip", limit=20, seconds=3600)
 def activate_government_worker_limited(email, activation_code, new_password=None):
     """Rate-limited version of activate_government_worker"""
     return activate_government_worker(email, activation_code, new_password)
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(key="ip", limit=20, seconds=3600)
 def resend_activation_code_limited(email):
     """Rate-limited version of resend_activation_code"""
     return resend_activation_code(email)
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(key="ip", limit=20, seconds=3600)
 def check_activation_status_limited(email):
     """Rate-limited version of check_activation_status"""
     return check_activation_status(email)

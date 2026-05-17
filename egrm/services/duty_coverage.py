@@ -21,6 +21,7 @@ from typing import TypedDict
 
 import frappe
 
+from egrm.services._constants import ACTIVE_ASSIGNMENT_STATUSES
 
 REQUIRED_DUTIES: tuple[str, ...] = (
     "Intake",
@@ -102,10 +103,10 @@ def _assignments_with_duties(project: str) -> list[dict]:
         JOIN `tabGRM Project Role Duty` prd ON prd.parent = a.role
         WHERE a.project = %s
           AND a.is_active = 1
-          AND a.activation_status IN ('Activated', 'Pending Activation', '')
+          AND a.activation_status IN %s
           AND prd.duty IN %s
         """,
-        (project, REQUIRED_DUTIES),
+        (project, ACTIVE_ASSIGNMENT_STATUSES, REQUIRED_DUTIES),
         as_dict=True,
     )
 

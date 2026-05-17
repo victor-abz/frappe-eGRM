@@ -99,6 +99,13 @@ def get_departments_by_projects(doctype, txt, searchfield, start, page_len, filt
         if isinstance(projects, str):
             projects = [projects]
 
+        # Review fix B1: project-scope the typeahead access check across
+        # every project in the input list. Without this, a user with
+        # access to project P1 could exfiltrate department names from
+        # P2 by passing both ids in ``filters.projects``.
+        for project in projects:
+            _ensure_project_typeahead_access(project)
+
         start, page_len = _coerce_pagination(start, page_len)
         placeholders = ", ".join(["%s"] * len(projects))
         params: list = list(projects)

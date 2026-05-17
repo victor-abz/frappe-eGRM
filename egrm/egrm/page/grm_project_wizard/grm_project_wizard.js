@@ -302,19 +302,48 @@ class GRMProjectWizard {
     }
 
     async advance() {
-        if (this.step_instance && typeof this.step_instance.save === "function") {
-            const ok = await this.step_instance.save();
-            if (!ok) return;
-        }
-        if (this.current_step < TOTAL_STEPS) {
-            this.goto_step(this.current_step + 1);
-        } else {
-            await this.complete_wizard();
+        // Review fix B9: double-submit guard on the wizard's primary
+        // forward action (Save & Next). Without this, a fast double
+        // click can fire two save() coroutines in parallel and corrupt
+        // state on the per-step save path.
+        if (this._advancing) return;
+        this._advancing = true;
+        try {
+            if (this.step_instance && typeof this.step_instance.save === "function") {
+                const ok = await this.step_instance.save();
+                if (!ok) return;
+            }
+            if (this.current_step < TOTAL_STEPS) {
+                this.goto_step(this.current_step + 1);
+            } else {
+                await this.complete_wizard();
+            }
+        } finally {
+            this._advancing = false;
         }
     }
 
     goto_step(n) {
         if (n < 1 || n > TOTAL_STEPS) return;
+        // Review fix B11: if the current step reports unsaved changes,
+        // confirm before discarding them. Steps that don't implement
+        // ``is_dirty()`` are treated as clean (no prompt) — that
+        // preserves backward compatibility for the steps that haven't
+        // been migrated yet.
+        const step = this.step_instance;
+        const isDirty = step && typeof step.is_dirty === "function" && step.is_dirty();
+        if (isDirty) {
+            frappe.confirm(
+                __("Discard unsaved changes?"),
+                () => { this._do_goto_step(n); },
+                () => { /* cancel: stay on the current step */ },
+            );
+            return;
+        }
+        this._do_goto_step(n);
+    }
+
+    _do_goto_step(n) {
         this.current_step = n;
         if (this.project && this.project.name) {
             frappe.db.set_value("GRM Project", this.project.name, "current_setup_step", n);
@@ -333,7 +362,7 @@ class GRMProjectWizard {
                 args: { project: this.project.name },
             });
             frappe.show_alert({ message: __("Project activated"), indicator: "green" });
-            frappe.set_route("Workspaces", "Platform");
+            frappe.set_route("Workspaces", "eGRM");
         } catch (e) {
             // frappe.call already shows the error; nothing to do
         }
@@ -542,6 +571,16 @@ class GRMWizardStep1ProjectInfo {
     validate(values) {
         const errors = [];
         if (!values.project_code) errors.push(__("Project Code is required."));
+        // Review fix B4: defense-in-depth on the permission_query_conditions
+        // SQL builder — reject project codes that contain characters that
+        // would require escaping ({ ' ; \ [ ]). The server-side builder
+        // also escapes backslashes and quotes, but rejecting them at the
+        // input layer keeps the entire downstream surface clean.
+        if (values.project_code && /[\[\]\\;'"`]/.test(values.project_code)) {
+            errors.push(__(
+                "Project Code may not contain quotes, semicolons, backslashes, or brackets."
+            ));
+        }
         if (!values.title) errors.push(__("Title is required."));
         if (values.start_date && values.end_date && values.end_date < values.start_date) {
             errors.push(__("End Date must be on or after Start Date."));
@@ -576,13 +615,18 @@ class GRMWizardStep1ProjectInfo {
                 window.history.replaceState({}, "", url.toString());
                 frappe.show_alert({ message: __("Project created: {0}", [doc.name]), indicator: "green" });
             } else {
-                // Update each changed field individually
+                // Review fix B10: single batched set_value call instead
+                // of one round-trip per changed field. Avoids the
+                // 1-RPC-per-form-field cost on Step 1 saves where the
+                // operator typically tweaks 3-5 fields.
+                const changed = {};
                 for (const [k, v] of Object.entries(values)) {
                     if (k === "project_code") continue; // immutable after creation
-                    if (this.project[k] !== v) {
-                        await frappe.db.set_value("GRM Project", this.project.name, k, v);
-                        this.project[k] = v;
-                    }
+                    if (this.project[k] !== v) changed[k] = v;
+                }
+                if (Object.keys(changed).length) {
+                    await frappe.db.set_value("GRM Project", this.project.name, changed);
+                    Object.assign(this.project, changed);
                 }
             }
             return true;
@@ -1596,6 +1640,11 @@ class GRMWizardStep9UserAdd {
     }
 
     async submit() {
+        // Review fix B9: double-submit guard. Without this a rapid
+        // double-click on the "Add" button can fire two concurrent
+        // create_assignment RPCs — second one races on duplicate-user
+        // detection and the operator gets a confusing error toast.
+        if (this._submitting) return;
         const user = this.controls.user && this.controls.user.get_value();
         const role = this.controls.role && this.controls.role.get_value();
         if (!user || !role) {
@@ -1610,6 +1659,7 @@ class GRMWizardStep9UserAdd {
         const department = this.controls.department && this.controls.department.get_value();
         const position_title = this.controls.position_title && this.controls.position_title.get_value();
 
+        this._submitting = true;
         frappe.dom.freeze(__("Adding user…"));
         try {
             const r = await frappe.call({
@@ -1630,6 +1680,7 @@ class GRMWizardStep9UserAdd {
             // frappe.call already surfaces the error toast; nothing to do.
         } finally {
             frappe.dom.unfreeze();
+            this._submitting = false;
         }
     }
 
