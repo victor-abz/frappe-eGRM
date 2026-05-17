@@ -4,10 +4,16 @@ import "./index.css";
 import { FrappeProvider } from "frappe-react-sdk";
 import { TranslateContext, useTranslateProvider } from "./hooks/useTranslate";
 
+function TranslateBoundary({ children }: { children: React.ReactNode }) {
+  const translate = useTranslateProvider();
+  return (
+    <TranslateContext.Provider value={translate}>{children}</TranslateContext.Provider>
+  );
+}
+
 function App() {
   // @ts-expect-error frappe global
   const getSiteName = () => window.frappe?.boot?.sitename ?? import.meta.env.VITE_SITE_NAME;
-  const translate = useTranslateProvider();
 
   return (
     <FrappeProvider
@@ -15,9 +21,9 @@ function App() {
       socketPort={import.meta.env.VITE_SOCKET_PORT ? import.meta.env.VITE_SOCKET_PORT : undefined}
       siteName={getSiteName()}
     >
-      <TranslateContext.Provider value={translate}>
+      <TranslateBoundary>
         <RouterProvider router={router} />
-      </TranslateContext.Provider>
+      </TranslateBoundary>
     </FrappeProvider>
   );
 }

@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
+import { useFrappePostCall } from "frappe-react-sdk";
 
 export interface RequestRatingCodeResult {
   status: "success" | "error";
@@ -13,83 +14,51 @@ export interface SubmitRatingResult {
   rating_submitted_at?: string;
 }
 
-async function postJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
-  const res = await fetch(path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Frappe-CSRF-Token": (window as any).csrf_token || "",
-    },
-    body: JSON.stringify(body),
-  });
-  const json = await res.json();
-  return (json.message ?? json) as T;
-}
-
 export function useRequestRatingCode() {
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<RequestRatingCodeResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { call, result, loading, error, reset } = useFrappePostCall<{
+    message: RequestRatingCodeResult;
+  }>("egrm.api.rating.request_rating_code");
 
-  const call = useCallback(async (tracking_code: string) => {
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    try {
-      const r = await postJson<RequestRatingCodeResult>(
-        "/api/method/egrm.api.rating.request_rating_code",
-        { tracking_code }
-      );
-      setResult(r);
-    } catch (e: any) {
-      setError(e?.message || "Network error");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const wrappedCall = useCallback(
+    (tracking_code: string) => call({ tracking_code }),
+    [call]
+  );
 
-  const reset = useCallback(() => {
-    setResult(null);
-    setError(null);
-  }, []);
-
-  return { call, result, loading, error, reset };
+  return {
+    call: wrappedCall,
+    result: result?.message ?? null,
+    loading,
+    error: error ? error.message || "Network error" : null,
+    reset,
+  };
 }
 
 export function useSubmitRating() {
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<SubmitRatingResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { call, result, loading, error, reset } = useFrappePostCall<{
+    message: SubmitRatingResult;
+  }>("egrm.api.rating.submit_rating");
 
-  const call = useCallback(
-    async (params: { tracking_code: string; rating: number; comment?: string; code?: string }) => {
-      setLoading(true);
-      setError(null);
-      setResult(null);
-      try {
-        const r = await postJson<SubmitRatingResult>(
-          "/api/method/egrm.api.rating.submit_rating",
-          {
-            tracking_code: params.tracking_code,
-            rating: String(params.rating),
-            comment: params.comment || "",
-            code: params.code || "",
-          }
-        );
-        setResult(r);
-      } catch (e: any) {
-        setError(e?.message || "Network error");
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
+  const wrappedCall = useCallback(
+    (params: {
+      tracking_code: string;
+      rating: number;
+      comment?: string;
+      code?: string;
+    }) =>
+      call({
+        tracking_code: params.tracking_code,
+        rating: String(params.rating),
+        comment: params.comment || "",
+        code: params.code || "",
+      }),
+    [call]
   );
 
-  const reset = useCallback(() => {
-    setResult(null);
-    setError(null);
-  }, []);
-
-  return { call, result, loading, error, reset };
+  return {
+    call: wrappedCall,
+    result: result?.message ?? null,
+    loading,
+    error: error ? error.message || "Network error" : null,
+    reset,
+  };
 }
