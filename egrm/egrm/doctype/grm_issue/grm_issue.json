@@ -60,6 +60,7 @@
   "appeal_section",
   "appeal_submitted",
   "appeal_date",
+  "appeal_reason",
   "amended_from",
   "assignment_tab",
   "assignment_section",
@@ -75,6 +76,8 @@
   "column_break_4",
   "resolution_accepted",
   "rating",
+  "rating_comment",
+  "rating_submitted_at",
   "escalate_flag",
   "confirmed",
   "sb_sla",
@@ -284,18 +287,21 @@
    "read_only": 1
   },
   {
+   "default": "Today",
    "fieldname": "intake_date",
    "fieldtype": "Date",
    "label": "Intake Date",
    "reqd": 1
   },
   {
+   "default": "Today",
    "fieldname": "issue_date",
    "fieldtype": "Date",
    "label": "Issue Date",
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "administrative_region",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -328,6 +334,20 @@
    "fieldname": "rating",
    "fieldtype": "Int",
    "label": "Rating",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "rating_comment",
+   "fieldtype": "Small Text",
+   "label": "Rating Comment",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "rating_submitted_at",
+   "fieldtype": "Datetime",
+   "label": "Rating Submitted At",
    "read_only": 1
   },
   {
@@ -500,6 +520,14 @@
    "fieldname": "appeal_date",
    "fieldtype": "Datetime",
    "label": "Appeal Date",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "appeal_submitted",
+   "fieldname": "appeal_reason",
+   "fieldtype": "Small Text",
+   "label": "Appeal Reason",
    "read_only": 1
   },
   {

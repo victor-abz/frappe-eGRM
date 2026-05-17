@@ -11,6 +11,12 @@ export interface TrackingResult {
     acknowledged_date?: string;
     resolution_date?: string;
     appeal_submitted: boolean;
+    appeal_date?: string | null;
+    appeal_reason?: string;
+    contact_channel?: "phone" | "email" | null;
+    rating?: number;
+    rated?: boolean;
+    rating_submitted_at?: string | null;
   };
 }
 

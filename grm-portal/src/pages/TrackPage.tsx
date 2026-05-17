@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Search, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { useTracking } from "@/hooks/useTracking";
 import { useTranslate } from "@/hooks/useTranslate";
+import RatingWidget from "@/components/RatingWidget";
+import AppealWidget from "@/components/AppealWidget";
 
 function statusBadge(status: string) {
   const s = status.toLowerCase();
@@ -28,12 +30,14 @@ function statusIcon(status: string) {
 export default function TrackPage() {
   const { __ } = useTranslate();
   const [code, setCode] = useState("");
+  const [justRated, setJustRated] = useState(false);
   const { call, result, loading, error, reset } = useTracking();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) return;
     reset();
+    setJustRated(false);
     call({ tracking_code: code.trim() });
   };
 
@@ -97,6 +101,26 @@ export default function TrackPage() {
               <Row label={__("Appeal")} value={__("Submitted")} />
             )}
           </div>
+          {(data.status.toLowerCase().includes("resolv") ||
+            data.status.toLowerCase().includes("closed")) && (
+            <div className="p-4 bg-gray-50 border-t border-grm-border">
+              <RatingWidget
+                trackingCode={data.tracking_code}
+                contactChannel={data.contact_channel ?? null}
+                initiallyRated={Boolean(data.rated)}
+                initialRating={data.rating ?? 0}
+                onRated={() => setJustRated(true)}
+              />
+              <AppealWidget
+                trackingCode={data.tracking_code}
+                contactChannel={data.contact_channel ?? null}
+                alreadyRated={Boolean(data.rated) || justRated}
+                initiallyAppealed={Boolean(data.appeal_submitted)}
+                initialAppealDate={data.appeal_date ?? null}
+                initialAppealReason={data.appeal_reason ?? ""}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
