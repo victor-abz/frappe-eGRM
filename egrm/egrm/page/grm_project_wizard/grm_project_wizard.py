@@ -12,18 +12,6 @@ ALLOWED_PAGE_ROLES = {
 TOTAL_SETUP_STEPS = 13
 
 
-# Project codes provisioned exclusively by the AQE full-suite. When a
-# project with one of these codes activates, we auto-bridge the canonical
-# test users into a project assignment so downstream sub-suites
-# (MOBILE-DUTY, MULTI-PROJECT, ISSUE-LIFECYCLE, API-CONTRACT, …) have a
-# working `accessible_projects` resolution out of the box. The codes are
-# *test-only* — production projects with different codes are unaffected.
-_AQE_TEST_PROJECT_CODES = {
-    "RW-WB", "KE-EAC", "STJ-HOSP", "PERF-IMPORT",
-    "AC-7-NoLevels", "AC-7-NoRole",
-}
-
-
 _DEFAULT_STATUSES = (
     {"status_name": "New", "initial_status": 1},
     {"status_name": "In Progress", "open_status": 1},
@@ -184,24 +172,6 @@ def _project_has_status_flag(project: str, flag: str) -> bool:
     return bool(rows)
 
 
-def _maybe_bridge_aqe_test_assignments(project_code: str) -> None:
-    """If `project_code` is an AQE test project, auto-create canonical
-    test-user assignments. Failures here MUST NOT break activation.
-    """
-    if project_code not in _AQE_TEST_PROJECT_CODES:
-        return
-    try:
-        from egrm.cli.seed_aqe_projects import assign_for_project
-        assign_for_project(project_code, verbose=False)
-    except Exception as exc:
-        # Test bridge is best-effort. Log, never raise.
-        frappe.log_error(
-            f"[activate_project] AQE test assignment bridge failed for "
-            f"{project_code}: {exc}",
-            "AQE test bridge",
-        )
-
-
 def _require_wizard_role() -> None:
     """Raise PermissionError unless caller has at least one allowed role.
 
@@ -266,14 +236,6 @@ def activate_project(project: str) -> dict:
         update_modified=False,
     )
     frappe.db.commit()
-
-    # Test-only bridge: AQE full-suite projects get their canonical actor
-    # assignments seeded inline so MOBILE-DUTY / MULTI-PROJECT / ISSUE-
-    # LIFECYCLE / API-CONTRACT can resolve `accessible_projects` without
-    # an external `seed_aqe_projects.assign` step. This is gated by an
-    # opt-in code list (see `_AQE_TEST_PROJECT_CODES`) so production
-    # activations are not affected.
-    _maybe_bridge_aqe_test_assignments(project)
 
     return {"ok": True, "project": project}
 

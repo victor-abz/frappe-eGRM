@@ -13,6 +13,10 @@ Run::
 """
 from __future__ import annotations
 
+# Module marker: tooling / reviewers can grep for ``__DEV_ONLY__`` to
+# distinguish operational diagnostic scripts from production code paths.
+__DEV_ONLY__ = True
+
 import frappe
 
 

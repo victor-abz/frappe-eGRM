@@ -19,8 +19,7 @@ This patch migrates every legacy row to the new naming scheme using
   - GRM Project Role.admin_level
 
 Idempotent: rows whose name already matches ``<project>-<level_name>`` are
-skipped. Rows missing a project are left untouched (cleaned up separately by
-``egrm.cli.cleanup_rdap.purge_orphan_admin_levels``).
+skipped. Rows missing a project are left untouched.
 """
 
 import frappe

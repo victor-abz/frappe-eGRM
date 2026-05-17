@@ -65,3 +65,7 @@ yarn.lock
 
 # Debug / scratch output
 analyzed_output.dat
+
+# Backup files
+*.bak
+*.bak.*
