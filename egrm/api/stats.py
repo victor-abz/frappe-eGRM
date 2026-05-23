@@ -11,6 +11,9 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, date_diff, get_datetime, getdate, now_datetime
 
+from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
+from egrm.utils.project_access import get_user_accessible_projects
+
 # Configure logging
 log = logging.getLogger(__name__)
 
@@ -183,23 +186,6 @@ def project_summary(project_id):
 
 
 # Helper functions
-
-
-def get_user_accessible_projects(user):
-    """Get projects a user can access"""
-    # Check if user is Administrator or has System Manager role (full access)
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
-        projects = frappe.get_all("GRM Project", fields=["name"])
-        return [p.name for p in projects]
-
-    # Get projects assigned to the user
-    assignments = frappe.get_all(
-        "GRM User Project Assignment",
-        filters={"user": user, "active": 1},
-        fields=["project"],
-    )
-
-    return [a.project for a in assignments]
 
 
 def get_date_filter(date_range):

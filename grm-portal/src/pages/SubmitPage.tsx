@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useContext, useRef } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,6 +9,7 @@ import {
   MapPin,
   ChevronDown,
 } from "lucide-react";
+import { FrappeContext, FrappeConfig } from "frappe-react-sdk";
 import { useTranslate } from "@/hooks/useTranslate";
 
 // ---------------------------------------------------------------------------
@@ -61,36 +62,23 @@ interface FormData {
 }
 
 // ---------------------------------------------------------------------------
-// API helpers
+// API helpers (frappe-react-sdk)
 // ---------------------------------------------------------------------------
 
-async function apiCall<T = any>(method: string, params?: Record<string, any>): Promise<T> {
-  const url = `/api/method/egrm.api.public_submit.${method}`;
-  const isGet = !["send_otp", "submit_grievance"].includes(method);
+const POST_METHODS = new Set(["send_otp", "submit_grievance"]);
 
-  if (isGet) {
-    const qs = params
-      ? "?" +
-        Object.entries(params)
-          .filter(([, v]) => v != null && v !== "")
-          .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-          .join("&")
-      : "";
-    const res = await fetch(url + qs);
-    const data = await res.json();
-    return data.message;
-  }
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Frappe-CSRF-Token": (window as any).csrf_token || "",
+function useApiCall() {
+  const { call } = useContext(FrappeContext) as FrappeConfig;
+  return useCallback(
+    async <T = any>(method: string, params?: Record<string, any>): Promise<T> => {
+      const path = `egrm.api.public_submit.${method}`;
+      const resp = POST_METHODS.has(method)
+        ? await call.post<{ message: T }>(path, params)
+        : await call.get<{ message: T }>(path, params);
+      return resp?.message as T;
     },
-    body: JSON.stringify(params),
-  });
-  const data = await res.json();
-  return data.message;
+    [call]
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -187,6 +175,7 @@ function CascadingRegionSelector({
   onChange: (regionName: string) => void;
   __: (s: string) => string;
 }) {
+  const apiCall = useApiCall();
   // Each level holds: { selected region name, options[] }
   const [levels, setLevels] = useState<
     { level: AdminLevel; options: RegionOption[]; selected: string; loading: boolean }[]
@@ -358,6 +347,7 @@ const TOTAL_STEPS = 6;
 
 export default function SubmitPage() {
   const { __ } = useTranslate();
+  const apiCall = useApiCall();
 
   // --- State ---
   const [step, setStep] = useState(1);

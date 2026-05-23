@@ -75,7 +75,7 @@ frappe.ui.form.on('GRM Issue Category', {
             if (frm.doc.grm_project_link) {
                 projects = frm.doc.grm_project_link.map(d => d.project);
             }
-            
+
             return {
                 query: 'egrm.server_scripts.queries.get_departments_by_projects',
                 filters: {
@@ -83,7 +83,18 @@ frappe.ui.form.on('GRM Issue Category', {
                 }
             };
         });
-        
+
+        // Restrict the role typeahead to active roles in the same project.
+        // Cross-project roles are filtered server-side.
+        frm.set_query('assigned_role', function() {
+            return {
+                filters: {
+                    project: frm.doc.project,
+                    is_active: 1,
+                },
+            };
+        });
+
         // Filter administrative level based on project
         frm.set_query('administrative_level', function() {
             let projects = [];

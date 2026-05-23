@@ -4,6 +4,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "project",
   "category_name",
   "label",
   "abbreviation",
@@ -11,13 +12,23 @@
   "confidentiality_level",
   "redirection_protocol",
   "section_break_1",
+  "routing_target_type",
   "assigned_department",
+  "assigned_role",
   "assigned_appeal_department",
   "assigned_escalation_department",
   "administrative_level",
   "grm_project_link"
  ],
  "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Project",
+   "options": "GRM Project"
+  },
   {
    "fieldname": "category_name",
    "fieldtype": "Data",
@@ -38,11 +49,27 @@
    "reqd": 1
   },
   {
+   "default": "Department",
+   "fieldname": "routing_target_type",
+   "fieldtype": "Select",
+   "label": "Route To",
+   "options": "Department\nRole"
+  },
+  {
+   "depends_on": "eval:!doc.routing_target_type || doc.routing_target_type == 'Department'",
+   "mandatory_depends_on": "eval:!doc.routing_target_type || doc.routing_target_type == 'Department'",
    "fieldname": "assigned_department",
    "fieldtype": "Link",
    "label": "Assigned Department",
-   "options": "GRM Issue Department",
-   "reqd": 1
+   "options": "GRM Issue Department"
+  },
+  {
+   "depends_on": "eval:doc.routing_target_type == 'Role'",
+   "mandatory_depends_on": "eval:doc.routing_target_type == 'Role'",
+   "fieldname": "assigned_role",
+   "fieldtype": "Link",
+   "label": "Assigned Role",
+   "options": "GRM Project Role"
   },
   {
    "fieldname": "assigned_appeal_department",
@@ -105,7 +132,6 @@
   {
    "create": 1,
    "delete": 1,
-   "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
@@ -117,33 +143,47 @@
   {
    "create": 1,
    "delete": 1,
-   "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRM Administrator",
+   "role": "GRM Platform Administrator",
    "share": 1,
    "write": 1
   },
   {
    "create": 1,
-   "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRM Project Manager",
-   "share": 1,
+   "role": "GRM Supervise",
    "write": 1
   },
   {
    "read": 1,
-   "role": "GRM Department Head"
+   "report": 1,
+   "role": "GRM Intake"
   },
   {
    "read": 1,
-   "role": "GRM Field Officer"
+   "report": 1,
+   "role": "GRM Review"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "GRM Assignment"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "GRM Investigate & Resolve"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "GRM Feedback"
   }
  ],
  "row_format": "Dynamic",

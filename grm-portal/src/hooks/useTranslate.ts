@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { FrappeContext, FrappeConfig } from "frappe-react-sdk";
 
 type Translations = Record<string, string>;
 
@@ -28,6 +29,7 @@ export const TranslateContext = createContext<TranslateContextValue>({
 });
 
 export function useTranslateProvider() {
+  const { call } = useContext(FrappeContext) as FrappeConfig;
   const [lang, setLang] = useState(() => {
     // Priority: cookie > browser > "en"
     const cookie = document.cookie
@@ -47,10 +49,13 @@ export function useTranslateProvider() {
       return;
     }
 
-    fetch('/api/method/frappe.translate.get_all_languages?with_language_name=True')
-      .then((r) => r.json())
+    call
+      .get<{ message: { language_code: string; language_name: string }[] }>(
+        "frappe.translate.get_all_languages",
+        { with_language_name: 1 }
+      )
       .then((data) => {
-        const langs: LanguageOption[] = (data.message || []).map((l: any) => ({
+        const langs: LanguageOption[] = (data?.message || []).map((l) => ({
           code: l.language_code,
           name: l.language_name,
         }));
@@ -84,16 +89,19 @@ export function useTranslateProvider() {
     }
 
     setIsLoading(true);
-    fetch(`/api/method/egrm.api.public_translations.get_translations?lang=${lang}`)
-      .then((r) => r.json())
+    call
+      .get<{ message: Translations }>(
+        "egrm.api.public_translations.get_translations",
+        { lang }
+      )
       .then((data) => {
-        const msgs = data.message || {};
+        const msgs = data?.message || {};
         translationCache[lang] = msgs;
         setMessages(msgs);
       })
       .catch(() => setMessages({}))
       .finally(() => setIsLoading(false));
-  }, [lang]);
+  }, [lang, call]);
 
   const __ = useCallback(
     (key: string, replacements?: string[]) => {

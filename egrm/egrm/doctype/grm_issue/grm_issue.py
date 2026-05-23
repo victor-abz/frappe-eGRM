@@ -10,6 +10,62 @@ from egrm.egrm.utils.sla_manager import SLAManager
 from egrm.utils.tracking_code_generator import generate_tracking_code
 
 
+# Per-field duty enforcement map. A non-bypass user changing one of these
+# fields must hold the corresponding duty for the issue's project. Bypass
+# roles: System Manager, GRM Platform Administrator, GRM Supervise (the
+# latter is intentionally permitted to override anything within scope).
+FIELD_DUTY_REQUIREMENTS: dict[str, str] = {
+    "status": "Review",
+    "category": "Review",
+    "issue_type": "Review",
+    "assignee": "Assignment",
+    "resolution_text": "Investigate & Resolve",
+    "resolved_by": "Investigate & Resolve",
+    "resolution_date": "Investigate & Resolve",
+    "resolution_days": "Investigate & Resolve",
+    "resolution_agreement": "Investigate & Resolve",
+    "rating": "Feedback",
+    "appeal_submitted": "Feedback",
+    "appeal_date": "Feedback",
+}
+
+DUTY_ENFORCEMENT_BYPASS_ROLES: set[str] = {
+    "System Manager",
+    "GRM Platform Administrator",
+    "GRM Supervise",
+}
+
+
+def _user_has_duty(user: str, duty: str, project: str) -> bool:
+    """Return True if the user has the named duty for this project (or
+    holds a bypass role). Used by GRM Issue field-level checks."""
+    if not user or user == "Guest":
+        return False
+    if user == "Administrator":
+        return True
+    user_roles = set(frappe.get_roles(user))
+    if user_roles & DUTY_ENFORCEMENT_BYPASS_ROLES:
+        return True
+    role_names = frappe.get_all(
+        "GRM User Project Assignment",
+        filters={
+            "user": user, "project": project, "is_active": 1,
+            "activation_status": ["in", ("Activated", "")],
+        },
+        pluck="role",
+        ignore_permissions=True,
+    )
+    if not role_names:
+        return False
+    matches = frappe.get_all(
+        "GRM Project Role Duty",
+        filters={"parent": ["in", role_names], "duty": duty},
+        limit=1,
+        ignore_permissions=True,
+    )
+    return bool(matches)
+
+
 class GRMIssue(Document):
     def autoname(self):
         """Use WatermelonDB ID if provided, otherwise use Frappe naming series"""
@@ -123,6 +179,29 @@ class GRMIssue(Document):
             frappe.log_error(f"Error in before_validate: {str(e)}")
             raise
 
+    def _enforce_duty_field_constraints(self) -> None:
+        """For each restricted field, if it changed since fetched_doc, verify
+        the user holds the required duty for this issue's project. Insert is
+        gated separately via L1 'create' permission (GRM Intake).
+
+        Honors flags.ignore_permissions so trusted server flows (e.g. sync
+        push auto-submit, controllers calling save() with elevation) can run
+        without re-asserting field-level duty checks the L1 layer already
+        verified.
+        """
+        if self.is_new() or self.flags.ignore_permissions:
+            return
+        user = frappe.session.user
+        for field, duty in FIELD_DUTY_REQUIREMENTS.items():
+            if not self.has_value_changed(field):
+                continue
+            if _user_has_duty(user, duty, self.project):
+                continue
+            frappe.throw(
+                frappe._("You need the {0} duty to change {1}.").format(duty, field),
+                frappe.PermissionError,
+            )
+
     def validate(self):
         try:
             # Generate tracking code if not provided (for cases where it wasn't generated in before_insert)
@@ -140,6 +219,8 @@ class GRMIssue(Document):
             # Validate project related fields
             self.validate_project_entities()
 
+            self._enforce_duty_field_constraints()
+
             # Validate dates
             self.validate_dates()
 
@@ -152,10 +233,56 @@ class GRMIssue(Document):
         try:
             # Generate auto increment ID, internal code, and tracking code
             self.generate_codes()
-            frappe.log(f"Generated codes for GRM Issue {self.name}")
+            self._apply_default_routing_from_category()
+            self._apply_default_assignee()
+            frappe.log(
+                f"Generated codes + applied default routing for GRM Issue {self.name}"
+            )
         except Exception as e:
-            frappe.log(f"Error generating codes for GRM Issue: {str(e)}")
+            frappe.log(f"Error in before_insert for GRM Issue: {str(e)}")
             raise
+
+    def _apply_default_routing_from_category(self) -> None:
+        """Populate ``assigned_role`` from the category when not explicitly set.
+
+        Caller-provided values take precedence so manual overrides
+        (mobile API, admin desk) are respected. Departments are not consulted
+        — routing is role-based.
+        """
+        if self.assigned_role:
+            return
+        if not self.category:
+            return
+        from egrm.services.category_routing import resolve_routing_for_issue_creation
+        routing = resolve_routing_for_issue_creation(self.category)
+        if routing["assigned_role"]:
+            self.assigned_role = routing["assigned_role"]
+
+    def _apply_default_assignee(self) -> None:
+        """Resolve ``assignee`` from the reporter or the category routing.
+
+        Runs AFTER ``_apply_default_routing_from_category`` so the resolver
+        sees the populated ``assigned_department`` / ``assigned_role``. The
+        resolver respects an explicitly supplied assignee — sync push,
+        mobile, and admin-desk overrides pass through untouched.
+        """
+        from egrm.services.assignee_routing import resolve_assignee
+        user, reason = resolve_assignee(self)
+        if user:
+            self.assignee = user
+        # Always stamp a log row so orphans (user is None) are observable
+        # in the issue history. Bypass-permission paths still log.
+        if reason and reason != "EXPLICIT_OVERRIDE":
+            timestamp = now_datetime()
+            text = (
+                f"Auto-assigned to {user} ({reason})" if user
+                else f"No eligible assignee at insert: {reason}"
+            )
+            self.append("grm_issue_log", {
+                "text": text,
+                "user": frappe.session.user,
+                "timestamp": timestamp,
+            })
 
     def after_insert(self):
         try:
@@ -164,6 +291,13 @@ class GRMIssue(Document):
             frappe.log(f"After insert completed for GRM Issue {self.name}")
         except Exception as e:
             frappe.log(f"Error in after_insert for GRM Issue: {str(e)}")
+
+    def before_update_after_submit(self):
+        # Frappe's update_after_submit path does NOT run validate(), so the
+        # field-duty checks in _enforce_duty_field_constraints would otherwise
+        # be silently bypassed for post-submit set_value / db_update calls.
+        # Re-run them here so the duty matrix applies to every save path.
+        self._enforce_duty_field_constraints()
 
     def on_update(self):
         try:
@@ -473,49 +607,30 @@ class GRMIssue(Document):
         return self.contact_information
 
     def has_permission_to_view_sensitive_data(self):
-        """Check if current user has permission to view sensitive data"""
+        """Duty-driven sensitive-data visibility.
+
+        Bypass roles (System Manager, GRM Platform Administrator) and
+        anyone holding a Supervise duty on this project can see sensitive
+        fields. The current assignee always sees their own issue.
+        """
         try:
-            # System Manager and GRM Administrator always have access
-            if (
-                "System Manager" in frappe.get_roles()
-                or "GRM Administrator" in frappe.get_roles()
-            ):
-                return True
-
-            # Project Manager of this project can view
-            if frappe.db.exists(
-                "GRM User Project Assignment",
-                {
-                    "user": frappe.session.user,
-                    "project": self.project,
-                    "role": "GRM Project Manager",
-                    "is_active": 1,
-                },
-            ):
-                return True
-
-            # Department Head for this category can view
-            category_dept = frappe.db.get_value(
-                "GRM Issue Category", self.category, "assigned_department"
+            from egrm.server_scripts.grm_issue_permissions import (
+                BYPASS_ROLES,
+                _user_duties_for_project,
             )
-            if category_dept and frappe.db.exists(
-                "GRM User Project Assignment",
-                {
-                    "user": frappe.session.user,
-                    "project": self.project,
-                    "role": "GRM Department Head",
-                    "department": category_dept,
-                    "is_active": 1,
-                },
-            ):
+
+            user = frappe.session.user
+            if user == "Administrator":
                 return True
 
-            # Current assignee can view
-            if self.assignee == frappe.session.user:
+            if set(frappe.get_roles(user)) & set(BYPASS_ROLES):
                 return True
 
-            # By default, no access to sensitive data
-            return False
+            if self.assignee == user:
+                return True
+
+            duties = _user_duties_for_project(user, self.project)
+            return "Supervise" in duties
         except Exception as e:
             frappe.log(f"Error checking sensitive data permissions: {str(e)}")
             return False

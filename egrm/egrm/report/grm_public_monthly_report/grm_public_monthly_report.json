@@ -7,7 +7,7 @@
  "doctype": "Report",
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2025-11-16 00:00:00",
+ "modified": "2026-05-09 14:00:00",
  "modified_by": "Administrator",
  "module": "egrm",
  "name": "GRM Public Monthly Report",
@@ -17,10 +17,13 @@
  "report_type": "Script Report",
  "roles": [
   {
-   "role": "GRM Administrator"
+   "role": "GRM Platform Administrator"
   },
   {
-   "role": "GRM Project Manager"
+   "role": "GRM Supervise"
+  },
+  {
+   "role": "System Manager"
   }
  ]
 }

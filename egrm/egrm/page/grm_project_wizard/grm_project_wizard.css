@@ -1,0 +1,762 @@
+/* GRM Project Wizard — palette aligned with grm-portal/tailwind.config.js
+   primary-500 #24c38b, primary-600 #1da672, accent #2490EF,
+   bg #F8F8F8, text #171717, border #EDEDED, muted #7C7C7C */
+
+.grm-wizard {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+    color: #171717;
+    background: linear-gradient(180deg, #f8fbfa 0%, #f8f8f8 100%);
+    min-height: calc(100vh - 80px);
+}
+
+.grm-wizard-header {
+    margin-bottom: 28px;
+}
+
+/* ---- Stepper (Option C — pulsing halo on active dot) ----
+   Minimal row of 13 dots; the current step pulses gently to draw the eye.
+   No numbers; done = soft green; pending = light grey. */
+.grm-wizard-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    background: #ffffff;
+    border: 1px solid #EDEDED;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.grm-wizard-stepper .grm-step {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #DADCDC;
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    flex: 0 0 auto;
+    position: relative;
+    /* Hide any text content (legacy step numbers) — purely visual now. */
+    font-size: 0;
+    line-height: 0;
+    color: transparent;
+    border: 0;
+    padding: 0;
+    /* Now an interactive <button>: clickable shortcut to that step. */
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+}
+.grm-wizard-stepper .grm-step:hover:not(:disabled) {
+    transform: scale(1.4);
+}
+.grm-wizard-stepper .grm-step:focus-visible {
+    box-shadow: 0 0 0 3px rgba(36, 195, 139, 0.35);
+}
+.grm-wizard-stepper .grm-step:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.grm-wizard-stepper .grm-step.done {
+    background: #B9DECC;
+}
+.grm-wizard-stepper .grm-step.pending {
+    background: #E8EAEA;
+}
+.grm-wizard-stepper .grm-step.active {
+    background: #1da672;
+}
+.grm-wizard-stepper .grm-step.active::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(36, 195, 139, 0.45);
+    animation: grm-step-pulse 1.6s ease-in-out infinite;
+}
+@keyframes grm-step-pulse {
+    0%, 100% { transform: scale(1);    opacity: 0.7; }
+    50%      { transform: scale(1.15); opacity: 0.25; }
+}
+
+/* ---- Title ---- */
+.grm-wizard-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    color: #171717;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.grm-wizard-title::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 22px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #24c38b 0%, #1da672 100%);
+    transform: translateY(2px);
+}
+
+/* ---- Body / form area ---- */
+.grm-wizard-body {
+    min-height: 360px;
+    padding: 28px 28px 24px;
+    background: #ffffff;
+    border: 1px solid #EDEDED;
+    border-radius: 14px;
+    margin-bottom: 24px;
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.04),
+        0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.grm-wizard-body .frappe-control {
+    margin-bottom: 14px;
+}
+
+.grm-wizard-body .control-label {
+    color: #4A4A4A;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.grm-wizard-body input.form-control,
+.grm-wizard-body select.form-control,
+.grm-wizard-body textarea.form-control,
+.grm-wizard-body .input-with-feedback {
+    border: 1px solid #EDEDED;
+    border-radius: 8px;
+    background: #FBFCFC;
+    color: #171717;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.grm-wizard-body input.form-control:focus,
+.grm-wizard-body select.form-control:focus,
+.grm-wizard-body textarea.form-control:focus,
+.grm-wizard-body .input-with-feedback:focus {
+    border-color: #24c38b;
+    box-shadow: 0 0 0 3px rgba(36, 195, 139, 0.18);
+    outline: none;
+}
+
+.grm-wizard-placeholder {
+    text-align: center;
+    padding: 56px 16px;
+    color: #7C7C7C;
+}
+
+.grm-wizard-placeholder h4,
+.grm-wizard-placeholder h3 {
+    color: #171717;
+}
+
+/* ---- Footer / actions ----
+   Sticky to the bottom of the .main-section scroll viewport so Back/Continue
+   stay reachable when the body has lots of rows (Step 7 with many citizen
+   groups, Step 6 with many issue types, etc.). */
+.grm-wizard-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: rgba(248, 248, 248, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-top: 1px solid #EDEDED;
+    border-radius: 12px;
+    margin-top: 16px;
+    box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.grm-wizard-footer .btn {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 10px 22px;
+    transition: all 0.15s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.grm-wizard-footer #grm-prev,
+.grm-wizard-footer .btn-default {
+    background: #ffffff;
+    color: #4A4A4A;
+    border-color: #EDEDED;
+}
+
+.grm-wizard-footer #grm-prev:hover,
+.grm-wizard-footer .btn-default:hover {
+    background: #F8F8F8;
+    border-color: #2490EF;
+    color: #2490EF;
+}
+
+.grm-wizard-footer #grm-next,
+.grm-wizard-footer .btn-primary {
+    background: linear-gradient(135deg, #24c38b 0%, #1da672 100%);
+    color: #ffffff;
+    border-color: #1da672;
+    box-shadow: 0 4px 14px rgba(36, 195, 139, 0.32);
+}
+
+.grm-wizard-footer #grm-next:hover,
+.grm-wizard-footer .btn-primary:hover {
+    background: linear-gradient(135deg, #1da672 0%, #17855b 100%);
+    box-shadow: 0 6px 20px rgba(29, 166, 114, 0.42);
+    transform: translateY(-1px);
+}
+
+#grm-step-status {
+    color: #7C7C7C;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ---- Tables ----
+   Strategy: extend Frappe instead of duplicating it. Step 3 (User Types) emits
+   the same div-grid markup Frappe uses on /app/doctype/<X>#permissions_tab —
+   <div class='form-grid'><div class='grid-heading-row'>... — so it inherits
+   100% of common/grid.scss + element/checkbox.scss. The other steps wrap their
+   <table> in <div class='form-grid'> for the same chrome.
+
+   No values defined by Frappe (border-radius, --subtle-fg, --table-border-color,
+   --checkbox-size, etc.) are redefined here. */
+
+/* Allow our wizard form-grids to size to content (Frappe's default min-height
+   creates dead space when there are no rows). */
+.grm-wizard-body .form-grid {
+    min-height: 0;
+}
+
+/* Plain <table> inside our form-grid wrappers (Steps other than Step 3) sits
+   flush — Frappe's .form-grid owns the chrome, the table is just a layout. */
+.grm-wizard-body .form-grid > .table,
+.grm-wizard-body .form-grid > .table-responsive > .table {
+    margin: 0;
+    border: 0;
+    background: transparent;
+}
+.grm-wizard-body .form-grid .table thead th {
+    background: var(--subtle-fg);
+    border-bottom: 1px solid var(--table-border-color);
+    color: var(--gray-600);
+    font-weight: var(--weight-regular, 400);
+    font-size: var(--text-sm);
+    padding: 4px 8px;
+    height: 32px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.grm-wizard-body .form-grid .table tbody tr {
+    background: var(--card-bg, #ffffff);
+}
+.grm-wizard-body .form-grid .table tbody tr + tr {
+    border-top: 1px solid var(--table-border-color);
+}
+.grm-wizard-body .form-grid .table tbody td {
+    border: 0;
+    padding: 6px 8px;
+    vertical-align: middle;
+    background: transparent;
+}
+
+/* ---- Step 3 (User Types) — duty matrix positional helpers ----
+   Step 3 uses the real Frappe grid markup (.form-grid > .grid-heading-row /
+   .grid-body > .rows > .grid-row > .data-row.row > .col.grid-static-col), so
+   sizing/typography come from common/grid.scss. We only add layout helpers. */
+.grm-wizard-body .grm-perm-table .grm-duty-col {
+    text-align: center;
+    white-space: normal;
+    line-height: 1.2;
+    min-width: 64px;
+    max-width: 96px;
+    flex: 0 0 auto;
+    font-size: var(--text-xs, 11px);
+}
+.grm-wizard-body .grm-perm-table .grm-duty-cell {
+    text-align: center;
+    min-width: 64px;
+    max-width: 96px;
+    flex: 0 0 auto;
+}
+
+/* Click-to-edit cell affordance (admin level) — reuses --subtle-fg for hover. */
+.grm-wizard-body .grm-edit-cell {
+    cursor: pointer;
+}
+.grm-wizard-body .grm-edit-cell:hover {
+    background: var(--subtle-fg);
+}
+.grm-wizard-body .grm-edit-cell .grm-edit-placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ---- Discrete row-action icon buttons (Steps 4–12) ----
+   Mirrors Frappe's permissions_tab pencil/x affordance: no fill, subtle muted
+   icon, hover surfaces --subtle-fg for the chip. Reuse --text-muted /
+   --text-color / --red-500 so dark mode and theme switches work for free. */
+.grm-wizard-body .grm-row-action {
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    padding: 4px 6px;
+    border-radius: 6px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.grm-wizard-body .grm-row-action + .grm-row-action {
+    margin-left: 2px;
+}
+.grm-wizard-body .grm-row-action:hover {
+    background: var(--subtle-fg);
+    color: var(--text-color);
+}
+.grm-wizard-body .grm-row-action.grm-row-action-danger:hover {
+    color: var(--red-500);
+}
+.grm-wizard-body .grm-row-action .icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* ---- Override Frappe's `.column-limit-reached` `:last-child → 30px sticky` rule
+   for our wizard tables. Frappe uses that rule to reserve space for a trailing
+   settings cog; we don't render a cog (per UX), so the actual `_actions` col
+   would otherwise get clipped to 30px. Restore natural sizing — col-xs-N stays
+   in effect, and rows without col-xs simply size by content. */
+.grm-wizard-body .form-grid-container.column-limit-reached .form-grid.grm-perm-table .grid-row > .row .col:last-child,
+.grm-wizard-body .form-grid-container.column-limit-reached .form-grid.grm-dept-table .grid-row > .row .col:last-child {
+    max-width: none;
+    min-width: 0;
+    position: static;
+    z-index: auto;
+}
+
+/* ---- Bulk-action toolbar (Steps 3 + 4 + future) ----
+   Mirrors Frappe's grid-buttons row pattern: appears above the table when
+   one or more rows are selected via the row-check column. */
+.grm-wizard-body .grm-bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: var(--subtle-accent);
+    border: 1px solid var(--table-border-color);
+    border-radius: var(--border-radius-md);
+}
+.grm-wizard-body .grm-bulk-actions[hidden] {
+    display: none;
+}
+.grm-wizard-body .grm-bulk-actions .grm-bulk-count {
+    font-size: var(--text-sm, 12px);
+    color: var(--text-muted);
+    margin-right: auto;
+}
+
+/* ---- Checkbox column for HTML <table> wizard tables (Steps 5-12) ---- */
+.grm-wizard-body .grm-bulk-cell {
+    width: 32px;
+    padding: 4px 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+.grm-wizard-body .grm-bulk-cell input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+/* ---- Step 9 (Users) — list panel + pills ----
+   The Users step is a doctype-driven list where row-level pills (role /
+   level / region / status) double as inline editors. Pills are hit
+   targets that pop a small Awesomplete-backed picker; an unset value
+   shows as a dashed gray "(unset)" pill. */
+.grm-wizard-body .grm-step9-users-panel {
+    margin-bottom: 16px;
+}
+.grm-wizard-body .grm-step9-list-title {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #171717;
+}
+.grm-wizard-body .grm-step9-list-controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.grm-wizard-body .grm-step9-list-controls-row .grm-step9-search {
+    flex: 2 1 220px;
+    min-width: 180px;
+}
+.grm-wizard-body .grm-step9-list-controls-row select {
+    flex: 1 1 130px;
+    min-width: 130px;
+}
+.grm-wizard-body .grm-step9-pager {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted, #7C7C7C);
+    font-size: var(--text-sm, 12px);
+}
+.grm-wizard-body .grm-step9-bulk-extras {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.grm-wizard-body .grm-step9-bulk-extras[hidden] {
+    display: none;
+}
+
+.grm-wizard-body .grm-users-table {
+    width: 100%;
+    margin-bottom: 0;
+}
+.grm-wizard-body .grm-users-table th,
+.grm-wizard-body .grm-users-table td {
+    padding: 6px 10px;
+    vertical-align: middle;
+    font-size: var(--text-sm, 13px);
+}
+.grm-wizard-body .grm-users-table tbody tr:nth-child(even) {
+    background: #fbfbfa;
+}
+.grm-wizard-body .grm-step9-name {
+    font-weight: 500;
+    color: #171717;
+}
+.grm-wizard-body .grm-step9-email {
+    font-size: 12px;
+}
+.grm-wizard-body .grm-step9-empty {
+    padding: 24px;
+    text-align: center;
+    background: #fbfbfa;
+    border: 1px dashed #DADCDC;
+    border-radius: var(--border-radius-md, 6px);
+}
+
+/* ---- Pills ---- */
+.grm-wizard-body .grm-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 12px;
+    line-height: 1;
+    background: #EDEDED;
+    color: #171717;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.grm-wizard-body .grm-pill:hover:not(.grm-pill-readonly) {
+    border-color: rgba(0, 0, 0, 0.18);
+}
+.grm-wizard-body .grm-pill-readonly {
+    cursor: default;
+    opacity: 0.85;
+}
+.grm-wizard-body .grm-pill[data-empty="true"] {
+    background: transparent;
+    border: 1px dashed #C9CBCB;
+    color: #7C7C7C;
+    font-style: italic;
+}
+.grm-wizard-body .grm-pill-role {
+    background: #E6F1FB;
+    color: #1d6cb1;
+}
+.grm-wizard-body .grm-pill-level {
+    background: #E6F7EF;
+    color: #1da672;
+}
+.grm-wizard-body .grm-pill-region {
+    background: #F1ECF9;
+    color: #6e3fb6;
+}
+.grm-wizard-body .grm-pill-status-activated {
+    background: #E6F7EF;
+    color: #1da672;
+}
+.grm-wizard-body .grm-pill-status-pending-activation {
+    background: #FCEFD8;
+    color: #b07a1c;
+}
+.grm-wizard-body .grm-pill-status-draft {
+    background: #EDEDED;
+    color: #555;
+}
+.grm-wizard-body .grm-pill-status-suspended {
+    background: #FAE3E3;
+    color: #b04545;
+}
+.grm-wizard-body .grm-pill-status-expired {
+    background: #FAE3E3;
+    color: #b04545;
+}
+
+.grm-pill-popover {
+    background: #ffffff;
+    border: 1px solid #DADCDC;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+    padding: 8px 10px;
+    min-width: 220px;
+    max-width: 320px;
+}
+.grm-pill-popover .grm-pill-pop-label {
+    display: block;
+    font-size: 11px;
+    color: #7C7C7C;
+    margin-bottom: 4px;
+}
+
+.grm-wizard-body .grm-step9-placeholder {
+    padding: 16px;
+    border: 1px dashed #DADCDC;
+    border-radius: 6px;
+    background: #fbfbfa;
+}
+
+/* ---- Step 9 (Phase D) — Add panel: Single + Bulk toggle ---- */
+.grm-wizard-body .grm-step9-add-section {
+    margin-top: 16px;
+}
+.grm-wizard-body .grm-step9-add-toggle {
+    display: inline-flex;
+    gap: 0;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #d6dadd;
+}
+.grm-wizard-body .grm-step9-add-toggle .btn {
+    border-radius: 0;
+    border: none;
+    background: #f7f8f9;
+    color: #4a4f53;
+    padding: 6px 14px;
+}
+.grm-wizard-body .grm-step9-add-toggle .btn + .btn {
+    border-left: 1px solid #d6dadd;
+}
+.grm-wizard-body .grm-step9-add-toggle .btn.active {
+    background: #2e86de;
+    color: #fff;
+}
+.grm-wizard-body .grm-step9-add-form {
+    border: 1px solid #DADCDC;
+    border-radius: 6px;
+    padding: 16px;
+    background: #fff;
+}
+.grm-wizard-body .grm-step9-add-form h5 {
+    margin-top: 0;
+    margin-bottom: 14px;
+}
+.grm-wizard-body .grm-step9-add-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+.grm-wizard-body .grm-region-cascade {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+}
+.grm-wizard-body .grm-region-cascade-slot {
+    display: inline-block;
+    margin-right: 8px;
+    margin-bottom: 6px;
+    min-width: 180px;
+    flex: 0 0 auto;
+}
+
+/* ---- Step 9 (Phase E) — Bulk import 4-stage flow ---- */
+.grm-wizard-body .grm-step9-bulk-stages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.grm-wizard-body .grm-step9-bulk-stages .grm-stage {
+    background: #f1f3f5;
+    color: #4a4f53;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #d6dadd;
+}
+.grm-wizard-body .grm-step9-bulk-stages .grm-stage.active {
+    background: #2e86de;
+    color: #fff;
+    border-color: #2e86de;
+}
+.grm-wizard-body .grm-step9-bulk-stages .grm-stage.done {
+    background: #e0f4ec;
+    color: #1f7a55;
+    border-color: #b3e8d1;
+}
+.grm-wizard-body .grm-step9-upload-zone {
+    border: 2px dashed #c4c8cc;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    background: #fafbfc;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.grm-wizard-body .grm-step9-upload-zone:hover {
+    background: #f3f6fa;
+    border-color: #2e86de;
+}
+.grm-wizard-body .grm-step9-upload-zone.dragging {
+    border-style: solid;
+    border-color: #2e86de;
+    background: #e8f1fb;
+}
+.grm-wizard-body .grm-step9-upload-zone .grm-upload-icon {
+    font-size: 28px;
+    color: #6c7378;
+    margin-bottom: 8px;
+}
+.grm-wizard-body .grm-upload-status {
+    margin-top: 10px;
+}
+.grm-wizard-body .grm-mapper-table-wrap {
+    max-height: 460px;
+    overflow: auto;
+    border: 1px solid #e2e5e8;
+    border-radius: 6px;
+}
+.grm-wizard-body .grm-mapper-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.grm-wizard-body .grm-mapper-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f7f8f9;
+    border-bottom: 1px solid #e2e5e8;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    z-index: 1;
+}
+.grm-wizard-body .grm-mapper-table tbody td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #eef0f2;
+    vertical-align: middle;
+}
+.grm-wizard-body .grm-mapper-table code {
+    font-family: SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px;
+    background: transparent;
+    padding: 0;
+}
+.grm-wizard-body .grm-mapper-banner {
+    margin-bottom: 10px;
+}
+.grm-wizard-body .grm-mapper-options {
+    margin-top: 10px;
+}
+.grm-wizard-body .grm-preview-table-wrap {
+    max-height: 400px;
+    overflow: auto;
+    border: 1px solid #e2e5e8;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+.grm-wizard-body .grm-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.grm-wizard-body .grm-preview-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f7f8f9;
+    border-bottom: 1px solid #e2e5e8;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+}
+.grm-wizard-body .grm-preview-table tbody td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #eef0f2;
+}
+.grm-wizard-body .grm-import-progress {
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid #e2e5e8;
+    border-radius: 6px;
+    background: #fbfbfc;
+}
+.grm-wizard-body .grm-import-progress progress.grm-progress-bar {
+    width: 100%;
+    height: 12px;
+}
+.grm-wizard-body .grm-progress-text {
+    margin: 6px 0 4px;
+}
+.grm-wizard-body .grm-progress-log {
+    max-height: 200px;
+    overflow: auto;
+    font-family: SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    background: #f7f8f9;
+    padding: 8px;
+    border-radius: 4px;
+    margin: 0;
+}
+
+/* ---- Activation step accent ---- */
+.grm-wizard .activation-card {
+    background: linear-gradient(135deg, #edfaf4 0%, #ffffff 100%);
+    border: 1px solid #b3e8d1;
+    border-radius: 12px;
+    padding: 24px;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .grm-wizard {
+        padding: 16px 12px 32px;
+    }
+    .grm-wizard-stepper {
+        gap: 10px;
+        padding: 12px 14px;
+    }
+    .grm-wizard-stepper .grm-step {
+        width: 7px;
+        height: 7px;
+    }
+    .grm-wizard-title {
+        font-size: 20px;
+    }
+}

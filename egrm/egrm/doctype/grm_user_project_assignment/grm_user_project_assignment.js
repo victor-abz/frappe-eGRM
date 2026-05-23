@@ -43,53 +43,6 @@ frappe.ui.form.on("GRM User Project Assignment", {
 		});
 	},
 
-	validate: function (frm) {
-		// Validate role has correct department/region based on role
-		if (frm.doc.role === "GRM Department Head" && !frm.doc.department) {
-			frappe.msgprint({
-				title: __("Validation Error"),
-				indicator: "red",
-				message: __("Department Head role requires a department to be specified."),
-			});
-			validated = false;
-		}
-
-		if (frm.doc.role === "GRM Field Officer" && !frm.doc.administrative_region) {
-			frappe.msgprint({
-				title: __("Validation Error"),
-				indicator: "red",
-				message: __(
-					"Field Officer role requires an administrative region to be specified."
-				),
-			});
-			validated = false;
-		}
-	},
-
-	role: function (frm) {
-		// When role changes, show/hide appropriate fields
-		if (frm.doc.role === "GRM Department Head") {
-			frm.toggle_reqd("department", true);
-			frm.toggle_reqd("administrative_region", false);
-
-			if (!frm.doc.department) {
-				frappe.msgprint(__("Please select a department for the Department Head."));
-			}
-		} else if (frm.doc.role === "GRM Field Officer") {
-			frm.toggle_reqd("administrative_region", true);
-			frm.toggle_reqd("department", false);
-
-			if (!frm.doc.administrative_region) {
-				frappe.msgprint(
-					__("Please select an administrative region for the Field Officer.")
-				);
-			}
-		} else {
-			frm.toggle_reqd("department", false);
-			frm.toggle_reqd("administrative_region", false);
-		}
-	},
-
 	project: function (frm) {
 		// Clear department and region when project changes
 		frm.set_value("department", "");
@@ -190,7 +143,7 @@ function add_activation_buttons(frm) {
 	}
 
 	// Manual Activate Worker button (for admins)
-	if (status !== "Activated" && frappe.user.has_role(["System Manager", "GRM Administrator"])) {
+	if (status !== "Activated" && frappe.user.has_role(["System Manager", "GRM Platform Administrator"])) {
 		frm.add_custom_button(
 			__("Manual Activate"),
 			function () {
@@ -245,7 +198,7 @@ function add_activation_buttons(frm) {
 	// Expire Code button (for admins)
 	if (
 		status === "Pending Activation" &&
-		frappe.user.has_role(["System Manager", "GRM Administrator"])
+		frappe.user.has_role(["System Manager", "GRM Platform Administrator"])
 	) {
 		frm.add_custom_button(
 			__("Expire Code"),
@@ -313,7 +266,7 @@ function style_activation_status(frm) {
 frappe.listview_settings["GRM User Project Assignment"] = {
 	onload: function (listview) {
 		// Add Export Activation Codes button for admins
-		if (frappe.user.has_role(["System Manager", "GRM Administrator", "GRM Project Manager"])) {
+		if (frappe.user.has_role(["System Manager", "GRM Platform Administrator", "GRM Supervise"])) {
 			listview.page.add_inner_button(__("Export Activation Codes"), function () {
 				let d = new frappe.ui.Dialog({
 					title: __("Export Activation Codes"),

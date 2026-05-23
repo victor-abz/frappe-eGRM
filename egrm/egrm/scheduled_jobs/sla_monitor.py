@@ -101,7 +101,7 @@ def _notify_admins_sla_summary(stats):
 	"""
 
 	admins = frappe.get_all(
-		"Has Role", filters={"role": "GRM Administrator"}, pluck="parent"
+		"Has Role", filters={"role": "GRM Platform Administrator"}, pluck="parent"
 	)
 	if admins:
 		frappe.sendmail(recipients=list(set(admins)), subject=subject, message=message)

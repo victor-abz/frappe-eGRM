@@ -161,10 +161,20 @@ class SLAManager:
 			return False
 
 		old_region = self.issue.administrative_region
+		old_assignee = self.issue.assignee
 		self.issue.administrative_region = current_region.parent_region
 
 		# Recalculate SLA with new level
 		self.initialize_sla()
+
+		# Re-route the assignee at the new region. The old assignee belongs
+		# to the lower region and has no authority at the parent; clearing
+		# `assignee` first lets the resolver pick a fresh duty-holder.
+		from egrm.services.assignee_routing import resolve_assignee
+		self.issue.assignee = None
+		new_user, reason = resolve_assignee(self.issue)
+		if new_user:
+			self.issue.assignee = new_user
 
 		self.issue.escalation_count = (self.issue.escalation_count or 0) + 1
 		self.issue.last_escalated_date = now_datetime()
@@ -175,6 +185,10 @@ class SLAManager:
 		self.issue.add_comment(
 			"Info",
 			f"Issue auto-escalated to {current_region.parent_region} due to SLA breach"
+		)
+		self.issue.add_comment(
+			"Info",
+			f"Reassigned from {old_assignee or '∅'} to {new_user or '∅'} ({reason})"
 		)
 
 		self.issue.save(ignore_permissions=True)

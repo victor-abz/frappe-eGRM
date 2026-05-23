@@ -10,6 +10,8 @@ import frappe
 from frappe import _
 from frappe.utils import get_datetime
 
+from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
+
 # Configure logging
 log = logging.getLogger(__name__)
 
@@ -26,19 +28,32 @@ def get_user_projects():
         user = frappe.session.user
         frappe.log(f"Getting projects for user: {user}")
 
-        # Check if user is Administrator or has System Manager role (full access)
-        if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+        # Check if user is Administrator or has an all-projects GRM role (full access)
+        if user == "Administrator" or set(frappe.get_roles(user)) & GRM_ALL_PROJECTS_ROLES:
             projects = frappe.get_all(
-                "GRM Project", fields=["name", "project_name", "description", "active"]
+                "GRM Project",
+                fields=[
+                    "name",
+                    "title as project_name",
+                    "project_code",
+                    "description",
+                    "is_active as active",
+                ],
+                ignore_permissions=True,
             )
             frappe.log(f"Admin user, returning all {len(projects)} projects")
             return {"status": "success", "data": projects}
 
-        # Get projects assigned to the user
+        # Get projects assigned to the user (active + activated)
         assignments = frappe.get_all(
             "GRM User Project Assignment",
-            filters={"user": user, "active": 1},
+            filters={
+                "user": user,
+                "is_active": 1,
+                "activation_status": ["in", ("Activated", "")],
+            },
             fields=["project"],
+            ignore_permissions=True,
         )
 
         if not assignments:
@@ -49,8 +64,15 @@ def get_user_projects():
         project_names = [a.project for a in assignments]
         projects = frappe.get_all(
             "GRM Project",
-            filters={"name": ["in", project_names], "active": 1},
-            fields=["name", "project_name", "description", "active"],
+            filters={"name": ["in", project_names], "is_active": 1},
+            fields=[
+                "name",
+                "title as project_name",
+                "project_code",
+                "description",
+                "is_active as active",
+            ],
+            ignore_permissions=True,
         )
 
         frappe.log(f"Returning {len(projects)} projects for user {user}")

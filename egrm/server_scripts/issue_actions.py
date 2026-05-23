@@ -2,7 +2,20 @@ import logging
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
+from frappe.utils import date_diff, now_datetime
+
+from egrm.egrm.doctype.grm_issue.grm_issue import _user_has_duty
+
+
+def _is_self_submission(doc) -> bool:
+    """A self-submission is one the current user filed for themselves.
+
+    The Accept / Reject actions normally require the Review duty, but a
+    staff member who files their own issue is also their own triager and
+    is allowed to accept or reject it without a separate Reviewer.
+    """
+    user = frappe.session.user
+    return bool(doc.reporter and doc.reporter == user and doc.assignee == user)
 
 log = logging.getLogger(__name__)
 
@@ -61,78 +74,119 @@ def change_status(issue, status, comment):
 
 @frappe.whitelist()
 def escalate_issue(issue, reason, due_at):
-    """
-    Escalate an issue and add an escalation reason
+    """Escalate an issue up the region chain and re-route the assignee.
+
+    The current assignee belongs to the lower region and has no authority
+    at the parent. After moving the issue to the parent region we clear
+    the assignee, re-resolve it at the new region, and reset the status
+    to the project's initial status so the new assignee sees Accept on
+    the desk. `escalate_flag` is cleared after the structural move so the
+    new assignee can escalate again if needed; `escalation_count` is the
+    durable record of how many hops the issue has taken.
     """
     try:
         if not issue or not reason or not due_at:
             frappe.throw(_("Missing required parameters"))
 
-        # Get the issue document
         doc = frappe.get_doc("GRM Issue", issue)
         if not doc:
             frappe.throw(_("Issue not found"))
 
-        # Set escalation flag
-        doc.escalate_flag = 1
+        # The current assignee is the only persona authorized to escalate
+        # their own assignment. Higher-region users get the issue only
+        # after this call re-routes it to them.
+        if doc.assignee != frappe.session.user:
+            frappe.throw(_("You are not assigned to this issue"))
 
-        # Add escalation reason
+        if not _user_has_duty(
+            frappe.session.user, "Investigate & Resolve", doc.project
+        ):
+            frappe.throw(
+                _("You need the Investigate & Resolve duty to escalate this issue."),
+                frappe.PermissionError,
+            )
+
+        current_region = frappe.get_doc(
+            "GRM Administrative Region", doc.administrative_region
+        )
+        if not current_region.parent_region:
+            frappe.throw(
+                _("Cannot escalate: already at the top of the region chain.")
+            )
+
+        old_region = doc.administrative_region
+        old_assignee = doc.assignee
+
+        # Record the escalation reason against the *current* level before
+        # moving up; the reason explains why this level couldn't resolve.
         doc.append(
             "grm_issue_escalation_reason",
             {"user": frappe.session.user, "comment": reason, "due_at": due_at},
         )
 
-        # Add log entry
-        log_text = _("Issue escalated: {0}").format(reason)
+        # Structural move: parent region + reset to initial status so the
+        # new assignee picks up a fresh in-progress issue with the Accept
+        # button available.
+        doc.administrative_region = current_region.parent_region
+        initial_status = get_initial_status(doc.project)
+        if initial_status:
+            doc.status = initial_status
+
+        # Re-route assignee. Clearing first prevents the resolver from
+        # re-picking the now-out-of-scope user.
+        from egrm.services.assignee_routing import resolve_assignee
+        doc.assignee = None
+        new_user, routing_reason = resolve_assignee(doc)
+        if new_user:
+            doc.assignee = new_user
+
+        doc.escalation_count = (doc.escalation_count or 0) + 1
+        doc.last_escalated_date = now_datetime()
+        # Treat escalate_flag as transient: it's set during the hop and
+        # cleared once the issue lands at the new level so the new
+        # assignee's action buttons (Accept → Escalate / Resolve) are
+        # enabled. `escalation_count` is the durable record.
+        doc.escalate_flag = 0
+
         doc.append(
             "grm_issue_log",
             {
-                "text": log_text,
+                "text": _("Issue escalated from {0} to {1}: {2}").format(
+                    old_region, current_region.parent_region, reason
+                ),
                 "user": frappe.session.user,
                 "timestamp": now_datetime(),
             },
         )
+        doc.add_comment(
+            "Info",
+            _("Reassigned from {0} to {1} ({2})").format(
+                old_assignee or "∅", new_user or "∅", routing_reason
+            ),
+        )
 
-        # Get escalation department for the category
-        category_doc = frappe.get_doc("GRM Issue Category", doc.category)
-        if category_doc.assigned_escalation_department:
-            # Get department head
-            dept_head = frappe.db.get_value(
-                "GRM Issue Department",
-                category_doc.assigned_escalation_department,
-                "head",
-            )
+        # The duty + assignee checks above authorize this action; bypass
+        # the field-level duty matrix so the status reset back to initial
+        # doesn't trip the Review-duty gate.
+        doc.flags.ignore_permissions = True
+        doc.save()
 
-            if dept_head:
-                # Assign to department head
-                doc.assignee = dept_head
-
-                # Add log entry
-                log_text = _(
-                    "Issue assigned to escalation department head: {0}"
-                ).format(dept_head)
-                doc.append(
-                    "grm_issue_log",
-                    {
-                        "text": log_text,
-                        "user": frappe.session.user,
-                        "timestamp": now_datetime(),
-                    },
-                )
-
-                # Notify department head
+        # Notify the new assignee that the issue has landed in their queue.
+        if new_user:
+            try:
                 send_notification(
-                    dept_head,
-                    _("Issue Escalated"),
+                    new_user,
+                    _("Issue Escalated to You"),
                     _("Issue {0} has been escalated to you").format(doc.name),
                 )
-
-        # Save the document
-        doc.save()
+            except Exception:
+                pass
 
         return True
     except Exception as e:
-        frappe.log_error(f"Error escalating issue: {str(e)}")
+        # Title goes to Error Log's `method` column (varchar 140); keep
+        # it short to avoid a secondary "Data too long" insert failure.
+        frappe.log_error(title="escalate_issue failed", message=str(e))
         frappe.throw(_("Error escalating issue: {0}").format(str(e)))
         return False
 
@@ -202,6 +256,18 @@ def accept_issue(issue):
         if doc.assignee != frappe.session.user:
             frappe.throw(_("You are not assigned to this issue"))
 
+        # Accept moves the issue out of the intake/initial status, so it
+        # is a status-change action gated by the Review duty. A self-
+        # submission (reporter == assignee == session user) bypasses
+        # the Review requirement because the same staff member filing
+        # an issue for themselves implicitly triages it.
+        if not _is_self_submission(doc):
+            if not _user_has_duty(frappe.session.user, "Review", doc.project):
+                frappe.throw(
+                    _("You need the Review duty to accept this issue."),
+                    frappe.PermissionError,
+                )
+
         # Get open status for the project
         open_status = get_open_status(doc.project)
         if not open_status:
@@ -216,7 +282,11 @@ def accept_issue(issue):
         log_text = _("Issue accepted and assigned for processing")
         add_comment_and_log(doc, comment_text, log_text, "Accepted issue")
 
-        # Save the document
+        # The duty check above is the authoritative gate for this action;
+        # the field-level duty matrix is suppressed so that a self-
+        # submitting staff member without Review duty isn't blocked at
+        # save() time on the same field they were just authorized to change.
+        doc.flags.ignore_permissions = True
         doc.save()
 
         return True
@@ -244,6 +314,15 @@ def reject_issue(issue, reason):
         if doc.assignee != frappe.session.user:
             frappe.throw(_("You are not assigned to this issue"))
 
+        # Reject is a status-change action gated by Review duty, with
+        # the same self-submission exception as Accept.
+        if not _is_self_submission(doc):
+            if not _user_has_duty(frappe.session.user, "Review", doc.project):
+                frappe.throw(
+                    _("You need the Review duty to reject this issue."),
+                    frappe.PermissionError,
+                )
+
         # Get rejected status for the project
         rejected_status = get_rejected_status(doc.project)
         if not rejected_status:
@@ -261,6 +340,11 @@ def reject_issue(issue, reason):
         )
         log_text = _("Issue rejected with provided reason")
         add_comment_and_log(doc, comment_text, log_text, "Rejected issue")
+
+        # Assignee guard (above) authorizes this action; bypass the
+        # field-level duty matrix so a resolver can reject their own
+        # auto-routed assignment.
+        doc.flags.ignore_permissions = True
 
         # Save the document
         doc.save()
@@ -337,6 +421,21 @@ def record_resolution(issue, resolution):
         if doc.assignee != frappe.session.user:
             frappe.throw(_("You are not assigned to this issue"))
 
+        # Record Resolution is the Resolver's action: it requires the
+        # Investigate & Resolve duty. The status transition (open ->
+        # final) is part of this authorised flow, so the field-level
+        # Review-duty gate on `status` is suppressed below.
+        if not _user_has_duty(
+            frappe.session.user, "Investigate & Resolve", doc.project
+        ):
+            frappe.throw(
+                _(
+                    "You need the Investigate & Resolve duty to record a"
+                    " resolution for this issue."
+                ),
+                frappe.PermissionError,
+            )
+
         # Get final status for the project
         final_status = get_final_status(doc.project)
         if not final_status:
@@ -348,17 +447,20 @@ def record_resolution(issue, resolution):
         doc.resolved_by = frappe.session.user
         doc.resolution_date = now_datetime()
 
-        # Calculate resolution days
+        # Calculate resolution days. frappe.utils.date_diff handles the
+        # Date/Datetime mismatch via getdate() on both arguments.
         if doc.issue_date:
-            delta = doc.resolution_date - doc.issue_date
-            doc.resolution_days = delta.days
+            doc.resolution_days = date_diff(doc.resolution_date, doc.issue_date)
 
         # Add comment and log
         comment_text = _("Issue was resolved by {0}").format(frappe.session.user)
         log_text = _("Issue has been marked as resolved")
         add_comment_and_log(doc, comment_text, log_text, "Resolved issue")
 
-        # Save the document
+        # Assignee guard (above) authorizes this action; bypass the
+        # field-level duty matrix so a resolver can resolve their own
+        # auto-routed assignment without holding the Review duty.
+        doc.flags.ignore_permissions = True
         doc.save()
 
         return True

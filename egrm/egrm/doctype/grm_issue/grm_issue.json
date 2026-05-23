@@ -12,6 +12,8 @@
   "column_break_zvuc",
   "project",
   "category",
+  "assigned_department",
+  "assigned_role",
   "issue_type",
   "tracking_code",
   "_sync_name",
@@ -58,6 +60,7 @@
   "appeal_section",
   "appeal_submitted",
   "appeal_date",
+  "appeal_reason",
   "amended_from",
   "assignment_tab",
   "assignment_section",
@@ -73,6 +76,8 @@
   "column_break_4",
   "resolution_accepted",
   "rating",
+  "rating_comment",
+  "rating_submitted_at",
   "escalate_flag",
   "confirmed",
   "sb_sla",
@@ -246,6 +251,20 @@
    "reqd": 1
   },
   {
+   "fieldname": "assigned_department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Assigned Department",
+   "options": "GRM Issue Department"
+  },
+  {
+   "fieldname": "assigned_role",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Assigned Role",
+   "options": "GRM Project Role"
+  },
+  {
    "fieldname": "issue_type",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -268,18 +287,21 @@
    "read_only": 1
   },
   {
+   "default": "Today",
    "fieldname": "intake_date",
    "fieldtype": "Date",
    "label": "Intake Date",
    "reqd": 1
   },
   {
+   "default": "Today",
    "fieldname": "issue_date",
    "fieldtype": "Date",
    "label": "Issue Date",
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "administrative_region",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -312,6 +334,20 @@
    "fieldname": "rating",
    "fieldtype": "Int",
    "label": "Rating",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "rating_comment",
+   "fieldtype": "Small Text",
+   "label": "Rating Comment",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "rating_submitted_at",
+   "fieldtype": "Datetime",
+   "label": "Rating Submitted At",
    "read_only": 1
   },
   {
@@ -484,6 +520,14 @@
    "fieldname": "appeal_date",
    "fieldtype": "Datetime",
    "label": "Appeal Date",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "appeal_submitted",
+   "fieldname": "appeal_reason",
+   "fieldtype": "Small Text",
+   "label": "Appeal Reason",
    "read_only": 1
   },
   {
@@ -744,8 +788,6 @@
    "write": 1
   },
   {
-   "amend": 1,
-   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -753,48 +795,61 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRM Administrator",
+   "role": "GRM Platform Administrator",
    "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Intake",
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Review",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Assignment",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Investigate & Resolve",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "GRM Feedback",
    "submit": 1,
    "write": 1
   },
   {
    "amend": 1,
    "cancel": 1,
-   "create": 1,
+   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRM Project Manager",
+   "role": "GRM Supervise",
    "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "amend": 1,
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "GRM Department Head",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "GRM Field Officer",
-   "share": 1,
-   "submit": 1,
    "write": 1
   }
  ],

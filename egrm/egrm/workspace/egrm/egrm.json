@@ -1,0 +1,83 @@
+{
+  "app": "egrm",
+  "charts": [],
+  "content": "[{\"id\":\"sec-shortcuts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Log a Grievance\",\"col\":4}},{\"id\":\"sec-shortcuts-open\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Open Issues\",\"col\":4}},{\"id\":\"sec-shortcuts-drafts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"My Drafts\",\"col\":4}},{\"id\":\"sec-intake\",\"type\":\"card\",\"data\":{\"card_name\":\"Intake\",\"col\":4}},{\"id\":\"sec-feedback\",\"type\":\"card\",\"data\":{\"card_name\":\"Feedback\",\"col\":4}},{\"id\":\"sec-oversight\",\"type\":\"card\",\"data\":{\"card_name\":\"Oversight\",\"col\":4}},{\"id\":\"sec-admin-projects\",\"type\":\"card\",\"data\":{\"card_name\":\"Projects\",\"col\":4}},{\"id\":\"sec-admin-users\",\"type\":\"card\",\"data\":{\"card_name\":\"Users & Access\",\"col\":4}},{\"id\":\"sec-admin-system\",\"type\":\"card\",\"data\":{\"card_name\":\"System\",\"col\":4}}]",
+  "creation": "2026-04-25 00:00:00",
+  "doctype": "Workspace",
+  "for_user": "",
+  "icon": "grievance",
+  "is_hidden": 0,
+  "label": "eGRM",
+  "shortcuts": [
+    {
+      "color": "Green",
+      "doc_view": "New",
+      "format": "New",
+      "label": "Log a Grievance",
+      "link_to": "GRM Issue",
+      "type": "DocType"
+    },
+    {
+      "color": "Yellow",
+      "format": "{} Open",
+      "label": "Open Issues",
+      "link_to": "GRM Unresolved",
+      "report_ref_doctype": "GRM Issue",
+      "stats_filter": "{\"docstatus\": 1, \"resolution_date\": [\"is\", \"not set\"]}",
+      "type": "Report"
+    },
+    {
+      "color": "Grey",
+      "format": "{} Draft",
+      "label": "My Drafts",
+      "link_to": "GRM Drafts",
+      "report_ref_doctype": "GRM Issue",
+      "stats_filter": "{\"docstatus\": 0}",
+      "type": "Report"
+    }
+  ],
+  "links": [
+    { "label": "Intake", "link_count": 3, "link_type": "DocType", "type": "Card Break" },
+    { "label": "All Issues", "link_to": "GRM Issue", "link_type": "DocType", "type": "Link" },
+    { "label": "Open Issues", "link_to": "GRM Unresolved", "link_type": "Report", "report_ref_doctype": "GRM Issue", "is_query_report": 0, "type": "Link" },
+    { "label": "Drafts", "link_to": "GRM Drafts", "link_type": "Report", "report_ref_doctype": "GRM Issue", "is_query_report": 0, "type": "Link" },
+
+    { "label": "Feedback", "link_count": 1, "link_type": "DocType", "type": "Card Break" },
+    { "label": "Appeals", "link_to": "GRM Appeals", "link_type": "Report", "report_ref_doctype": "GRM Issue", "is_query_report": 0, "type": "Link" },
+
+    { "label": "Oversight", "link_count": 1, "link_type": "DocType", "type": "Card Break" },
+    { "label": "Escalations", "link_to": "GRM Escalations", "link_type": "Report", "report_ref_doctype": "GRM Issue", "is_query_report": 0, "type": "Link" },
+
+    { "label": "Projects", "link_count": 2, "link_type": "DocType", "type": "Card Break" },
+    { "label": "All Projects", "link_to": "GRM Project", "link_type": "DocType", "type": "Link" },
+    { "label": "Onboard New Project", "link_to": "grm-project-wizard", "link_type": "Page", "type": "Link" },
+
+    { "label": "Users & Access", "link_count": 2, "link_type": "DocType", "type": "Card Break" },
+    { "label": "Users by Project", "link_to": "grm-users", "link_type": "Page", "type": "Link" },
+    { "label": "Frappe Users (raw)", "link_to": "User", "link_type": "DocType", "type": "Link" },
+
+    { "label": "System", "link_count": 3, "link_type": "DocType", "type": "Card Break" },
+    { "label": "Administrative Level Types", "link_to": "GRM Administrative Level Type", "link_type": "DocType", "type": "Link" },
+    { "label": "Android App Versions", "link_to": "Android App Version", "link_type": "DocType", "type": "Link" },
+    { "label": "Duties Catalog", "link_to": "GRM Duty", "link_type": "DocType", "type": "Link" }
+  ],
+  "modified": "2026-05-09 14:00:00",
+  "modified_by": "Administrator",
+  "module": "egrm",
+  "name": "eGRM",
+  "owner": "Administrator",
+  "public": 1,
+  "roles": [
+    { "role": "GRM Intake" },
+    { "role": "GRM Review" },
+    { "role": "GRM Assignment" },
+    { "role": "GRM Investigate & Resolve" },
+    { "role": "GRM Feedback" },
+    { "role": "GRM Supervise" },
+    { "role": "GRM Platform Administrator" },
+    { "role": "System Manager" }
+  ],
+  "sequence_id": 1.0,
+  "title": "eGRM",
+  "type": "Workspace"
+}

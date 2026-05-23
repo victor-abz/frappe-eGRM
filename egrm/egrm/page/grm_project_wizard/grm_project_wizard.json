@@ -1,0 +1,17 @@
+{
+  "creation": "2026-04-25 00:00:00",
+  "doctype": "Page",
+  "icon": "settings",
+  "modified": "2026-04-25 00:00:00",
+  "module": "egrm",
+  "name": "grm-project-wizard",
+  "owner": "Administrator",
+  "page_name": "grm-project-wizard",
+  "roles": [
+    { "role": "System Manager" },
+    { "role": "GRM Platform Administrator" },
+    { "role": "GRM Supervise" }
+  ],
+  "standard": "Yes",
+  "title": "Project Setup Wizard"
+}

@@ -1,9 +1,10 @@
 {
  "actions": [],
- "autoname": "field:level_name",
+ "autoname": "hash",
  "creation": "2025-05-17 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
+ "title_field": "level_name",
  "field_order": [
   "level_name",
   "level_order",
@@ -21,8 +22,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Level Name",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "level_order",
@@ -81,55 +81,68 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-21 22:23:00.960021",
+ "modified": "2026-05-08 14:30:00.000000",
  "modified_by": "Administrator",
  "module": "egrm",
  "name": "GRM Administrative Level Type",
- "naming_rule": "By fieldname",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
    "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
+   "read": 1,
+   "write": 1,
    "create": 1,
    "delete": 1,
-   "email": 1,
-   "export": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
-   "role": "GRM Administrator",
-   "share": 1,
-   "write": 1
+   "export": 1,
+   "share": 1
   },
   {
+   "role": "GRM Platform Administrator",
+   "read": 1,
+   "write": 1,
    "create": 1,
-   "email": 1,
-   "export": 1,
+   "delete": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
-   "role": "GRM Project Manager",
-   "share": 1,
-   "write": 1
+   "export": 1,
+   "share": 1
   },
   {
+   "role": "GRM Supervise",
    "read": 1,
-   "role": "GRM Department Head"
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
   },
   {
+   "role": "GRM Intake",
    "read": 1,
-   "role": "GRM Field Officer"
+   "report": 1
+  },
+  {
+   "role": "GRM Review",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "GRM Assignment",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "GRM Investigate & Resolve",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "GRM Feedback",
+   "read": 1,
+   "report": 1
   }
  ],
  "row_format": "Dynamic",

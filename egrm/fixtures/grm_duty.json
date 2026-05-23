@@ -1,0 +1,68 @@
+[
+ {
+  "description": "Create new GRM Issues. Combines Uptake and Data Entry from the WB template (digital-only).",
+  "docstatus": 0,
+  "doctype": "GRM Duty",
+  "duty_name": "Intake",
+  "icon": "inbox",
+  "label": "Intake",
+  "lifecycle_phase": "Intake",
+  "modified": "2026-05-09 23:13:19.014732",
+  "name": "Intake"
+ },
+ {
+  "description": "Validate categorisation, eligibility, severity. Move issues from Submitted to Reviewed/Rejected.",
+  "docstatus": 0,
+  "doctype": "GRM Duty",
+  "duty_name": "Review",
+  "icon": "check-circle",
+  "label": "Review",
+  "lifecycle_phase": "Triage",
+  "modified": "2026-05-09 23:13:19.234839",
+  "name": "Review"
+ },
+ {
+  "description": "Set or change the issue assignee, route to a department or admin level.",
+  "docstatus": 0,
+  "doctype": "GRM Duty",
+  "duty_name": "Assignment",
+  "icon": "users",
+  "label": "Assignment",
+  "lifecycle_phase": "Triage",
+  "modified": "2026-05-09 23:13:19.236477",
+  "name": "Assignment"
+ },
+ {
+  "description": "Add comments, evidence, and propose a resolution. Submit the issue.",
+  "docstatus": 0,
+  "doctype": "GRM Duty",
+  "duty_name": "Investigate & Resolve",
+  "icon": "search",
+  "label": "Investigate & Resolve",
+  "lifecycle_phase": "Resolution",
+  "modified": "2026-05-09 23:13:19.242609",
+  "name": "Investigate & Resolve"
+ },
+ {
+  "description": "Track citizen rating, manage the appeal flow, close the issue.",
+  "docstatus": 0,
+  "doctype": "GRM Duty",
+  "duty_name": "Feedback",
+  "icon": "message-square",
+  "label": "Feedback",
+  "lifecycle_phase": "Feedback",
+  "modified": "2026-05-09 23:13:19.243661",
+  "name": "Feedback"
+ },
+ {
+  "description": "Read all in-scope issues, force-reassign/close, view dashboards, manage user assignments within scope.",
+  "docstatus": 0,
+  "doctype": "GRM Duty",
+  "duty_name": "Supervise",
+  "icon": "bar-chart",
+  "label": "Supervise",
+  "lifecycle_phase": "Oversight",
+  "modified": "2026-05-09 23:13:19.244610",
+  "name": "Supervise"
+ }
+]

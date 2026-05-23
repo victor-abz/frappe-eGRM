@@ -15,10 +15,13 @@ import frappe
 from egrm.egrm.doctype.egrm_settings.egrm_settings import get_portal_visibility
 
 STAFF_ROLES = {
-    "GRM Administrator",
-    "GRM Project Manager",
-    "GRM Department Head",
-    "GRM Field Officer",
+    "GRM Intake",
+    "GRM Review",
+    "GRM Assignment",
+    "GRM Investigate & Resolve",
+    "GRM Feedback",
+    "GRM Supervise",
+    "GRM Platform Administrator",
     "System Manager",
 }
 
