@@ -94,17 +94,20 @@ def get_department_categories():
     departments = get_my_departments()
     if not departments:
         return []
-        
-    department_list = "', '".join(departments)
-    
+
     # Department dashboards intentionally exclude role-routed categories —
     # they may carry a stale ``assigned_department`` from a legacy
     # migration but their canonical target is a project role.
-    categories = frappe.db.sql(f"""
+    placeholders = ", ".join(["%s"] * len(departments))
+    categories = frappe.db.sql(
+        f"""
         SELECT name
         FROM `tabGRM Issue Category`
-        WHERE assigned_department IN ('{department_list}')
+        WHERE assigned_department IN ({placeholders})
           AND (routing_target_type IS NULL OR routing_target_type = 'Department')
-    """, as_dict=1)
+        """,
+        tuple(departments),
+        as_dict=1,
+    )
 
     return [c.name for c in categories] if categories else []

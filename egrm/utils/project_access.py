@@ -16,8 +16,33 @@ from __future__ import annotations
 
 import frappe
 
+from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
+
 # Platform-wide roles always bypass project scoping.
 PLATFORM_ROLES = {"System Manager", "GRM Platform Administrator"}
+
+
+def get_user_accessible_projects(user: str) -> list[str]:
+    """Return the list of GRM Project names a user can access (web/stats scope).
+
+    Admins and all-projects roles see every project; otherwise the user
+    sees the projects they hold an active assignment for.
+
+    Note: the mobile sync layer (`egrm.api.sync`) uses a stricter variant
+    that also requires `activation_status = 'Activated'` on the assignment.
+    Web/stats contexts don't gate on mobile activation, so they call this
+    helper instead.
+    """
+    if user == "Administrator" or GRM_ALL_PROJECTS_ROLES & set(frappe.get_roles(user)):
+        projects = frappe.get_all("GRM Project", fields=["name"])
+        return [p.name for p in projects]
+
+    assignments = frappe.get_all(
+        "GRM User Project Assignment",
+        filters={"user": user, "is_active": 1},
+        fields=["project"],
+    )
+    return [a.project for a in assignments]
 
 
 def is_platform_admin(user: str | None = None) -> bool:

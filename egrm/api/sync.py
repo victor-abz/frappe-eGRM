@@ -1615,7 +1615,18 @@ def watermelon_to_frappe_data(raw_record):
 
 
 def get_user_accessible_projects(user):
-    """Get projects a user can access based on their active assignments"""
+    """Mobile-sync-scoped variant of project access.
+
+    This function is intentionally stricter than the shared
+    ``egrm.utils.project_access.get_user_accessible_projects`` helper used
+    by the web UI and stats: it additionally requires
+    ``activation_status = 'Activated'`` on the assignment row, because the
+    mobile app must not pull data for assignments that haven't completed
+    OTP-based device activation. It also filters out inactive
+    ``GRM Project`` records (mobile sync should never see archived
+    projects, but web admin/stats may still need them for historical
+    reporting).
+    """
     # Check if user is Administrator or has a platform-level role (full access).
     # `GRM Platform Administrator` is the duty-driven equivalent of System
     # Manager — they bootstrap projects via the wizard, so the sync layer

@@ -97,6 +97,40 @@ override_whitelisted_methods = {
     "frappe.boot.get_bootinfo": "egrm.api.boot.get_bootinfo",
 }
 
+# Project Setup Wizard — split into per-step modules under
+# ``egrm/public/js/grm_project_wizard/``. Frappe's ``page_js`` hook
+# concatenates these onto the page's own script (see
+# ``frappe.core.doctype.page.page.Page.load_assets``), so the page
+# directory's ``grm_project_wizard.js`` stays a thin entrypoint and
+# bare cross-references between step classes resolve in the shared
+# script scope. Order is human-readability only — class declarations
+# are referenced from inside method bodies (call-time lookup), not
+# at parse time.
+page_js = {
+    "grm-project-wizard": [
+        "public/js/grm_project_wizard/_helpers.js",
+        "public/js/grm_project_wizard/_wizard.js",
+        "public/js/grm_project_wizard/step1_project_info.js",
+        "public/js/grm_project_wizard/step2_admin_units.js",
+        "public/js/grm_project_wizard/step2_admin_levels.js",
+        "public/js/grm_project_wizard/step2_admin_regions.js",
+        "public/js/grm_project_wizard/step3_issue_categories.js",
+        "public/js/grm_project_wizard/step4_issue_types.js",
+        "public/js/grm_project_wizard/step5_citizen_lookups.js",
+        "public/js/grm_project_wizard/step6_notification_templates.js",
+        "public/js/grm_project_wizard/step7_project_roles.js",
+        "public/js/grm_project_wizard/step8_departments.js",
+        "public/js/grm_project_wizard/step9_users.js",
+        "public/js/grm_project_wizard/step9_users_list.js",
+        "public/js/grm_project_wizard/step9_user_add.js",
+        "public/js/grm_project_wizard/step9_user_import.js",
+        "public/js/grm_project_wizard/step10_routing.js",
+        "public/js/grm_project_wizard/step11_slas.js",
+        "public/js/grm_project_wizard/step12_issue_statuses.js",
+        "public/js/grm_project_wizard/step13_activate.js",
+    ],
+}
+
 # Allow guest access
 has_website_permission = {
     "Android App Version": "egrm.egrm.doctype.android_app_version.android_app_version.has_website_permission"

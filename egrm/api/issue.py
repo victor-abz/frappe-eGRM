@@ -15,6 +15,7 @@ from egrm.api._roles import GRM_ALL_PROJECTS_ROLES
 # `create_issue_from_sync` was removed when sync.py was refactored to the
 # WatermelonDB-style protocol. We now route create() through sync.create_record.
 from egrm.api.sync import create_record as _sync_create_record
+from egrm.utils.project_access import get_user_accessible_projects
 
 # Configure logging
 log = logging.getLogger(__name__)
@@ -977,31 +978,6 @@ def get_latest_issues(last_sync_timestamp=None, limit=50, offset=0):
 
 
 # Utility functions
-
-
-def get_user_accessible_projects(user):
-    """
-    Get projects a user can access
-
-    Args:
-        user (str): User ID
-
-    Returns:
-        list: List of project IDs
-    """
-    # Check if user is Administrator or has an all-projects GRM role (full access)
-    if user == "Administrator" or GRM_ALL_PROJECTS_ROLES & set(frappe.get_roles(user)):
-        projects = frappe.get_all("GRM Project", fields=["name"])
-        return [p.name for p in projects]
-
-    # Get projects assigned to the user
-    assignments = frappe.get_all(
-        "GRM User Project Assignment",
-        filters={"user": user, "is_active": 1},
-        fields=["project"],
-    )
-
-    return [a.project for a in assignments]
 
 
 def get_reopened_status(project_id):
