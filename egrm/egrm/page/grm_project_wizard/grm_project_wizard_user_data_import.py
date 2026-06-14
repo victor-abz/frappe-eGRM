@@ -158,6 +158,7 @@ def prepare_user_import(
     auto_create_regions: Any = True,
     synthesize_emails: Any = False,
     synthesize_email_domain: str = "",
+    phone_as_username: Any = True,
 ) -> dict:
     """Stage a user-import CSV and create the wrapping ``Data Import`` doc.
 
@@ -166,11 +167,19 @@ def prepare_user_import(
     -created ``Data Import``, and returns preview + counts +
     region-creation summary + the ``data_import`` name.
 
-    ``synthesize_emails`` (default False): when False, rows with a missing
-    or Excel-error email are skipped with an explicit error so the operator
-    knows their file is broken. When True, the wizard auto-builds
-    ``firstname.lastname@<synthesize_email_domain>`` for those rows — the
-    domain is operator-supplied (e.g. ``yopmail.com``); never hardcoded.
+    ``synthesize_emails`` (default False): legacy name-based synthesis.
+    When True, the wizard auto-builds
+    ``firstname.lastname@<synthesize_email_domain>`` for rows missing an
+    email — the domain is operator-supplied.
+
+    ``phone_as_username`` (default True): the new RDAP default. When
+    True, ``User.username`` and ``User.mobile_no`` are stamped with the
+    phone digits, and missing-email rows synthesise
+    ``<phone-digits>@<synthesize_email_domain or 'yopmail.com'>``. The
+    end user logs in with their raw phone via the System Settings flags
+    ``allow_login_using_mobile_number`` / ``allow_login_using_user_name``
+    (set on project activation). Takes precedence over
+    ``synthesize_emails`` when both are True.
     """
     _require_wizard_role()
 
@@ -184,12 +193,19 @@ def prepare_user_import(
     level_mapping_d = _coerce_dict(level_mapping, "level_mapping")
     auto_create = _coerce_bool(auto_create_regions)
     synth_emails = _coerce_bool(synthesize_emails)
+    phone_username = _coerce_bool(phone_as_username)
     synth_domain = (synthesize_email_domain or "").strip().lower()
-    if synth_emails:
+    # Domain is required when either synthesis path is on. Phone-as-username
+    # falls back to ``yopmail.com`` in the service layer if the operator
+    # left it blank; legacy name-based synthesis is stricter (operator
+    # must opt in explicitly).
+    if synth_emails and not phone_username:
         if not synth_domain:
             frappe.throw(_("Email domain is required when synthesizing emails."))
         if not _EMAIL_DOMAIN_RE.match(synth_domain):
             frappe.throw(_("Invalid email domain: {0}").format(synth_domain))
+    elif phone_username and synth_domain and not _EMAIL_DOMAIN_RE.match(synth_domain):
+        frappe.throw(_("Invalid email domain: {0}").format(synth_domain))
 
     # 2. Read the uploaded file.
     headers, rows = read_uploaded_file(file_url)
@@ -199,7 +215,7 @@ def prepare_user_import(
 
     # 4. Validate against doctype-driven required fields.
     project_meta = get_assignment_field_meta(project)
-    validation = validate_mapping(mapping, project_meta)
+    validation = validate_mapping(mapping, project_meta, phone_as_username=phone_username)
     if not validation["ok"]:
         missing = ", ".join(validation["missing_required"]) or _("(none)")
         errors = "; ".join(validation["errors"]) or _("(none)")
@@ -216,6 +232,7 @@ def prepare_user_import(
         auto_create_regions=auto_create,
         synthesize_emails=synth_emails,
         synthesize_email_domain=synth_domain,
+        phone_as_username=phone_username,
     )
 
     # No ready rows (e.g. dry-run with all regions missing) → skip

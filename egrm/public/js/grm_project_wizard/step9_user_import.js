@@ -353,14 +353,18 @@ class GRMWizardStep9UserImport {
                 <input type="checkbox" class="grm-auto-create-regions" checked>
                 ${__("Auto-create missing administrative regions")}
               </label>
-              <label class="ml-3">
-                <input type="checkbox" class="grm-synthesize-emails">
-                ${__("Generate emails for rows with a missing/invalid email column")}
+              <label class="ml-3" title="${__("Users will log in with their phone number. Username and mobile_no are set from the phone digits; placeholder emails are auto-generated for rows without one.")}">
+                <input type="checkbox" class="grm-phone-as-username" checked>
+                ${__("Use phone as login (no real email required)")}
               </label>
-              <label class="ml-3 grm-synth-domain-wrap" style="display:none;">
+              <label class="ml-3 grm-synth-domain-wrap">
                 ${__("Email domain")}:
                 <input type="text" class="form-control form-control-sm grm-synth-domain"
-                       placeholder="example.com" style="display:inline-block; width:auto;">
+                       placeholder="yopmail.com" value="yopmail.com" style="display:inline-block; width:auto;">
+              </label>
+              <label class="ml-3 grm-legacy-synth-wrap" title="${__("Legacy: builds firstname.lastname@<domain> for rows without an email. Phone-as-login takes precedence when both are checked.")}">
+                <input type="checkbox" class="grm-synthesize-emails">
+                ${__("Generate name-based emails (legacy)")}
               </label>
             </div>
             <div class="grm-step9-add-actions">
@@ -391,10 +395,15 @@ class GRMWizardStep9UserImport {
             // Re-render to update the validation banner / Continue button.
             this._render_mapping_stage($content);
         });
-        $content.on("change", ".grm-synthesize-emails", (e) => {
-            const checked = $(e.currentTarget).is(":checked");
-            $content.find(".grm-synth-domain-wrap").toggle(checked);
-        });
+        // Domain field is visible whenever either synthesis path is on.
+        // Phone-as-username defaults to ON so the field starts visible.
+        const _refresh_synth_domain_visibility = () => {
+            const phone_on = $content.find(".grm-phone-as-username").is(":checked");
+            const legacy_on = $content.find(".grm-synthesize-emails").is(":checked");
+            $content.find(".grm-synth-domain-wrap").toggle(phone_on || legacy_on);
+        };
+        $content.on("change", ".grm-phone-as-username, .grm-synthesize-emails", _refresh_synth_domain_visibility);
+        _refresh_synth_domain_visibility();
         $content.find(".grm-stage-back").on("click", () => this.set_stage("upload"));
         $content.find(".grm-stage-next").on("click", () => this._start_preview());
     }
@@ -471,11 +480,16 @@ class GRMWizardStep9UserImport {
     async _start_preview() {
         const $content = this.$mount.find(".grm-step9-bulk-content");
         const auto_create = this.$mount.find(".grm-auto-create-regions").is(":checked");
+        const phone_as_username = this.$mount.find(".grm-phone-as-username").is(":checked");
         const synthesize_emails = this.$mount.find(".grm-synthesize-emails").is(":checked");
         const synthesize_email_domain = (this.$mount.find(".grm-synth-domain").val() || "").trim().toLowerCase();
 
-        if (synthesize_emails) {
-            const domain_re = /^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+        // Validate the domain whenever any synthesis path is on. Phone-as-
+        // username defaults to ``yopmail.com`` server-side when blank, so
+        // empty-domain is only a hard error for the legacy path; the
+        // server still rejects malformed domains in either mode.
+        const domain_re = /^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+        if (synthesize_emails && !phone_as_username) {
             if (!synthesize_email_domain) {
                 frappe.msgprint({
                     title: __("Email domain required"),
@@ -492,6 +506,13 @@ class GRMWizardStep9UserImport {
                 });
                 return;
             }
+        } else if (phone_as_username && synthesize_email_domain && !domain_re.test(synthesize_email_domain)) {
+            frappe.msgprint({
+                title: __("Invalid email domain"),
+                message: __("Email domain '{0}' is not valid.", [synthesize_email_domain]),
+                indicator: "orange",
+            });
+            return;
         }
 
         // Build the wire-format mappings the server endpoint expects.
@@ -517,6 +538,7 @@ class GRMWizardStep9UserImport {
                     auto_create_regions: auto_create ? 1 : 0,
                     synthesize_emails: synthesize_emails ? 1 : 0,
                     synthesize_email_domain: synthesize_email_domain,
+                    phone_as_username: phone_as_username ? 1 : 0,
                 },
             });
             this.preview = r.message || {};

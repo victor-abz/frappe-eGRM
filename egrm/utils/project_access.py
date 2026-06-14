@@ -23,15 +23,10 @@ PLATFORM_ROLES = {"System Manager", "GRM Platform Administrator"}
 
 
 def get_user_accessible_projects(user: str) -> list[str]:
-    """Return the list of GRM Project names a user can access (web/stats scope).
+    """Return the list of GRM Project names a user can access.
 
     Admins and all-projects roles see every project; otherwise the user
-    sees the projects they hold an active assignment for.
-
-    Note: the mobile sync layer (`egrm.api.sync`) uses a stricter variant
-    that also requires `activation_status = 'Activated'` on the assignment.
-    Web/stats contexts don't gate on mobile activation, so they call this
-    helper instead.
+    sees the projects where they hold an active, activated assignment.
     """
     if user == "Administrator" or GRM_ALL_PROJECTS_ROLES & set(frappe.get_roles(user)):
         projects = frappe.get_all("GRM Project", fields=["name"])
@@ -39,7 +34,7 @@ def get_user_accessible_projects(user: str) -> list[str]:
 
     assignments = frappe.get_all(
         "GRM User Project Assignment",
-        filters={"user": user, "is_active": 1},
+        filters={"user": user, "is_active": 1, "activation_status": "Activated"},
         fields=["project"],
     )
     return [a.project for a in assignments]
@@ -63,7 +58,7 @@ def has_project_admin(project: str, user: str | None = None) -> bool:
         JOIN `tabGRM Project Role` r ON r.name = a.role
         JOIN `tabGRM Project Role Duty` d ON d.parent = r.name
         WHERE a.user = %s AND a.project = %s AND a.is_active = 1
-          AND d.duty = 'Supervise'
+          AND a.activation_status = 'Activated' AND d.duty = 'Supervise'
         LIMIT 1
         """,
         (user, project),

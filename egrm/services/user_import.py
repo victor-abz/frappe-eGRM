@@ -100,6 +100,51 @@ def _synthesize_email(first: str, last: str, domain: str) -> str:
     return f"{local}@{(domain or '').strip()}"
 
 
+# Default email domain used to synthesise a Frappe-acceptable User.name
+# when the operator opted into phone-as-username AND a row has no real
+# email. Frappe's User.autoname hardcodes ``name = email`` and User.email
+# has ``options: "Email"`` format validation (user.py:198 + user.json), so
+# a User document literally cannot exist without an email-shaped PK. The
+# end user never types this — they log in with their phone via Frappe's
+# allow_login_using_mobile_number setting. The operator can override the
+# domain in the wizard's Step 9 form.
+DEFAULT_PHONE_EMAIL_DOMAIN = "yopmail.com"
+
+
+def _phone_digits(raw: str) -> str:
+    """Strip everything except digits from a phone string.
+
+    Source XLSX cells are messy: leading apostrophes (Excel's text-coercion
+    artifact), spaces, dashes, parentheses, ``+`` prefixes. Returns the
+    bare digit string. No country-code prepending — we store the operator's
+    source format and use the digits as both ``username`` and ``mobile_no``.
+    """
+    if not raw:
+        return ""
+    return re.sub(r"\D+", "", str(raw))
+
+
+def _synthesize_phone_email(phone: str, domain: str) -> str:
+    """Build ``<phone-digits>@<domain>`` for rows missing emails in
+    phone-as-username mode.
+
+    Used instead of ``_synthesize_email`` (firstname.lastname) when the
+    operator opted into phone-as-username: keying the placeholder PK on
+    the unique phone digits avoids collisions between users who share a
+    first/last-name pair, and lines up the email local-part with the
+    username so operators can correlate them at a glance.
+
+    Empty / digit-less phone → ``""`` (caller skips the row); empty
+    domain → ``""`` too (caller must supply one — defaults to
+    ``yopmail.com`` at the wizard/RPC boundary).
+    """
+    digits = _phone_digits(phone)
+    dom = (domain or "").strip()
+    if not digits or not dom:
+        return ""
+    return f"{digits}@{dom}"
+
+
 def _duty_roles_for_project_role(project_role: str) -> list[str]:
     """Return the Frappe Role names mapped to the given GRM Project Role's duties.
 
@@ -132,6 +177,8 @@ def _ensure_user(
     gender: str = "",
     phone: str = "",
     project_role: str = "",
+    phone_as_username: bool = False,
+    mobile_no: str = "",
 ) -> tuple[str, bool]:
     """Find-or-create a Frappe User keyed by email; return ``(name, created)``.
 
@@ -147,6 +194,13 @@ def _ensure_user(
     does not raise the "No Roles Specified" msgprint. As a baseline (e.g.
     when no duties resolve), we always grant ``Desk User`` so the warning
     never fires and the user can authenticate against the desk.
+
+    When ``phone_as_username`` is True, we additionally stamp the User's
+    ``username`` and ``mobile_no`` with the digit-only phone so the end
+    user can authenticate with their raw phone number (Frappe System
+    Settings: ``allow_login_using_mobile_number`` /
+    ``allow_login_using_user_name``). The ``email`` argument may be empty
+    in this mode — the caller already synthesised ``<phone>@phone.local``.
     """
     email = (email or "").strip().lower()
     if not email:
@@ -175,18 +229,36 @@ def _ensure_user(
         if role not in role_set:
             role_set.append(role)
 
-    doc = frappe.get_doc({
+    # Phone-as-username: surface the digit-canonical form on both
+    # ``username`` and ``mobile_no``. Frappe's auth find_by_credentials
+    # (frappe/core/doctype/user/user.py:852) does an equality match against
+    # those fields when ``allow_login_using_mobile_number`` /
+    # ``allow_login_using_user_name`` are enabled in System Settings.
+    phone_clean = (phone or "").strip()
+    mobile_clean = (mobile_no or phone or "").strip()
+    phone_digits = _phone_digits(mobile_clean) if phone_as_username else ""
+
+    user_doc: dict[str, Any] = {
         "doctype": "User",
         "email": email,
         "first_name": (first_name or "").strip() or email.split("@", 1)[0],
         "last_name": (last_name or "").strip(),
         "gender": gender_norm or None,
-        "phone": (phone or "").strip(),
+        "phone": phone_clean,
         "send_welcome_email": 0,
         "user_type": "System User",
         "enabled": 1,
         "roles": [{"role": r} for r in role_set],
-    })
+    }
+    if phone_as_username and phone_digits:
+        user_doc["username"] = phone_digits
+        user_doc["mobile_no"] = phone_digits
+    elif mobile_clean:
+        # Even outside phone-as-username, persist mobile_no when the source
+        # mapped a Phone column so the column is not silently dropped.
+        user_doc["mobile_no"] = _phone_digits(mobile_clean) or mobile_clean
+
+    doc = frappe.get_doc(user_doc)
     doc.flags.ignore_permissions = True
     doc.insert(ignore_permissions=True)
     return doc.name, True
@@ -463,7 +535,7 @@ def auto_detect_mapping(headers: list[str], project_meta: dict) -> dict:
 # A.1 — validate_mapping
 # ---------------------------------------------------------------------------
 
-def _required_targets() -> list[tuple[str, str]]:
+def _required_targets(phone_as_username: bool = False) -> list[tuple[str, str]]:
     """Return ``[(target_token, label), ...]`` for every must-have field.
 
     Required = the wizard's User minima (email/first_name/last_name) plus
@@ -471,14 +543,25 @@ def _required_targets() -> list[tuple[str, str]]:
     fields the operator cannot map: ``project`` (wizard supplies it),
     ``administrative_region`` (handled via the TARGET_REGION sentinel + level
     sub-picker), and ``user`` (auto-derived from ``User.email`` at import time).
+
+    When ``phone_as_username`` is True, ``User.email`` is dropped from the
+    required set: the service layer synthesises ``<phone-digits>@<domain>``
+    for missing-email rows, so the operator does not need to map an Email
+    column — but they MUST map a Phone-bearing column (mobile_no/phone), so
+    we add that to the required set in its place.
     """
     required: list[tuple[str, str]] = []
     user_meta = frappe.get_meta("User")
     user_meta_by_name = {f.fieldname: f for f in user_meta.fields}
-    for fname in ("email", "first_name", "last_name"):
+    user_required = ("first_name", "last_name") if phone_as_username else ("email", "first_name", "last_name")
+    for fname in user_required:
         f = user_meta_by_name.get(fname)
         label = (f.label if f else fname) or fname
         required.append((f"User.{fname}", label))
+    if phone_as_username:
+        # Either mobile_no or phone satisfies the requirement; we record
+        # both targets and check disjunctively in validate_mapping.
+        required.append(("User.mobile_no|User.phone", "Phone (Mobile No or Phone)"))
 
     non_mappable_assignment = {"project", "administrative_region", "user"}
     for f in frappe.get_meta("GRM User Project Assignment").fields:
@@ -491,8 +574,14 @@ def _required_targets() -> list[tuple[str, str]]:
     return required
 
 
-def validate_mapping(mapping: dict, project_meta: dict) -> dict:
+def validate_mapping(mapping: dict, project_meta: dict, phone_as_username: bool = False) -> dict:
     """Check that every required target is mapped exactly once.
+
+    ``phone_as_username``: when True, ``User.email`` is dropped from the
+    required set and a "Phone (Mobile No or Phone)" disjunctive requirement
+    is added — the operator must map either a ``User.mobile_no`` or
+    ``User.phone`` column, satisfying the requirement when at least one is
+    present.
 
     Returns:
         ``{"ok": bool, "missing_required": [label, ...],
@@ -500,7 +589,7 @@ def validate_mapping(mapping: dict, project_meta: dict) -> dict:
     """
     del project_meta  # required-set is doctype-driven, not project-meta-driven
 
-    required = _required_targets()
+    required = _required_targets(phone_as_username=phone_as_username)
     targets_in_use: list[tuple[str, str | None]] = []
     level_type_use: dict[str, list[str]] = {}
 
@@ -523,6 +612,13 @@ def validate_mapping(mapping: dict, project_meta: dict) -> dict:
     for token, label in required:
         if token == TARGET_REGION:
             continue  # region is optional at the doctype level
+        # Disjunctive requirement (``a|b``) — satisfied when ANY listed
+        # target is mapped. Used for the phone-as-username flow where
+        # either ``User.mobile_no`` or ``User.phone`` counts.
+        if "|" in token:
+            if not any(t in target_token_set for t in token.split("|")):
+                missing_labels.append(label)
+            continue
         if token not in target_token_set:
             missing_labels.append(label)
 
@@ -604,6 +700,7 @@ def materialize_staged_csv(
     auto_create_regions: bool = True,
     synthesize_emails: bool = False,
     synthesize_email_domain: str = "",
+    phone_as_username: bool = False,
 ) -> dict:
     """Apply mapping + region resolution to every row, write a staged CSV.
 
@@ -799,15 +896,44 @@ def materialize_staged_csv(
                 user_payload[fname] = _clean_cell(raw)
                 resolved[fname] = user_payload[fname]
 
-            # Email is required on the User doctype. Source cells that are
-            # blank or carry an Excel formula error (#NAME?, #REF!, …) are
-            # treated as missing. Default behaviour: error + skip the row so
-            # the operator sees what's broken in their file. Opt-in
-            # synthesis (``synthesize_emails=True``) builds
-            # ``firstname.lastname@<synthesize_email_domain>`` for missing
-            # rows — the domain is operator-supplied, never hardcoded.
+            # Email is required on the User doctype (Frappe autonames by
+            # email — user.py:198 — and the field has email-format
+            # validation). When the source cell is blank or carries an
+            # Excel formula error (#NAME?, #REF!, …) we have three paths:
+            #
+            #   - phone_as_username=True (the new RDAP default):
+            #     synthesise ``<phone-digits>@<domain>``. Domain defaults
+            #     to ``yopmail.com`` if the operator left it blank — the
+            #     end user never sees it; they log in with their raw
+            #     phone via System Settings.allow_login_using_mobile_number.
+            #     Keying on phone digits avoids collisions between users
+            #     who share a first/last-name pair.
+            #   - synthesize_emails=True (legacy name-based path):
+            #     build ``firstname.lastname@<domain>``.
+            #   - neither: error + skip so the operator sees what's broken.
+            #
+            # phone_as_username takes precedence — when it's on, we always
+            # use phone-keyed synthesis even if the legacy flag is also on.
             if not user_payload.get("email"):
-                if synthesize_emails:
+                phone_for_synth = (
+                    user_payload.get("mobile_no")
+                    or user_payload.get("phone")
+                    or ""
+                )
+                if phone_as_username:
+                    if not _phone_digits(phone_for_synth):
+                        errors.append(
+                            f"Row {row_num}: phone is missing or unreadable "
+                            f"(phone-as-username mode requires a usable phone "
+                            f"number — source cell empty or non-digit)."
+                        )
+                        rows_skipped += 1
+                        continue
+                    domain = (synthesize_email_domain or "").strip() or DEFAULT_PHONE_EMAIL_DOMAIN
+                    synthetic = _synthesize_phone_email(phone_for_synth, domain)
+                    user_payload["email"] = synthetic
+                    resolved["email"] = synthetic
+                elif synthesize_emails:
                     synthetic = _synthesize_email(
                         user_payload.get("first_name", ""),
                         user_payload.get("last_name", ""),
@@ -869,6 +995,8 @@ def materialize_staged_csv(
                     gender=user_payload.get("gender", ""),
                     phone=user_payload.get("phone", ""),
                     project_role=asgn_resolved.get("role", ""),
+                    phone_as_username=phone_as_username,
+                    mobile_no=user_payload.get("mobile_no", ""),
                 )
             except Exception as exc:
                 errors.append(f"Row {row_num}: could not create User: {exc}")
