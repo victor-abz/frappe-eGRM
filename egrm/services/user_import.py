@@ -179,6 +179,7 @@ def _ensure_user(
     project_role: str = "",
     phone_as_username: bool = False,
     mobile_no: str = "",
+    language: str = "",
 ) -> tuple[str, bool]:
     """Find-or-create a Frappe User keyed by email; return ``(name, created)``.
 
@@ -238,6 +239,14 @@ def _ensure_user(
     mobile_clean = (mobile_no or phone or "").strip()
     phone_digits = _phone_digits(mobile_clean) if phone_as_username else ""
 
+    # Default language: stamp the project's default_language onto the
+    # User row so that new operators see the desk in the project's
+    # configured language on first login. ``language`` is the resolved
+    # code (e.g. "rw", "fr", "en"); blank means "leave Frappe's default".
+    lang_value = (language or "").strip()
+    if lang_value and not frappe.db.exists("Language", lang_value):
+        lang_value = ""  # silently ignore an unknown language code
+
     user_doc: dict[str, Any] = {
         "doctype": "User",
         "email": email,
@@ -245,6 +254,7 @@ def _ensure_user(
         "last_name": (last_name or "").strip(),
         "gender": gender_norm or None,
         "phone": phone_clean,
+        "language": lang_value or None,
         "send_welcome_email": 0,
         "user_type": "System User",
         "enabled": 1,
@@ -726,6 +736,11 @@ def materialize_staged_csv(
             f"{_MAX_ROWS:,}. Split the file or run the bench CLI importer."
         )
 
+    # Project's default_language is stamped on every freshly-created User
+    # so operators see the desk in the project's language on first login.
+    # An empty value leaves Frappe's own default in place.
+    project_default_language = frappe.db.get_value("GRM Project", project, "default_language") or ""
+
     header_index = {h: i for i, h in enumerate(headers)}
     level_columns = _ordered_level_columns(mapping)
 
@@ -997,6 +1012,7 @@ def materialize_staged_csv(
                     project_role=asgn_resolved.get("role", ""),
                     phone_as_username=phone_as_username,
                     mobile_no=user_payload.get("mobile_no", ""),
+                    language=project_default_language,
                 )
             except Exception as exc:
                 errors.append(f"Row {row_num}: could not create User: {exc}")

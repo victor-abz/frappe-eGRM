@@ -31,7 +31,9 @@ export const TranslateContext = createContext<TranslateContextValue>({
 export function useTranslateProvider() {
   const { call } = useContext(FrappeContext) as FrappeConfig;
   const [lang, setLang] = useState(() => {
-    // Priority: cookie > browser > "en"
+    // Priority: cookie > browser > "en". Server-derived default
+    // (logged-in user / project / system) is fetched async below and
+    // applied if no cookie is set yet.
     const cookie = document.cookie
       .split("; ")
       .find((c) => c.startsWith("preferred_language="));
@@ -41,6 +43,32 @@ export function useTranslateProvider() {
   const [messages, setMessages] = useState<Translations>({});
   const [languages, setLanguages] = useState<LanguageOption[]>(languagesCache || []);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch the server-side preferred language ONCE on mount. If the user
+  // has no cookie yet, adopt whatever the server suggests (user >
+  // project > system) so the SPA opens in the project's language
+  // out-of-the-box. Skipped if a cookie is already set — explicit user
+  // choice always wins.
+  useEffect(() => {
+    const hasCookie = document.cookie
+      .split("; ")
+      .some((c) => c.startsWith("preferred_language="));
+    if (hasCookie) return;
+    call
+      .get<{ message: { language: string; source: string } }>(
+        "egrm.api.public_translations.get_preferred_language",
+        {}
+      )
+      .then((data) => {
+        const serverLang = data?.message?.language;
+        if (serverLang && serverLang !== lang) {
+          setLang(serverLang);
+        }
+      })
+      .catch(() => {
+        // Silent fallback — keep whatever the browser-locale init gave us.
+      });
+  }, []);
 
   // Fetch available languages from Frappe
   useEffect(() => {
