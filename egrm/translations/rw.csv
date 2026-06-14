@@ -1,110 +1,500 @@
+ and , na 
+(no project loaded),(nta mushinga winjijwe)
+(none),(nta na kimwe)
+(pick level),(hitamo urwego)
+(select),(hitamo)
+(skip),(simbuka)
+(unset),(nta cyashyizweho)
+...and {0} more,...n'ibindi {0}
+0 = direct routing,0 = yohereza ako kanya
+1,1
+1 = redirect via supervisor,1 = kunyuza ku muyobozi
 1 Year,Umwaka 1
+1 assigned,1 yahawe
+1 data row detected,Hari umurongo 1 wabonetse
+1 row selected,1 umurongo watoranyijwe
+1 selected,1 cyatoranyijwe
+1. Template,1. Icyitegererezo
+2,2
+2. Upload,2. Ohereza
+3. Map columns,3. Huza inkingi
 30 Days,Iminsi 30
+4. Preview & Import,4. Reba mbere & Kohereza
 7 Days,Iminsi 7
 90 Days,Iminsi 90
+A role must have at least one duty assigned.,Inshingano igomba kuba ifite nibura imwe yahawe.
+"A template of type ""{0}"" already exists for this project.","Icyitegererezo cy'ubwoko ""{0}"" gisanzwe kiriho kuri uyu mushinga."
+Abbrev.,Inshyiramo
+Abbreviation,Inshyiramo
+Abbreviation is required.,Inshyiramo irakenewe.
+Ack Days,Iminsi yo Kwemeza
 Acknowledged,Cyemejwe
+Acknowledgment Days,Iminsi yo Kwemeza
+Acknowledgment Days: how long before the case must be acknowledged. Resolution Days: how long before it must be resolved. Resolution must be >= Acknowledgment.,Iminsi yo Kwemeza: igihe mbere yuko ikibazo cyemezwa. Iminsi yo Gukemura: igihe mbere yuko gikemurwa. Gukemura kugomba kuba >= Kwemeza.
+Actions,Ibikorwa
+Activate Project,Tangiza Umushinga
+Activation blocked,Gutangiza byabujijwe
+"Activation is blocked until every region has Intake, Review, and Investigate & Resolve.","Gutangiza birabujijwe kugeza buri karere kafite Kwakira, Kugenzura, no Gushakisha & Gukemura."
+Activation pre-flight,Igenzura ryo gutangiza
+Active,Birakora
 Active Projects,Imishinga Ikora
+Add,Ongeraho
+Add Age Group,Ongeraho Itsinda ry'Imyaka
+Add Category,Ongeraho Icyiciro
+Add Citizen Group,Ongeraho Itsinda ry'Abaturage
+Add Department,Ongeraho Ishami
+Add Level,Ongeraho Urwego
+Add Role,Ongeraho Inshingano
+Add Status,Ongeraho Imimerere
+Add Template,Ongeraho Icyitegererezo
+Add Type,Ongeraho Ubwoko
+Add User Type,Ongeraho Ubwoko bw'Ukoresha
+Add a department in Step 4 first.,Banza wongeremo ishami mu Ntambwe ya 4.
 Add a short comment (optional),Ongeraho igitekerezo gito (bidategetswe)
+Add a single user,Ongeraho ukoresha umwe
+Add or reassign users above before continuing.,Ongera cyangwa ukongere uhe abakoresha hejuru mbere yo gukomeza.
+Add user,Ongeraho ukoresha
+Adding user…,Birongerwaho ukoresha...
+Admin Level,Urwego rwa Admin
+Administrative Level,Urwego rw'Ubuyobozi
+Administrative Level (optional),Urwego rw'Ubuyobozi (bidategetswe)
+Administrative Levels,Inzego z'Ubuyobozi
+Administrative Levels are the geographic / organizational hierarchy used to route GRM cases (e.g. National &rarr; Region &rarr; District &rarr; Sector &rarr; Cell).,Inzego z'Ubuyobozi ni uburyo bw'ahantu / imitunganyirize bukoreshwa kohereza ibibazo bya GRM (urugero Igihugu &rarr; Intara &rarr; Akarere &rarr; Umurenge &rarr; Akagari).
+Administrative Region,Akarere k'Ubuyobozi
+Administrative region,akarere k'ubuyobozi
+Age Group,Itsinda ry'Imyaka
+Age Group '{0}' already exists for this project.,Itsinda ry'Imyaka '{0}' risanzwe ririho kuri uyu mushinga.
+Age Group created.,Itsinda ry'Imyaka ryakozwe.
+Age Group deleted.,Itsinda ry'Imyaka ryasibwe.
+Age Group is required.,Itsinda ry'Imyaka rirakenewe.
+Age Group updated.,Itsinda ry'Imyaka ryavuguruwe.
+Age Groups,Amatsinda y'Imyaka
+"Age Groups: e.g. ""0-17"", ""18-24"", ""25-44"", ""45-64"", ""65+"". Citizen Groups: tags like ""Indigenous"", ""Smallholder Farmer"", ""Female-headed Household"". Group Type 1 vs 2 lets you split groups into two parallel lists if your form needs it.","Amatsinda y'Imyaka: urugero ""0-17"", ""18-24"", ""25-44"", ""45-64"", ""65+"". Amatsinda y'Abaturage: utubigo nka ""Kavukire"", ""Umuhinzi muto"", ""Urugo ruyobowe n'umugore"". Ubwoko bw'Itsinda 1 cyangwa 2 buguha kubigabanya mu ndorerezi ebyiri."
 All Categories,Ibyiciro Byose
 All Projects,Imishinga Yose
+All levels,Inzego zose
+All regions covered,Uturere twose twuzuye
+All roles,Inshingano zose
+All statuses,Imimerere yose
+Allow citizens to rate the resolution of their complaints.,Emerera abaturage gutanga amanota ku gukemurwa kw'ibibazo byabo.
+Already Active,Bisanzwe Bikora
 An error occurred. Please try again.,Habayeho ikosa. Mwongere mugerageze.
+Analyzing {0}…,Birasesengurwa {0}...
 Appeal,Ubujurire
+Appeal Department,Ishami ry'Ubujurire
+Apply,Shyira mu bikorwa
+Assigned Role,Inshingano Yahawe
+Assigned Role is required.,Inshingano Yahawe irakenewe.
+Assignment,Iyinjizwa
+Auto Escalate,Yikora Yegukijwe Uwabikoze
+Auto Escalation Days,Iminsi yo Kwitwaza Ako Kanya
+Auto Escalation Days must be non-negative.,Iminsi yo Kwitwaza Ako Kanya ntigomba kuba mibi.
+Auto-create missing administrative regions,Yikore uturere tw'ubuyobozi tubura
 Back,Subira inyuma
+Bind this role to an admin level (e.g. District). Leave blank for project-wide roles.,Hashe iyi nshingano ku rwego (urugero Akarere). Reka ubusa ku nshingano z'umushinga wose.
 Bot verification failed,Kwemeza anti-roboti byanze
+Bulk import users,Kwinjiza abakoresha mu rwego rwa rusange
 By Category,Hashingiwe ku Cyiciro
 By Region,Hashingiwe ku Karere
 By Status,Hashingiwe ku Ihagarara
+CSV file,Dosiye CSV
+CSV/Excel import,Kwinjiza CSV/Excel
 Call the GRM hotline to submit your grievance by phone,Hamagara umurongo wa GRM utange ikibazo cyawe kuri telefoni
+Cancel,Hagarika
 Category,Icyiciro
 Category & Issue Type,Icyiciro n'Ubwoko bw'Ikibazo
+Category '{0}' already exists for this project.,Icyiciro '{0}' gisanzwe kiriho kuri uyu mushinga.
+Category Name,Izina ry'Icyiciro
+Category Name is required.,Izina ry'Icyiciro rirakenewe.
+Category created.,Icyiciro cyakozwe.
+Category deleted.,Icyiciro cyasibwe.
+Category name is the record id and can't be changed after creation.,"Izina ry'icyiciro ni kode y'inyandiko, ntirishobora guhindurwa nyuma yo gukorwa."
+Category updated.,Icyiciro cyavuguruwe.
 Cell,Akagali
+Change role,Hindura inshingano
+Change status,Hindura imimerere
 Check your status,Reba imimerere yawe
 Choose a method to file your complaint,Hitamo uburyo bwo gutanga ikirego cyawe
+Choose file,Hitamo dosiye
+Citizen Group '{0}' already exists for this project.,Itsinda ry'Abaturage '{0}' risanzwe ririho kuri uyu mushinga.
+Citizen Group created.,Itsinda ry'Abaturage ryakozwe.
+Citizen Group deleted.,Itsinda ry'Abaturage ryasibwe.
+Citizen Group updated.,Itsinda ry'Abaturage ryavuguruwe.
+Citizen Groups,Amatsinda y'Abaturage
+Citizen Lookups are the demographic dropdowns shown on intake forms. They help disaggregate complaint data for reporting.,Ibitabo by'Abaturage ni intoranya z'imibare yerekanwa ku mafishi. Bifasha gutandukanya amakuru y'ibibazo.
+Clear,Siba
+Clear selection,Siba ibyatoranyijwe
+Click to set,Kanda hano ushyireho
 Closed,Byarafunzwe
+Column '{0}' is mapped to administrative region but has no level type selected.,Inkingi '{0}' yashyizwe ku karere k'ubuyobozi ariko nta bwoko bw'urwego bwatoranyijwe.
+"Columns include your project's admin levels (e.g. Province / District / Sector), required user fields (email, first name, last name), and required assignment fields (role).","Inkingi zikubiyemo inzego z'ubuyobozi z'umushinga (urugero Intara / Akarere / Umurenge), imirima y'ukoresha ikenewe (imeyili, izina, izina ry'umuryango), n'imirima yo guha (inshingano)."
+"Common pattern: ""New"" (initial, open) → ""In Progress"" (open) → ""Resolved"" (final, open) → ""Closed"" (final). Use ""Rejected"" for cases dismissed during review.","Uburyo busanzwe: ""Gishya"" (intangiriro, gifunguye) → ""Birakorwa"" (gifunguye) → ""Cyakemuwe"" (cya nyuma, gifunguye) → ""Cyafunzwe"" (cya nyuma). Koresha ""Cyanze"" ku bibazo byanzwe."
 Complaint Submitted Successfully,Ikibazo Cyoherejwe Neza
 Complaint not found. Please check the tracking code.,Ikibazo ntikiboneka. Nyamuneka reba kode yo gukurikirana.
 Complete verification to submit your complaint,Uzuza iyemezwa kugira ngo wohereze ikibazo cyawe
+Computing impact…,Gusesengura ingaruka...
+Confidential,Ibanga
+Confidentiality,Ibanga
+Confidentiality Level,Urwego rw'Ibanga
+Confirm cascade removal,Emeza gukuraho byose
+Confirm removal,Emeza ko bikurwaho
 Contact Information,Aho Twabageraho
 Contact a field officer who can register your complaint on your behalf,Vugana n'umukozi w'ikigo ushobora kwandikisha ikirego cyawe
+Continue,Komeza
+Continue to preview,Komeza ureba mbere
+Continue to upload,Komeza kohereza
 Copy,Koporora
+Could not analyze the file. {0},Ntibyashobotse gusesengura dosiye. {0}
+Could not compute removal impact,Ntibyashobotse kubara ingaruka zo gukuraho
+Could not delete age group — it may still be referenced by issues.,Ntibyashobotse gusiba itsinda ry'imyaka — rishobora kuba rikiri gukoreshwa n'ibibazo.
+Could not delete category — it may still be referenced by issues.,Ntibyashobotse gusiba icyiciro — gishobora kuba kikiri gukoreshwa n'ibibazo.
+Could not delete citizen group — it may still be referenced by issues.,Ntibyashobotse gusiba itsinda ry'abaturage — rishobora kuba rikiri gukoreshwa.
+Could not delete department — it may still be referenced by categories or issues.,Ntibyashobotse gusiba ishami — rishobora kuba rikiri gukoreshwa n'ibyiciro cyangwa ibibazo.
+Could not delete status — it may still be referenced by issues.,Ntibyashobotse gusiba imimerere — ishobora kuba ikiri gukoreshwa n'ibibazo.
+Could not delete template.,Ntibyashobotse gusiba icyitegererezo.
+Could not delete type — it may still be referenced by issues.,Ntibyashobotse gusiba ubwoko — bushobora kuba bukiri gukoreshwa n'ibibazo.
+Could not delete {0} department(s) — they may still be referenced by categories or issues.,Ntibyashobotse gusiba amashami {0} — ashobora kuba akiri gukoreshwa n'ibyiciro cyangwa ibibazo.
+Could not delete {0} role(s) — they may still be referenced.,Ntibyashobotse gusiba inshingano {0} — zishobora kuba zikiri gukoreshwa.
+Could not delete {0} {1} — they may still be referenced.,Ntibyashobotse gusiba {0} {1} — bishobora kuba bikiri gukoreshwa.
 Could not load app information. Please try again later.,Ntibyashobotse kuzana amakuru ya porogaramu. Ongera ugerageze nyuma.
+Could not load form metadata.,Ntibyashobotse kuzana amakuru ya fomu.
+Could not load template.,Ntibyashobotse kuzana icyitegererezo.
+Could not load users.,Ntibyashobotse kuzana abakoresha.
+Could not start the import.,Ntibyashobotse gutangira kohereza.
+Country,Igihugu
+Coverage preview unavailable.,Kureba mbere ibyuzuye ntibibasha.
+Currency,Ifaranga
 Dashboard,Ikibaho
+Date Format,Imiterere y'Itariki
+Days before an unresolved issue auto-escalates to the next tier.,Iminsi mbere yuko ikibazo kitarakemuwe kijya mu rwego ruri hejuru.
+Deactivate,Hagarika
+Default Language,Ururimi Rwibanze
+Define at least one role with at least one duty before continuing.,Tegura nibura inshingano imwe ifite nibura inshingano imwe mbere yo gukomeza.
+"Define the project's user types (e.g. ""District GRM Officer"") and tick the duties each role performs in the case lifecycle.","Tegura amoko y'abakoresha b'umushinga (urugero ""Umukozi wa GRM ku Karere"") ushyire akamenyetso ku nshingano."
+Delete,Siba
+Delete age group {0}? This will remove it from this project's setup.,Siba itsinda ry'imyaka {0}? Bizarikura ku gutegura uyu mushinga.
+Delete category {0}? This will remove it from this project's setup.,Siba icyiciro {0}? Bizagikura ku gutegura uyu mushinga.
+Delete citizen group {0}? This will remove it from this project's setup.,Siba itsinda ry'abaturage {0}? Bizarikura ku gutegura uyu mushinga.
+Delete department {0}?,Siba ishami {0}?
+Delete department {0}? This will remove it from this project's setup.,Siba ishami {0}? Bizarikura ku gutegura uyu mushinga.
+Delete issue type {0}? This will remove it from this project's setup.,Siba ubwoko bw'ikibazo {0}? Bizabukura ku gutegura uyu mushinga.
+Delete level {0}?,Siba urwego {0}?
+Delete notification template {0}?,Siba icyitegererezo cyo kumenyesha {0}?
+Delete role,Siba inshingano
+Delete role {0}?,Siba inshingano {0}?
+Delete role {0}? This cannot be undone.,Siba inshingano {0}? Ibi ntibishobora gusubirwaho.
+Delete row,Siba umurongo
+Delete status {0}? This will remove it from this project's setup.,Siba imimerere {0}? Bizayikura ku gutegura uyu mushinga.
+Delete the selected administrative level?,Siba urwego rw'ubuyobozi rwatoranyijwe?
+Delete the selected age group?,Siba itsinda ry'imyaka ryatoranyijwe?
+Delete the selected category?,Siba icyiciro cyatoranyijwe?
+Delete the selected citizen group?,Siba itsinda ry'abaturage ryatoranyijwe?
+Delete the selected issue type?,Siba ubwoko bw'ikibazo bwatoranyijwe?
+Delete the selected notification template?,Siba icyitegererezo cyo kumenyesha cyatoranyijwe?
+Delete the selected status?,Siba imimerere yatoranyijwe?
+Delete this {0}?,Siba iyi {0}?
+Delete {0},Siba {0}
+Delete {0} rows,Siba imirongo {0}
+Delete {0} selected administrative levels?,Siba inzego z'ubuyobozi {0} zatoranyijwe?
+Delete {0} selected age groups?,Siba amatsinda y'imyaka {0} yatoranyijwe?
+Delete {0} selected categories?,Siba ibyiciro {0} byatoranyijwe?
+Delete {0} selected citizen groups?,Siba amatsinda y'abaturage {0} yatoranyijwe?
+Delete {0} selected departments?,Siba amashami {0} yatoranyijwe?
+Delete {0} selected issue types?,Siba amoko y'ibibazo {0} yatoranyijwe?
+Delete {0} selected notification templates?,Siba ibyitegererezo byo kumenyesha {0} byatoranyijwe?
+Delete {0} selected roles?,Siba inshingano {0} zatoranyijwe?
+Delete {0} selected statuses?,Siba imimerere {0} yatoranyijwe?
+Delete {0} selected {1}?,Siba {1} {0} byatoranyijwe?
+Deleting…,Birasibwa...
+Department,Ishami
+Department '{0}' already exists for this project.,Ishami '{0}' risanzwe ririho kuri uyu mushinga.
+Department Name,Izina ry'Ishami
+Department Name is required.,Izina ry'Ishami rirakenewe.
+Department created.,Ishami ryakozwe.
+Department deleted.,Ishami ryasibwe.
+Department updated.,Ishami ryavuguruwe.
+"Departments are the organizational units that handle issues — typical examples: Customer Service, Engineering, Compliance, Field Operations.","Amashami ni utugarama tw'imitunganyirize tukemura ibibazo — urugero Serivisi z'Abakiriya, Ubwubatsi, Kubahiriza, Ibikorwa byo ku Murima."
 Describe the Issue,Sobanura Ikibazo
 "Describe what happened, when, and how it affected you...","Sobanura ibyabaye, ryari, n'uburyo byakugizeho ingaruka..."
 Description,Ibisobanuro
+Detected {0} rows across levels: {1},Hagaragajwe imirongo {0} mu nzego: {1}
+Discard unsaved changes?,Reka impinduka zitabitswe?
+Display Label,Akarango Kagaragazwa
+Display Label is required.,Akarango Kagaragazwa karakenewe.
 District,Akarere
 Download APK,Manura APK
+Download CSV template,Manura icyitegererezo cya CSV
+Download Excel template,Manura icyitegererezo cya Excel
+"Download a project-tailored template, fill it in with your users, then upload below.","Manura icyitegererezo cyateguriwe umushinga, kiyuzuze n'abakoresha bawe, hanyuma cyohereze hepfo."
 Download public reports,Kuramo raporo rusange
+"Drag your CSV or Excel file here, or click to browse.","Kurura dosiye yawe ya CSV cyangwa Excel hano, cyangwa ukande wishakishe."
+Duties,Inshingano
+Duty coverage complete,Inshingano zuzuye
+Duty coverage incomplete,Inshingano ntizuzuye
+Each category routes to either a Department (organisational) or a Role (cross-department workflow). Step 10 lets you review and re-assign at the end.,Buri cyiciro cyoherezwa ku Ishami (imitunganyirize) cyangwa Inshingano (mirimo ihuza amashami). Intambwe ya 10 ikwemerera kugenzura no kongera kuyaha mu mpera.
+Each department can have a head — a user who oversees issues routed there. Step 5 (Categories) assigns issues to one of these departments by default.,Buri shami rishobora kugira umuyobozi — ukoresha ugenzura ibibazo byoherejwe aho. Intambwe ya 5 (Ibyiciro) ishyira ibibazo kuri rimwe muri aya mashami.
+"Each region must cover Intake, Review, and Investigate & Resolve duties. Add users below, or remove regions you don't intend to use.","Buri karere kagomba gufata Kwakira, Kugenzura, no Gushakisha & Gukemura. Ongera abakoresha hepfo, cyangwa ukure uturere utagiye gukoresha."
+"Each region must have at least one user covering Intake, Review, and Investigate & Resolve.","Buri karere kagomba kuba kafite nibura ukoresha umwe ufata Kwakira, Kugenzura, no Gushakisha & Gukemura."
+"Each region must have at least one user covering Intake, Review, and Investigate & Resolve. Duties may be split across multiple users or held by one person.","Buri karere kagomba kuba kafite nibura ukoresha umwe ufata Kwakira, Kugenzura, no Gushakisha & Gukemura. Inshingano zishobora kugabanwa."
+"Each template can drive an email (linked Email Template) and / or an SMS (Jinja2 message body). Use {{ tracking_code }}, {{ status }}, {{ subject }}, etc. as placeholders.","Buri cyitegererezo gishobora gukoresha imeyili (Icyitegererezo cy'Imeyili gihujwe) na / cyangwa SMS (umubiri wa Jinja2). Koresha {{ tracking_code }}, {{ status }}, {{ subject }}, n'ibindi."
+Edit,Hindura
+Edit Admin Level — {0},Hindura Urwego — {0}
+Edit Category,Hindura Icyiciro
+Edit Citizen Group,Hindura Itsinda ry'Abaturage
+Edit Department,Hindura Ishami
+Edit Head — {0},Hindura Umuyobozi — {0}
+Edit Status,Hindura Imimerere
+Edit Template,Hindura Icyitegererezo
 Email,Imeyili
 Email Address,Aderesi y'Imeyili
+Email Template,Icyitegererezo cy'Imeyili
+Email domain,Domeyini y'imeyili
+Email domain '{0}' is not valid.,Domeyini y'imeyili '{0}' ntikwiye.
+Email domain required,Domeyini y'imeyili irakenewe
+Enable Citizen Feedback,Tangiza ibitekerezo by'abaturage
+Enable SMS,Tangiza SMS
+End Date,Itariki yo Kurangiza
+End Date must be on or after Start Date.,Itariki yo Kurangiza igomba kuba kuri cyangwa nyuma y'Itariki yo Gutangira.
+Enter an email domain (e.g. example.com) to generate emails.,Andika domeyini y'imeyili (urugero example.com) kugira ngo ukore imeyili.
 Enter the 6-digit code,Andika kode y'imibare 6
 Enter the 6-digit code sent to {0},Andika kode y'imibare 6 yoherejwe kuri {0}
 Enter tracking code...,Andika kode yo gukurikirana...
 Enter your tracking code to check the status,Andika kode yo gukurikirana kugira ngo urebe aho bigeze
+Error,Ikosa
+Errors,Amakosa
+Escalation Department,Ishami ry'Itanga
 Failed to load dashboard data.,Kuzana amakuru y'ikibaho byanze.
 Failed to send code,Kohereza kode byanze
 Female,Gore
 Field Officer,Umukozi w'Ikigo
 File a new grievance,Tanga ikirego gishya
 "File your grievance via web, mobile, or field officer","Tanga ikirego cyawe ukoresheje urubuga, telefoni, cyangwa umukozi w'ikigo"
+Final Status,Imimerere ya Nyuma
+Final?,Birangiye?
+"Finalise where each category's complaints are routed. Choose a Department for organisational routing, or a Role for cross-department workflows.","Soza aho ibibazo by'icyiciro byoherezwa. Hitamo Ishami ku byohereza by'imitunganyirize, cyangwa Inshingano ku mirimo ihuza amashami."
 GRM Portal,Urubuga rwa GRM
 Gender,Igitsina
+Generate name-based emails (legacy),Kora imeyili zishingiye ku mazina (uburyo bushaje)
 Get a tracking code and monitor progress,Habwa umubare w'ikurikirana ukurikirane aho bigeze
 Go to Dashboard,Jya ku Ikibaho
+Go to step,Jya ku ntambwe
 Grievance Redress,Gukemura Ibibazo
 Grievance Redress Mechanism,Urwego rw'Ikemurampaka
+Group Name,Izina ry'Itsinda
+Group Name is required.,Izina ry'Itsinda rirakenewe.
+Group Type,Ubwoko bw'Itsinda
+Group Type 1 / 2 separates two parallel demographic dimensions on the intake form.,Ubwoko bw'Itsinda 1 / 2 butandukanya impande ebyiri z'imibare y'abaturage ku ifishi yo kwakira.
+Head,Umuyobozi
+Head (User),Umuyobozi (Ukoresha)
+Heads up: '{0}' is already marked Initial — only one should be the entry point.,Witondere: '{0}' isanzwe yashyizweho akamenyetso ya Mbere — imwe gusa ikwiye kuba aho bitangirira.
+Heads up: project code becomes the record name and cannot be changed after save.,Witondere: kode y'umushinga ihinduka izina ry'inyandiko kandi ntishobora guhindurwa nyuma yo kubikwa.
+"Highest level (single value, applied to all rows)","Urwego rwo hejuru (agaciro kamwe, gakurikizwa imirongo yose)"
 Home,Ahabanza
 How It Works,Uburyo Bikora
+"How dates, numbers, and currency are formatted across the platform. Default Language drives label translations for citizens and staff.","Uburyo amatariki, imibare, n'amafaranga byerekanwa muri platform. Ururimi Rwibanze rugenzura ihindurwa ry'akarango."
 How would you like to be contacted?,Mwifuza ko mwagezwaho mute?
+I confirm the project setup is complete,Nemeza ko gutegura umushinga byarangiye
 I don't know,Sinzi
 I want updates,Nshaka kumenya aho bigeze
+Identity,Indangamuntu
+Import Regions,Kwinjiza Uturere
+"Import {0}: {1} succeeded, {2} failed","Kwinjiza {0}: {1} byagenze neza, {2} byanze"
+Imported {0} regions ({1} updated). {2} errors.,Hinjijwemo uturere {0} ({1} twavuguruwe). Amakosa {2}.
 In Person,Ku Muntu
+Inactive projects are hidden from intake screens but stay queryable in reports.,Imishinga idakora ihishe ku byerekanwa ariko ikomeza kuboneka muri raporo.
+Initial Status,Imimerere ya Mbere
+Initial?,Itangiriro?
+Invalid email domain,Domeyini y'imeyili idakwiye
+Is Active,Birakora
+Issue Categories (linked),Ibyiciro by'Ibibazo (bihujwe)
+"Issue Categories define the kinds of grievances this project handles, plus the default routing (which department or role picks them up, escalation paths, and confidentiality).","Ibyiciro by'Ibibazo bisobanura ubwoko bw'ibibazo umushinga ukemura, n'ahabyoherezwa (ishami cyangwa inshingano bibitwara, inzira z'ikwitwaza, n'ibanga)."
+Issue Statuses define the lifecycle of a case — from intake to closure. Mark exactly one status as the Initial status (the entry point) and at least one as Final (resolution / closure).,Imimerere y'Ibibazo isobanura uburyo ikibazo kigenda — kuva ku kwakira kugeza ku ifunga. Shyira imimerere imwe gusa nka Mbere (aho bitangirira) na nibura imwe nka Nyuma (gukemura / gufunga).
 Issue Type,Ubwoko bw'Ikibazo
+"Issue Types complement categories — they describe the broader nature of a complaint (e.g. ""Service Quality"", ""Compensation"", ""Environmental"").","Amoko y'Ibibazo arangiza ibyiciro — asobanura imiterere rusange y'ikibazo (urugero ""Ubuziranenge"", ""Indishyi"", ""Ibidukikije"")."
 Issue date cannot be in the future,Itariki y'ikibazo ntishobora kuba mu gihe kizaza
+Issues in this category are routed to the user holding this role in the issue's region (or nearest ancestor) with the Investigate & Resolve duty.,Ibibazo by'iki cyiciro byoherezwa ku ukoresha ufite iyi nshingano mu karere k'ikibazo (cyangwa ahegereye) ufite inshingano yo Gushakisha & Gukemura.
+Label,Akarango
 Latest version,Verisiyo nshya
+Leave blank for project-wide roles.,Reka ubusa ku nshingano z'umushinga wose.
+Legacy: builds firstname.lastname@<domain> for rows without an email. Phone-as-login takes precedence when both are checked.,Uburyo bushaje: bukora firstname.lastname@<domeyini> ku mirongo idafite imeyili. Telefoni iza imbere igihe byombi byatoranyijwe.
+Level,Urwego
+Level Name,Izina ry'Urwego
+Level Name '{0}' already exists for this project.,Izina ry'Urwego '{0}' risanzwe ririho kuri uyu mushinga.
+Level Name is required.,Izina ry'Urwego rirakenewe.
+Level Order must be an integer >= 1.,Urutonde rw'Urwego rugomba kuba umubare wuzuye >= 1.
+Level created.,Urwego rwakozwe.
+Level deleted.,Urwego rwasibwe.
+Level type,Ubwoko bw'Urwego
+Level updated.,Urwego rwavuguruwe.
+Levels,Inzego
+Loading counts...,Birashakwa imibare...
+Loading coverage...,Birashakwa ibyuzuzwa...
 Loading latest version…,Birashakwa verisiyo nshya...
 Loading metrics...,Birashakwa imibare...
 Loading reports...,Birashakwa raporo...
+Loading…,Birashakwa...
+Locale,Ururimi
 Login,Injira
+"Lower level_order = higher in the tree (1 = root). Each level defines its own SLA defaults: acknowledgment, resolution, reminder lead time, and auto-escalation.","level_order nto = hejuru mu giti (1 = urufatiro). Buri rwego rufite SLA z'ibanze: kwemeza, gukemura, kwibutsa, no kwitwaza ako kanya."
 Male,Gabo
+Map each column from your file to a target field. Required fields are marked with an asterisk.,Shyira buri nkingi yo muri dosiye ku murima ugamijwe. Imirima ikenewe yashyizweho akamenyetso.
+Map these required fields before continuing:,Huza ibi byangombwa mbere yo gukomeza:
+Mapping is complete — ready to preview.,Gushyira mu byiciro byarangiye — biriteguye kurebwa mbere.
 Minimum 10 characters,Inyuguti 10 nibura
+Missing duties,Inshingano zibura
 Mobile App,Porogaramu ya Telefoni
+Multiple columns mapped to admin level '{0}': {1}. Pick exactly one.,Inkingi nyinshi zashyizwe ku rwego '{0}': {1}. Hitamo imwe gusa.
+Name,Izina
+Name / Email,Izina / Imeyili
+Needs role — edit to fix,Hakenewe inshingano — hindura ukosore
+New Administrative Level,Urwego rw'Ubuyobozi Rushya
+New Age Group,Itsinda ry'Imyaka Rishya
+New Category,Icyiciro Gishya
+New Citizen Group,Itsinda ry'Abaturage Rishya
+New Department,Ishami Rishya
+New Issue Type,Ubwoko bw'Ikibazo Bushya
+New Status,Imimerere Nshya
+New Template,Icyitegererezo Gishya
 Next,Komeza
+No,Oya
+No administrative levels defined yet — go back to Step 2 to add them.,Nta nzego z'ubuyobozi zatangijwe — subira ku Ntambwe ya 2 kugira ngo uzongereho.
+"No administrative levels yet — click ""Add Level"" to create the first one.","Nta nzego z'ubuyobozi zirahari — kanda ""Ongeraho Urwego"" kugira ngo ukore urwa mbere."
+"No age groups yet — click ""Add Age Group"" to create the first one.","Nta matsinda y'imyaka arahari — kanda ""Ongeraho Itsinda ry'Imyaka"" kugira ngo ukore irya mbere."
 No categories found,Nta byiciro byabonetse
+"No categories yet — click ""Add Category"" to create the first one.","Nta byiciro birahari — kanda ""Ongeraho Icyiciro"" kugira ngo ukore icya mbere."
+"No citizen groups yet — click ""Add Citizen Group"" to create the first one.","Nta matsinda y'abaturage arahari — kanda ""Ongeraho Itsinda ry'Abaturage"" kugira ngo ukore irya mbere."
 No data,Nta makuru
+"No departments defined yet — go back to Step 4 first to add departments, then return to this step.","Nta mashami yatangijwe — banza usubire ku Ntambwe ya 4 ushyiremo amashami, hanyuma usubire kuri iyi ntambwe."
+"No departments yet — click ""Add Department"" to create the first one.","Nta mashami arahari — kanda ""Ongeraho Ishami"" kugira ngo ukore irya mbere."
+No issue categories defined yet — go back to Step 5 to add some.,Nta byiciro by'ibibazo byatangijwe — subira ku Ntambwe ya 5 kugira ngo ubyongereho.
 No issue types found,Nta bwoko bw'ibibazo bwabonetse
+"No issue types yet — click ""Add Type"" to create the first one.","Nta moko y'ibibazo arahari — kanda ""Ongeraho Ubwoko"" kugira ngo ukore iya mbere."
+"No notification templates yet — click ""Add Template"" to create the first one.","Nta byitegererezo byo kumenyesha bihari — kanda ""Ongeraho Icyitegererezo"" kugira ngo ukore icya mbere."
+No preview rows available.,Nta murongo wo kureba mbere uhari.
+No project loaded.,Nta mushinga winjijwe.
+No project to activate,Nta mushinga wo gutangiza
 No projects found,Nta mishinga yabonetse
+No regions defined yet.,Nta turere twatangijwe.
 No regions found,Nta turere twabonetse
 No reports available yet,Nta raporo zihari nubu
+"No roles yet — click ""+ Add Role"" below to create the first one.","Nta nshingano zirahari — kanda ""+ Ongeraho Inshingano"" hepfo kugira ngo ukore iya mbere."
+No rows are ready to import. Adjust your mapping or input file and try again.,Nta murongo witeguye kohereza. Hindura uburyo bwawe cyangwa dosiye urongere ugerageze.
+"No statuses yet — click ""Add Status"" to create the first one.","Nta mimerere irahari — kanda ""Ongeraho Imimerere"" kugira ngo ukore iya mbere."
+No users assigned to this project yet. Add users below.,Nta bakoresha bahawe uyu mushinga. Ongeraho abakoresha hepfo.
+No users match the current filters.,Nta bakoresha bahuye n'iyo myanya.
+No.,Nimero
+None,Nta kimwe
 Not satisfied? Submit an appeal,Ntimwumva bihagije? Tanga ubujurire
+"Notification Templates control the messages sent to citizens at each stage of an issue's lifecycle (receipt, acknowledgment, status updates, escalation, SLA reminders).","Ibyitegererezo byo Kumenyesha bigenzura ubutumwa boherezwa abaturage ku buri ntambwe (kwakira, kwemeza, ihinduka, kwitwaza, kwibutsa SLA)."
+Notify project administrators on activation,Menyesha abayobozi b'umushinga igihe utangijwe
+Number Format,Imiterere y'Imibare
 Open,Bifunguye
+Open Status,Imimerere Ifunguye
+Open project record,Fungura inyandiko y'umushinga
+Open?,Birafunguye?
+Operational Defaults,Ibanze byo Gukoresha
+Optional. The user who oversees issues routed to this department.,Bidategetswe. Ukoresha ugenzura ibibazo byoherejwe muri iri shami.
+Optional. Used in dashboards and to gate intake outside the project window.,Bidategetswe. Bikoreshwa ku bibaho no gufunga kwakira hanze y'igihe cy'umushinga.
+Order,Urutonde
 Other,Ikindi
 Pending,Bitegereje
 Phone,Telefoni
 Phone Hotline,Umurongo wa Telefoni
 Phone Number,Numero ya Telefoni
+Pick a CSV first.,Hitamo CSV mbere.
+Pick at least one duty,Hitamo nibura inshingano imwe
+Pick {0},Hitamo {0}
+Please define {0} before continuing.,Tegura {0} mbere yo gukomeza.
 Please describe your complaint in detail,Mwitonze musobanure ikibazo cyanyu
+Polling failed.,Gukurikirana byanze.
+Position,Umwanya
 Preferred Contact Method,Uburyo Mwifuza Kugezwaho
+Preparing preview…,Gutegura reba mbere...
+Prev,Subira inyuma
+Preview,Reba mbere
+Project,Umushinga
+Project Code,Kode y'Umushinga
+Project Code is required.,Kode y'Umushinga irakenewe.
+Project Roles,Inshingano z'Umushinga
+Project Setup Wizard,Umufasha wo Gutegura Umushinga
+Project Summary,Incamake y'Umushinga
+Project Title,Umutwe w'Umushinga
+Project activated,Umushinga watangijwe
+Project already active.,Umushinga usanzwe ukora.
+Project code cannot be changed after creation.,Kode y'umushinga ntishobora guhindurwa nyuma yo gukorwa.
+Project created: {0},Umushinga wakozwe: {0}
+Project is already active.,Umushinga usanzwe ukora.
+Project not found,Umushinga ntiwabonetse
+Project users,Abakoresha b'Umushinga
+Project-wide behavioural defaults. You can adjust these later from project settings.,Imikorere y'ibanze y'umushinga. Ushobora kubihindura nyuma mu igenamiterere.
 Provide your contact details to receive status updates,Tanga aho twabagereraho kugira ngo muhabwe amakuru
 Province,Intara
+Public,Rusange
 Public Dashboard,Ikibaho cya Rubanda
 Public Portal,Urubuga rwa rubanda
 Public Reports,Raporo za Rubanda
 Public reports will appear here once generated.,Raporo za rubanda zizagaragara hano nyuma yo gukorwa.
+Publish project to citizen portal,Tangaza umushinga ku rubuga rw'abaturage
 Raise Issue,Tanga Ikibazo
 Rate this resolution,Tanga amanota kuri uku gukemurwa
+Redirection Protocol,Uburyo bwo Kohereza Ahandi
+Region,Akarere
+Region Duty Coverage,Inshingano mu Turere
+Region removal failed,Gukuraho akarere byanze
+Regions,Uturere
+Regions that will be created:,Uturere tuzakorwa:
+Rejected Status,Imimerere Yanzwe
+Rejected?,Cyanze?
+Reminder Before,Kwibutsa Mbere
+Removal is blocked for any region that still has active users.,Gukuraho byabujijwe ku karere kose gakifite abakoresha bakora.
+Remove selected regions from project,Kura uturere twatoranyijwe ku mushinga
+Remove the selected user from this project?,Kura ukoresha watoranyijwe kuri uyu mushinga?
+Remove {0} selected region(s) from project,Kura uturere {0} twatoranyijwe ku mushinga
+Remove {0} selected users from this project?,Kura abakoresha {0} batoranyijwe kuri uyu mushinga?
+Removed {0} region(s),Hakuwemo uturere {0}
+Removing…,Birasibwa...
 Reports,Raporo
+Required fields missing,Ibyangombwa biburayo
+Res Days,Iminsi yo Gukemura
 Resend code,Wongere wohereze kode
 Resend verification code,Wongere wohereze kode yo kwemeza
+Resolution Days,Iminsi yo Gukemura
 Resolve,Gukemura
 Resolved,Byakemuwe
+Role,Inshingano
+Role Name,Izina ry'Inshingano
+Route To,Yohereza Kuri
+Routes To,Yoherereza Kuri
+Row {0}: Acknowledgment Days must be >= 0.,Umurongo {0}: Iminsi yo Kwemeza igomba kuba >= 0.
+Row {0}: Resolution Days must be >= 1.,Umurongo {0}: Iminsi yo Gukemura igomba kuba >= 1.
+Row {0}: Resolution Days must be >= Acknowledgment Days.,Umurongo {0}: Iminsi yo Gukemura igomba kuba >= Iminsi yo Kwemeza.
 Rwanda,Rwanda
+SLA validation failed — see errors above.,Igenzura rya SLA ryanze — reba amakosa hejuru.
+SLAs are tuned per administrative level. Adjust the acknowledgment and resolution targets and toggle auto-escalation for each level.,SLA zigenwa kuri buri rwego rw'ubuyobozi. Hindura intego z'ikwemeza n'ikuremurwa kandi uhindure escalade ku rwego.
+SLAs saved.,SLA zabitswe.
+SMS Message,Ubutumwa bwa SMS
+Sample,Urugero
+Save,Bika
+Save All,Bika Byose
+Save Category,Bika Icyiciro
+Save Department,Bika Ishami
+Save Group,Bika Itsinda
+Save Level,Bika Urwego
+Save Status,Bika Imimerere
+Save Step 1 first to create the project.,Banza ubike Intambwe ya 1 kugira ngo ukore umushinga.
+Save Step 1 to begin,Bika Intambwe ya 1 utangire
+Save Template,Bika Icyitegererezo
+Save Type,Bika Ubwoko
 Save your tracking code to check the status of your complaint,Bika kode yo gukurikirana kugira ngo urebe aho ikibazo cyawe kigeze
+Schedule,Gahunda
+Search by email or name,Shakisha ukoresheje imeyili cyangwa izina
+Search name / email / position,Shakisha izina / imeyili / umwanya
 Search projects...,Shakisha imishinga...
 Search regions...,Shakisha uturere...
 Searching...,Birashakishwa...
 Sector,Umurenge
 See public statistics,Reba imibare rusange
+Seeded {0} default statuses. Tweak as needed.,Hashyizweho imimerere y'ibanze {0}. Hindura uko ushaka.
 Select,Hitamo
 Select Project,Hitamo Umushinga
 Select Region,Hitamo Akarere
@@ -112,9 +502,24 @@ Send code to my email,Wohereze kode kuri imeyili yanjye
 Send code to my phone,Wohereze kode kuri telefoni yanjye
 Send verification code to {0},Wohereze kode yo kwemeza kuri {0}
 Sending...,Birohereza...
+Showing 50 of {0} gaps.,Hagaragazwa 50 mu cyuho {0}.
+Showing up to 100 enabled users.,Hagaragazwa abakoresha 100 bakora.
+Showing up to 50 Email Templates.,Hagaragazwa Ibyitegererezo by'Imeyili 50.
+Single user,Ukoresha umwe
 "Solution proposed, implemented, and verified","Igisubizo cyatanzwe, cyashyizweho, kandi cyemejwe"
+Source column,Inkingi y'inkomoko
+Start Date,Itariki yo Gutangira
+Start import,Tangira kohereza
+Starting import…,Gutangira kohereza...
 Status,Imimerere
+Status '{0}' already exists for this project.,Imimerere '{0}' isanzwe iriho kuri uyu mushinga.
+Status Name,Izina ry'Imimerere
+Status Name is required.,Izina ry'Imimerere rirakenewe.
+Status created.,Imimerere yakozwe.
+Status deleted.,Imimerere yasibwe.
+Status updated.,Imimerere yavuguruwe.
 Stay anonymous,Komeza utamenyekane
+Step component pending — see plan tasks 3.2-B / 3.2-C,Igice cy'intambwe kirategereje — reba imirimo 3.2-B / 3.2-C
 Step {0},Intambwe ya {0}
 Submission failed. Please try again.,Kohereza byanze. Mwongere mugerageze.
 Submit,Ohereza
@@ -127,15 +532,59 @@ Submit rating,Ohereza amanota
 Submit through the GRM mobile application available on Android,Ohereza ukoresheje porogaramu ya GRM kuri Android
 Submitted,Cyoherejwe
 Submitting...,Birohereza...
+"Supports Jinja2: {{ tracking_code }}, {{ status }}, {{ subject }}, {{ complainant_name }}, {{ created_date }}, etc.","Yemera Jinja2: {{ tracking_code }}, {{ status }}, {{ subject }}, {{ complainant_name }}, {{ created_date }}, n'ibindi."
+Target,Aho bigana
+Target field,Aho bigana
+"Tell us about your project. The information below will appear across the platform — citizen-facing portals, mobile apps, and notification templates.","Tubwire ibyerekeye umushinga wawe. Amakuru hepfo azagaragara muri platform — ku rubuga rw'abaturage, porogaramu za telefoni, n'ibyitegererezo byo kumenyesha."
 Tell us why you are not satisfied,Tubwire impamvu mutanyuzwe
+Template '{0}' already exists for this project.,Icyitegererezo '{0}' gisanzwe kiriho kuri uyu mushinga.
+Template Active,Icyitegererezo Kirakora
+Template Name,Izina ry'Icyitegererezo
+Template Name is required.,Izina ry'Icyitegererezo rirakenewe.
+Template Type,Ubwoko bw'Icyitegererezo
+Template Type is required.,Ubwoko bw'Icyitegererezo burakenewe.
+Template created.,Icyitegererezo cyakozwe.
+Template deleted.,Icyitegererezo cyasibwe.
+Template name is the record id and can't be changed.,Izina ry'icyitegererezo ni kode y'inyandiko ntihindurwa.
+Template updated.,Icyitegererezo cyavuguruwe.
 Thanks for your feedback,Murakoze ku gitekerezo cyanyu
 The mobile app is not available yet. Please check back later.,Porogaramu ya telefoni iracyahari. Reba nyuma.
+"There is no way to keep the descendants — descendants without an ancestor produce orphan regions, which the wizard refuses to create.","Nta buryo bwo kugumya uturere two munsi — uturere tutagira uwakwiriye dukora uturere imfubyi, abuza umufasha kubikora."
+These fields identify your project to staff and citizens.,Ibi byangombwa biranga umushinga wawe ku bakozi n'abaturage.
+These roles must be created in Step 8 (Roles) first:,Izi nshingano zigomba kubanza gukorwa mu Ntambwe ya 8 (Inshingano):
+"Tick ""I confirm the project setup is complete"" to activate.","Shyira akamenyetso kuri ""Nemeza ko gutegura umushinga byarangiye"" kugira ngo utangize."
+Tick a checkbox to grant the role that duty — saves immediately.,Shyira akamenyetso kugira ngo uhe inshingano iyo nshingano — bibitsa ako kanya.
+"Tick the confirmation above, then click ""Activate Project"" to mark setup complete and switch to the Platform workspace.","Shyira akamenyetso ku iyemezwa hejuru, hanyuma ukande ""Tangiza Umushinga"" kwemeza ko byarangiye uhinduke ujye ku Mwanya wa Platform."
+Tick the duties this role performs in the case lifecycle. At least one is required.,Shyira akamenyetso ku nshingano iyi nshingano ikora mu kibazo. Nibura imwe irakenewe.
+Time Zone,Igihe
+Title,Umutwe
+Title is required.,Umutwe urakenewe.
 Total Issues,Ibibazo Byose
 Track,Kurikirana
 Track Complaint,Kurikirana Ikibazo
 Track Your Complaint,Kurikirana Ikibazo Cyawe
 Tracking Code,Kode yo Gukurikirana
 Tracking Result,Igisubizo cyo Gukurikirana
+Type,Ubwoko
+Type '{0}' already exists for this project.,Ubwoko '{0}' busanzwe buriho kuri uyu mushinga.
+Type Name,Izina ry'Ubwoko
+Type Name is required.,Izina ry'Ubwoko rirakenewe.
+Type created.,Ubwoko bwakozwe.
+Type deleted.,Ubwoko bwasibwe.
+Type updated.,Ubwoko bwavuguruwe.
+"Types are project-scoped. Pick a small, stable list — citizens see these on intake forms.","Amoko ari mu mushinga gusa. Hitamo urutonde ruto, ruhamye — abaturage babibona ku mafishi."
+Unrouted,Ntibyoherejwe
+Updated {0} users.,Byavuguruwe abakoresha {0}.
+Updated {0}; {1} failed.,{0} byavuguruwe; {1} byanze.
+Updated.,Byavuguruwe.
+"Upload a CSV with one column per administrative level (e.g. Province, District, Sector). The highest level is auto-created from the project's country.","Ohereza CSV ifite inkingi imwe kuri buri rwego rw'ubuyobozi (urugero Intara, Akarere, Umurenge). Urwego rwo hejuru rwikora ku gihugu cy'umushinga."
+Uploaded: {0},Cyoherejwe: {0}
+Use phone as login (no real email required),Koresha telefoni kwinjira (nta imeyili yose ikenewe)
+User,Ukoresha
+User added.,Ukoresha yongeweho.
+User and Role are required.,Ukoresha n'Inshingano birakenewe.
+Users will log in with their phone number. Username and mobile_no are set from the phone digits; placeholder emails are auto-generated for rows without one.,Abakoresha bazinjira bakoresheje numero ya telefoni. Username na mobile_no bishyirwaho biva ku mibare ya telefoni; imeyili zo guhamya zikoreshwa imirongo idafite imeyili.
+Value,Agaciro
 Verify & Submit,Emeza & Ohereza
 View,Reba
 View Dashboard,Reba Ikibaho
@@ -150,8 +599,59 @@ What's new,Ibishya
 When did this happen?,Ibi byabaye ryari?
 Where did the issue occur?,Ikibazo cyabereye he?
 Which project does your complaint relate to?,Ni uwuhe mushinga ikibazo cyanyu kireba?
+Yes,Yego
+"Yes, remove","Yego, kura"
+"Yes, remove regions + descendants + unassign users","Yego, kura uturere + ibyo munsi + ukure abakoresha"
 Your Name,Izina Ryanyu
 Your appeal has been recorded,Ubujurire bwanyu bwanditswe
 Your complaint will be processed without contact information,Ikibazo cyanyu kizakorwaho nta makuru y'aho mwagerwaho
+a Final status,imimerere ya Nyuma
+age group,itsinda ry'imyaka
+age groups,amatsinda y'imyaka
+"all {0} region(s) have Intake, Review, and Investigate & Resolve.","uturere {0} twose dufite Kwakira, Kugenzura, no Gushakisha & Gukemura."
+an Initial status,imimerere ya Mbere
+categories,ibyiciro
+category,icyiciro
+citizen group,itsinda ry'abaturage
+citizen groups,amatsinda y'abaturage
+e.g. 18-24,urugero 18-24
+e.g. District GRM Officer,urugero Umukozi wa GRM ku Karere
+e.g. Issue {{ tracking_code }} is now {{ status }}.,urugero Ikibazo {{ tracking_code }} ubu ni {{ status }}.
 eGRM Mobile App,Porogaramu ya eGRM kuri Telefoni
+level,urwego
+levels,inzego
 optional,bidategetswe
+plus {0} descendant region(s),hamwe n'uturere {0} two munsi
+resolve the duty-coverage gaps above before activating the project.,kemura icyuho cy'inshingano hejuru mbere yo gutangiza umushinga.
+row,umurongo
+skipped {0},byasimbuwe {0}
+status,uko bimeze
+statuses,uko bimeze
+template,icyitegererezo
+templates,ibyitegererezo
+type,ubwoko
+types,amoko
+unassigned {0} user(s),abakoresha {0} batahawe
+user,ukoresha
+users,abakoresha
+{0} active,{0} bikora
+{0} active user(s),{0} abakoresha bakora
+{0} assigned,{0} byahawe
+{0} data rows detected,Imirongo y'amakuru {0} yabonetse
+{0} department(s) deleted.,Amashami {0} yasibwe.
+{0} descendant region(s),uturere two munsi {0}
+{0} draft,{0} cyateguwe
+{0} of {1} region(s) are missing coverage:,Uturere {0} kuri {1} ntiturafasha:
+{0} of {1} region(s) missing duty coverage,Uturere {0} kuri {1} ntiturafasha mu nshingano
+{0} of {1} regions fully covered.,Uturere {0} kuri {1} twuzuye.
+{0} of {1} regions have full duty coverage.,Uturere {0} kuri {1} twuzuye inshingano.
+{0} pending,{0} bitegereje
+{0} region(s) missing coverage,Uturere {0} ntiturafasha
+{0} role(s) deleted.,Inshingano {0} zasibwe.
+"{0} rows ready, {1} skipped (of {2} total).","Imirongo {0} iteguye, {1} yasimbuwe (kuri {2} yose)."
+{0} rows selected,{0} imirongo yatoranyijwe
+{0} selected,{0} byatoranyijwe
+{0} unmapped,{0} bidashobora gushyirwa
+{0} {1} deleted.,{0} {1} byasibwe.
+{0}-{1} of {2},{0}-{1} kuri {2}
+"{0}: {1} succeeded, {2} failed","{0}: {1} byagenze neza, {2} byanze"
