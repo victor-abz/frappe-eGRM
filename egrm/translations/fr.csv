@@ -1,19 +1,44 @@
   ... and {n} more,  ... et {n} de plus
+ and , et 
 # ###.##,# ###.##
 "#,###.##","#,###.##"
 "#,##,###.##","#,##,###.##"
 "#.###,##","#.###,##"
+(no project loaded),(aucun projet chargé)
+(none),(aucun)
+(pick level),(choisir un niveau)
+(select),(sélectionner)
+(skip),(ignorer)
+(unset),(non défini)
+...and {0} more,...et {0} de plus
 0,0
+0 = direct routing,0 = acheminement direct
+1,1
+1 = redirect via supervisor,1 = rediriger via le superviseur
 1 Year,1 An
+1 assigned,1 attribué
+1 data row detected,1 ligne de données détectée
+1 row selected,1 ligne sélectionnée
+1 selected,1 sélectionné
+1. Template,1. Modèle
+2,2
+2. Upload,2. Télécharger
+3. Map columns,3. Mapper les colonnes
 30 Days,30 Jours
+4. Preview & Import,4. Aperçu et Import
 6-digit activation code,Code d'activation à 6 chiffres
 7 Days,7 Jours
 90 Days,90 Jours
 A Project Role must have at least one duty assigned.,Un rôle de projet doit avoir au moins une fonction.
 A region cannot be its own parent,Une région ne peut être son propre parent
+A role must have at least one duty assigned.,Un rôle doit avoir au moins une fonction attribuée.
 A role named {0} already exists for this project.,Un rôle nommé {0} existe déjà pour ce projet.
 A role named {0} already exists in project {1},Un rôle nommé {0} existe déjà dans le projet {1}
+"A template of type ""{0}"" already exists for this project.","Un modèle de type ""{0}"" existe déjà pour ce projet."
 APK File,Fichier APK
+Abbrev.,Abrév.
+Abbreviation,Abréviation
+Abbreviation is required.,L'abréviation est requise.
 About,A Propos
 Accept Information,Informations d'Acceptation
 Accepted,Accepté
@@ -21,9 +46,12 @@ Accepted Date,Date d'Acceptation
 Access Restrictions,Restrictions d'Accès
 Account activated successfully!,Compte activé avec succès !
 Account is suspended. Please contact administrator.,Compte suspendu. Contactez l'administrateur.
+Ack Days,Jours d'accusé
 Acknowledged,Accusée de réception
 Acknowledgment,Accusé de Réception
 Acknowledgment Breached On,Accusé Dépassé Le
+Acknowledgment Days,Jours d'Accusé de Réception
+Acknowledgment Days: how long before the case must be acknowledged. Resolution Days: how long before it must be resolved. Resolution must be >= Acknowledgment.,Jours d'Accusé : délai avant accusé de réception. Jours de Résolution : délai avant résolution. Résolution doit être >= Accusé.
 Acknowledgment Due Date,Date Limite d'Accusé
 Acknowledgment SLA Status,Statut SLA Accusé
 Acknowledgment Template,Modèle d'Accusé
@@ -36,6 +64,7 @@ Action Tracking,Suivi des Actions
 Action/Steps Taken,Actions/Étapes Effectuées
 Actions,Actions
 Activate,Activer
+Activate Project,Activer le Projet
 Activated,Activé
 Activated On,Activé Le
 Activation Attempts,Tentatives d'Activation
@@ -43,28 +72,70 @@ Activation Code,Code d'Activation
 Activation Expires On,Activation Expire Le
 Activation Status,Statut d'Activation
 Activation Timeline,Chronologie d'Activation
+Activation blocked,Activation bloquée
 Activation code has expired. Please request a new code.,Code d'activation expiré. Demandez-en un nouveau.
 Activation code sent successfully!,Code d'activation envoyé avec succès !
+"Activation is blocked until every region has Intake, Review, and Investigate & Resolve.","L'activation est bloquée tant que toutes les régions n'ont pas Réception, Examen et Investigation & Résolution."
+Activation pre-flight,Pré-vérification d'activation
 Active,actif
 Active Projects,Projets Actifs
 Activity Log,Journal d'Activité
+Add,Ajouter
+Add Age Group,Ajouter un Groupe d'Âge
+Add Category,Ajouter une Catégorie
+Add Citizen Group,Ajouter un Groupe de Citoyens
+Add Department,Ajouter un Département
+Add Level,Ajouter un Niveau
+Add Role,Ajouter un Rôle
+Add Status,Ajouter un Statut
+Add Template,Ajouter un Modèle
+Add Type,Ajouter un Type
+Add User Type,Ajouter un Type d'Utilisateur
+Add a department in Step 4 first.,Ajoutez d'abord un département à l'Étape 4.
 Add a short comment (optional),Ajoutez un court commentaire (facultatif)
+Add a single user,Ajouter un seul utilisateur
+Add or reassign users above before continuing.,Ajoutez ou réattribuez des utilisateurs ci-dessus avant de continuer.
+Add user,Ajouter un utilisateur
 Added steps,Étapes ajoutées
+Adding user…,Ajout de l'utilisateur…
+Admin Level,Niveau Admin
+Administrative Level,Niveau Administratif
+Administrative Level (optional),Niveau Administratif (facultatif)
+Administrative Levels,Niveaux Administratifs
+Administrative Levels are the geographic / organizational hierarchy used to route GRM cases (e.g. National &rarr; Region &rarr; District &rarr; Sector &rarr; Cell).,Les niveaux administratifs sont la hiérarchie géographique/organisationnelle pour acheminer les plaintes (ex. National → Région → District → Secteur → Cellule).
+Administrative Region,Région Administrative
 Administrative Region {0} does not exist,La région administrative {0} n'existe pas
+Administrative region,région administrative
+Age Group,Groupe d'Âge
+Age Group '{0}' already exists for this project.,Le groupe d'âge '{0}' existe déjà pour ce projet.
+Age Group created.,Groupe d'Âge créé.
+Age Group deleted.,Groupe d'Âge supprimé.
+Age Group is required.,Le groupe d'âge est requis.
+Age Group updated.,Groupe d'Âge mis à jour.
 Age Group {0} does not belong to project {1},Le groupe d'âge {0} n'appartient pas au projet {1}
+Age Groups,Groupes d'Âge
+"Age Groups: e.g. ""0-17"", ""18-24"", ""25-44"", ""45-64"", ""65+"". Citizen Groups: tags like ""Indigenous"", ""Smallholder Farmer"", ""Female-headed Household"". Group Type 1 vs 2 lets you split groups into two parallel lists if your form needs it.","Groupes d'Âge : ex. ""0-17"", ""18-24"", ""25-44"", ""45-64"", ""65+"". Groupes Citoyens : tags comme ""Autochtone"", ""Petit Agriculteur"", ""Foyer Dirigé par une Femme"". Type 1 vs 2 permet de séparer en deux listes parallèles."
 Agreement Notes,Notes de l'Accord
 Agreement Parties,Parties de l'Accord
 Agreement Signed Date,Date de Signature
 All Categories,Toutes les Catégories
 All Projects,Tous les Projets
+All levels,Tous les niveaux
+All regions covered,Toutes les régions couvertes
+All roles,Tous les rôles
+All statuses,Tous les statuts
+Allow citizens to rate the resolution of their complaints.,Permettre aux citoyens d'évaluer la résolution de leurs plaintes.
+Already Active,Déjà Actif
 Amended From,Modifié À Partir De
 An appeal has already been submitted for this complaint.,Un recours a déjà été soumis pour cette plainte.
 An error occurred during activation. Please try again.,Erreur durant l'activation. Réessayez.
 An error occurred during bulk operation,Erreur durant l'opération en masse
 An error occurred while checking status. Please try again.,Erreur durant la vérification. Réessayez.
 An error occurred. Please try again.,Une erreur s'est produite. Veuillez réessayer.
+Analyzing {0}…,Analyse de {0}…
 Appeal,Recours
 Appeal Date,Date du Recours
+Appeal Department,Département des Recours
 Appeal Information,Informations du Recours
 Appeal Reason,Motif du Recours
 Appeal Submitted,Recours Soumis
@@ -74,9 +145,12 @@ Appeal reason is required,Le motif du recours est requis
 Appeal submitted by citizen,Recours soumis par le citoyen
 Appeal submitted by citizen via public portal,Recours soumis par citoyen via portail public
 Appealed,En Recours
+Apply,Appliquer
 Assigned Appeal Department,Département de Recours Attribué
 Assigned Department,Département Attribué
 Assigned Escalation Department,Département d'Escalade Attribué
+Assigned Role,Rôle Attribué
+Assigned Role is required.,Le rôle attribué est requis.
 Assigned Role {0} does not belong to project {1},Le rôle attribué {0} n'appartient pas au projet {1}
 Assignee,Affecté à
 Assignee not found,Affecté introuvable
@@ -95,90 +169,228 @@ Attachment not found,Pièce jointe introuvable
 Attachment uploaded successfully,Pièce jointe téléversée avec succès
 Attachments,Pièces Jointes
 Authentication required,Authentification requise
+Auto Escalate,Escalade Automatique
+Auto Escalation Days,Jours d'Escalade Automatique
+Auto Escalation Days must be non-negative.,Les jours d'escalade automatique doivent être non négatifs.
 Auto-Escalate on SLA Breach,Escalade Auto en cas de Dépassement SLA
+Auto-create missing administrative regions,Créer automatiquement les régions administratives manquantes
 Automatically escalate to parent level if SLA is breached,Escalader automatiquement si SLA dépassé
 "Automatically generated path for efficient hierarchy queries (e.g., Country:State:District)",Chemin auto-généré pour les requêtes hiérarchiques (ex. Pays:État:District)
 Avg Resolution Days,Jours de Résolution Moyens
 Back,Retour
+Bind this role to an admin level (e.g. District). Leave blank for project-wide roles.,Liez ce rôle à un niveau admin (ex. District). Laissez vide pour les rôles à l'échelle du projet.
 Bot verification failed,La vérification anti-robot a échoué
 Breached,Dépassé
+Bulk import users,Importer des utilisateurs en masse
 By Category,Par Catégorie
 By Region,Par Région
 By Status,Par Statut
+CSV file,Fichier CSV
+CSV/Excel import,Import CSV/Excel
 Call the GRM hotline to submit your grievance by phone,Appelez la ligne d'assistance GRM pour soumettre votre plainte par téléphone
+Cancel,Annuler
 Cannot delete: {0} user(s) currently use this role.,Suppression impossible : {0} utilisateur(s) utilisent ce rôle.
 Cannot escalate - already at highest level,Impossible d'escalader - déjà au plus haut niveau
 Cannot escalate: already at the top of the region chain.,Impossible d'escalader : déjà en haut de la chaîne régionale.
 Category,Catégorie
 Category & Issue Type,Catégorie et Type de Plainte
+Category '{0}' already exists for this project.,La catégorie '{0}' existe déjà pour ce projet.
 Category Name,Nom de la Catégorie
+Category Name is required.,Le nom de la catégorie est requis.
+Category created.,Catégorie créée.
+Category deleted.,Catégorie supprimée.
 Category does not belong to this project,La catégorie n'appartient pas à ce projet
+Category name is the record id and can't be changed after creation.,Le nom de la catégorie est l'identifiant et ne peut pas être modifié après création.
+Category updated.,Catégorie mise à jour.
 Category {0} does not belong to project {1},La catégorie {0} n'appartient pas au projet {1}
 Cell,Cellule
+Change role,Changer le rôle
+Change status,Changer le statut
 Changed status from {0} to {1}: {2},Statut changé de {0} à {1} : {2}
 Check your status,Vérifiez votre statut
 Choose a method to file your complaint,Choisissez une méthode pour déposer votre plainte
+Choose file,Choisir un fichier
 Circular reference detected in region hierarchy,Référence circulaire détectée dans la hiérarchie
 Citizen,Citoyen
 Citizen (Confidential),Citoyen (Confidentiel)
 Citizen Age Group,Groupe d'Âge du Citoyen
+Citizen Group '{0}' already exists for this project.,Le groupe de citoyens '{0}' existe déjà pour ce projet.
 Citizen Group 1,Groupe de Citoyens 1
 Citizen Group 2,Groupe de Citoyens 2
+Citizen Group created.,Groupe de Citoyens créé.
+Citizen Group deleted.,Groupe de Citoyens supprimé.
+Citizen Group updated.,Groupe de Citoyens mis à jour.
 Citizen Group {0} does not belong to project {1},Le groupe de citoyens {0} n'appartient pas au projet {1}
+Citizen Groups,Groupes de Citoyens
 Citizen Information,Informations du Citoyen
+Citizen Lookups are the demographic dropdowns shown on intake forms. They help disaggregate complaint data for reporting.,Les recherches citoyennes sont les listes démographiques affichées sur les formulaires. Elles aident à désagréger les données.
 Citizen Type,Type de Citoyen
 Citizen appeal: {0},Recours citoyen : {0}
 "Citizen feedback collected: Resolution {0}, Rating: {1}","Retour citoyen : Résolution {0}, Note : {1}"
 Citizen feedback: {0},Retour citoyen : {0}
 Citizen has provided feedback rating,Le citoyen a fourni un retour
+Clear,Effacer
+Clear selection,Effacer la sélection
+Click to set,Cliquer pour définir
 Closed,Fermé
 Closed Template,Modèle de Clôture
 Code Sent On,Code Envoyé Le
+Column '{0}' is mapped to administrative region but has no level type selected.,La colonne '{0}' est mappée à la région administrative mais aucun type de niveau n'est sélectionné.
+"Columns include your project's admin levels (e.g. Province / District / Sector), required user fields (email, first name, last name), and required assignment fields (role).","Les colonnes incluent les niveaux admin (Province/District/Secteur), les champs utilisateur requis (e-mail, prénom, nom) et les champs d'affectation requis (rôle)."
 Comment,Commentaire
+"Common pattern: ""New"" (initial, open) → ""In Progress"" (open) → ""Resolved"" (final, open) → ""Closed"" (final). Use ""Rejected"" for cases dismissed during review.","Modèle classique : ""Nouveau"" (initial, ouvert) → ""En Cours"" (ouvert) → ""Résolu"" (final, ouvert) → ""Clôturé"" (final). Utilisez ""Rejeté"" pour les cas rejetés."
 Complaint Submitted Successfully,Plainte Soumise avec Succès
 Complaint not found.,Plainte introuvable.
 Complaint not found. Please check the tracking code.,Plainte introuvable. Vérifiez le code de suivi.
 Complaint not found. Please check your tracking code.,Plainte introuvable. Vérifiez votre code de suivi.
 Complete verification to submit your complaint,Complétez la vérification pour soumettre votre plainte
+Computing impact…,Calcul de l'impact…
+Confidential,Confidentiel
+Confidentiality,Confidentialité
+Confidentiality Level,Niveau de Confidentialité
 Configuration,Configuration
+Confirm cascade removal,Confirmer le retrait en cascade
+Confirm removal,Confirmer le retrait
 Confirmed,Confirmé
 Contact Information,Coordonnées de Contact
 Contact Information (Confidential),Coordonnées (Confidentielles)
 Contact Information Type,Type de Coordonnées
 Contact Medium,Moyen de Contact
 Contact a field officer who can register your complaint on your behalf,Contactez un agent de terrain qui peut enregistrer votre plainte en votre nom
+Continue,Continuer
+Continue to preview,Continuer vers l'aperçu
+Continue to upload,Continuer vers le téléversement
 Copy,Copier
+Could not analyze the file. {0},Impossible d'analyser le fichier. {0}
+Could not compute removal impact,Impossible de calculer l'impact du retrait
+Could not delete age group — it may still be referenced by issues.,Impossible de supprimer le groupe d'âge — peut-être encore référencé.
+Could not delete category — it may still be referenced by issues.,Impossible de supprimer la catégorie — peut-être encore référencée par des plaintes.
+Could not delete citizen group — it may still be referenced by issues.,Impossible de supprimer le groupe de citoyens — peut-être encore référencé.
+Could not delete department — it may still be referenced by categories or issues.,Impossible de supprimer le département — peut-être encore référencé par des catégories ou plaintes.
+Could not delete status — it may still be referenced by issues.,Impossible de supprimer le statut — peut-être encore référencé par des plaintes.
+Could not delete template.,Impossible de supprimer le modèle.
+Could not delete type — it may still be referenced by issues.,Impossible de supprimer le type — peut-être encore référencé par des plaintes.
+Could not delete {0} department(s) — they may still be referenced by categories or issues.,Impossible de supprimer {0} département(s) — peut-être encore référencés par des catégories ou plaintes.
+Could not delete {0} role(s) — they may still be referenced.,Impossible de supprimer {0} rôle(s) — peut-être encore référencés.
+Could not delete {0} {1} — they may still be referenced.,Impossible de supprimer {0} {1} — peut-être encore référencés.
 Could not load app information. Please try again later.,Impossible de charger les informations de l'application. Veuillez réessayer plus tard.
+Could not load form metadata.,Impossible de charger les métadonnées du formulaire.
+Could not load template.,Impossible de charger le modèle.
+Could not load users.,Impossible de charger les utilisateurs.
+Could not start the import.,Impossible de démarrer l'import.
+Country,Pays
+Coverage preview unavailable.,Aperçu de couverture indisponible.
+Currency,Devise
 Current Setup Step,Étape de Configuration Actuelle
 Dashboard,Tableau de Bord
+Date Format,Format de Date
 Days Remaining (Resolution),Jours Restants (Résolution)
+Days before an unresolved issue auto-escalates to the next tier.,Jours avant qu'une plainte non résolue ne s'escalade automatiquement au niveau suivant.
+Deactivate,Désactiver
+Default Language,Langue par Défaut
+Define at least one role with at least one duty before continuing.,Définissez au moins un rôle avec au moins une fonction avant de continuer.
+"Define the project's user types (e.g. ""District GRM Officer"") and tick the duties each role performs in the case lifecycle.","Définissez les types d'utilisateurs du projet (ex. ""Agent GRM de District"") et cochez les fonctions de chaque rôle."
+Delete,Supprimer
+Delete age group {0}? This will remove it from this project's setup.,Supprimer le groupe d'âge {0} ? Cela le retirera de la configuration du projet.
+Delete category {0}? This will remove it from this project's setup.,Supprimer la catégorie {0} ? Cela la retirera de la configuration du projet.
+Delete citizen group {0}? This will remove it from this project's setup.,Supprimer le groupe de citoyens {0} ? Cela le retirera de la configuration du projet.
+Delete department {0}?,Supprimer le département {0} ?
+Delete department {0}? This will remove it from this project's setup.,Supprimer le département {0} ? Cela le retirera de la configuration du projet.
+Delete issue type {0}? This will remove it from this project's setup.,Supprimer le type de plainte {0} ? Cela le retirera de la configuration du projet.
+Delete level {0}?,Supprimer le niveau {0} ?
+Delete notification template {0}?,Supprimer le modèle de notification {0} ?
+Delete role,Supprimer le rôle
+Delete role {0}?,Supprimer le rôle {0} ?
+Delete role {0}? This cannot be undone.,Supprimer le rôle {0} ? Action irréversible.
+Delete row,Supprimer la ligne
+Delete status {0}? This will remove it from this project's setup.,Supprimer le statut {0} ? Cela le retirera de la configuration du projet.
+Delete the selected administrative level?,Supprimer le niveau administratif sélectionné ?
+Delete the selected age group?,Supprimer le groupe d'âge sélectionné ?
+Delete the selected category?,Supprimer la catégorie sélectionnée ?
+Delete the selected citizen group?,Supprimer le groupe de citoyens sélectionné ?
+Delete the selected issue type?,Supprimer le type de plainte sélectionné ?
+Delete the selected notification template?,Supprimer le modèle de notification sélectionné ?
+Delete the selected status?,Supprimer le statut sélectionné ?
+Delete this {0}?,Supprimer ce {0} ?
+Delete {0},Supprimer {0}
+Delete {0} rows,Supprimer {0} lignes
+Delete {0} selected administrative levels?,Supprimer {0} niveaux administratifs sélectionnés ?
+Delete {0} selected age groups?,Supprimer {0} groupes d'âge sélectionnés ?
+Delete {0} selected categories?,Supprimer {0} catégories sélectionnées ?
+Delete {0} selected citizen groups?,Supprimer {0} groupes de citoyens sélectionnés ?
+Delete {0} selected departments?,Supprimer {0} départements sélectionnés ?
+Delete {0} selected issue types?,Supprimer {0} types de plainte sélectionnés ?
+Delete {0} selected notification templates?,Supprimer {0} modèles de notification sélectionnés ?
+Delete {0} selected roles?,Supprimer {0} rôles sélectionnés ?
+Delete {0} selected statuses?,Supprimer {0} statuts sélectionnés ?
+Delete {0} selected {1}?,Supprimer {0} {1} sélectionné(s) ?
+Deleting…,Suppression…
 Department,Département
+Department '{0}' already exists for this project.,Le département '{0}' existe déjà pour ce projet.
 Department Assignment,Affectation du Département
+Department Name,Nom du Département
+Department Name is required.,Le nom du département est requis.
+Department created.,Département créé.
+Department deleted.,Département supprimé.
+Department updated.,Département mis à jour.
 Department {0} is not linked to project {1},Le département {0} n'est pas lié au projet {1}
+"Departments are the organizational units that handle issues — typical examples: Customer Service, Engineering, Compliance, Field Operations.","Les départements sont les unités organisationnelles qui traitent les plaintes — ex. Service Client, Ingénierie, Conformité, Opérations Terrain."
 Describe the Issue,Décrire la Plainte
 "Describe what happened, when, and how it affected you...","Décrivez ce qui s'est passé, quand et comment cela vous a affecté..."
 Description,Description
 Description must be at least 10 characters,La description doit faire au moins 10 caractères
+Detected {0} rows across levels: {1},{0} lignes détectées sur les niveaux : {1}
+Discard unsaved changes?,Annuler les modifications non enregistrées ?
+Display Label,Étiquette Affichée
+Display Label is required.,L'étiquette affichée est requise.
 District,District
 Download APK,Télécharger APK
+Download CSV template,Télécharger le modèle CSV
+Download Excel template,Télécharger le modèle Excel
+"Download a project-tailored template, fill it in with your users, then upload below.","Téléchargez un modèle adapté au projet, remplissez-le avec vos utilisateurs, puis téléversez-le ci-dessous."
 Download public reports,Télécharger les rapports publics
 Draft,Brouillon
+"Drag your CSV or Excel file here, or click to browse.","Glissez votre fichier CSV ou Excel ici, ou cliquez pour parcourir."
 Due At,Échéance
 Due Date,Date d'Échéance
 Duplicate project {0} in project links,Projet en double {0}
+Duties,Fonctions
 Duty,Fonction
+Duty coverage complete,Couverture des fonctions complète
+Duty coverage incomplete,Couverture des fonctions incomplète
+Each category routes to either a Department (organisational) or a Role (cross-department workflow). Step 10 lets you review and re-assign at the end.,Chaque catégorie est acheminée vers un Département (organisationnel) ou un Rôle (inter-départements). L'Étape 10 permet de revoir.
+Each department can have a head — a user who oversees issues routed there. Step 5 (Categories) assigns issues to one of these departments by default.,Chaque département peut avoir un responsable — un utilisateur qui supervise les plaintes. L'Étape 5 affecte les plaintes à un département par défaut.
+"Each region must cover Intake, Review, and Investigate & Resolve duties. Add users below, or remove regions you don't intend to use.","Chaque région doit couvrir Réception, Examen et Investigation & Résolution. Ajoutez des utilisateurs ci-dessous ou retirez les régions inutiles."
+"Each region must have at least one user covering Intake, Review, and Investigate & Resolve.","Chaque région doit avoir au moins un utilisateur couvrant Réception, Examen et Investigation & Résolution."
+"Each region must have at least one user covering Intake, Review, and Investigate & Resolve. Duties may be split across multiple users or held by one person.","Chaque région doit couvrir Réception, Examen, Investigation & Résolution. Les fonctions peuvent être réparties ou tenues par une seule personne."
+"Each template can drive an email (linked Email Template) and / or an SMS (Jinja2 message body). Use {{ tracking_code }}, {{ status }}, {{ subject }}, etc. as placeholders.","Chaque modèle peut piloter un e-mail (modèle lié) et/ou un SMS (corps Jinja2). Utilisez {{ tracking_code }}, {{ status }}, {{ subject }} comme variables."
+Edit,Modifier
+Edit Admin Level — {0},Modifier le Niveau Admin — {0}
+Edit Category,Modifier la Catégorie
+Edit Citizen Group,Modifier le Groupe de Citoyens
+Edit Department,Modifier le Département
+Edit Head — {0},Modifier le Responsable — {0}
+Edit Status,Modifier le Statut
+Edit Template,Modifier le Modèle
 Email,E-mail
 Email Address,Adresse E-mail
 Email Configuration,Configuration E-mail
 Email Template,Modèle d'email
 Email and activation code are required,L'e-mail et le code sont requis
+Email domain,Domaine e-mail
+Email domain '{0}' is not valid.,Le domaine e-mail '{0}' n'est pas valide.
 Email domain is required when synthesizing emails.,Domaine e-mail requis pour générer les e-mails.
+Email domain required,Domaine e-mail requis
 Email is required,L'e-mail est requis
 Enable Automated Notifications,Activer les Notifications Automatiques
+Enable Citizen Feedback,Activer les retours citoyens
 Enable Public Dashboard,Activer Tableau de Bord Public
 Enable Public Reports,Activer Rapports Publics
+Enable SMS,Activer SMS
 End Date,Date de Fin
 End Date cannot be before Start Date,La date de fin ne peut être avant la date de début
+End Date must be on or after Start Date.,La date de fin doit être égale ou postérieure à la date de début.
+Enter an email domain (e.g. example.com) to generate emails.,Saisissez un domaine e-mail (ex. example.com) pour générer les e-mails.
 Enter the 6-digit code,Saisissez le code à 6 chiffres
 Enter the 6-digit code sent to {0},Saisissez le code à 6 chiffres envoyé à {0}
 Enter tracking code...,Saisissez le code de suivi...
@@ -200,6 +412,7 @@ Error retrieving complaint status,Erreur de récupération du statut
 Error retrieving departments. Please try again later.,Erreur de récupération des départements.
 Error setting up permissions. Please check the logs.,Erreur de configuration des permissions.
 Error submitting appeal: {0},Erreur de soumission du recours : {0}
+Errors,Erreurs
 Escalate Flag,Indicateur d'Escalade
 Escalated,Escaladé
 Escalated By,Escaladé Par
@@ -207,6 +420,7 @@ Escalated Date,Date Escalade
 Escalated Template,Modèle d'Escalade
 Escalation,Escalade
 Escalation Count,Compteur d'Escalades
+Escalation Department,Département d'Escalade
 Escalation Reason,Motif de l'Escalade
 Escalation Reasons,Motifs d'Escalade
 Escalation Tracking,Suivi d'Escalade
@@ -230,33 +444,57 @@ File Name,Nom du Fichier
 File a new grievance,Déposer une nouvelle plainte
 File not found,Fichier introuvable
 "File your grievance via web, mobile, or field officer","Déposez votre plainte via le web, mobile, ou un agent de terrain"
+Final Status,Statut Final
+Final?,Final ?
+"Finalise where each category's complaints are routed. Choose a Department for organisational routing, or a Role for cross-department workflows.",Finalisez l'acheminement des plaintes par catégorie. Choisissez un Département (organisationnel) ou un Rôle (inter-départements).
 From Date,A partir du
 From Date cannot be after To Date,La date de début ne peut être après la date de fin
 GRM Portal,Portail GRM
 GRM System - Government Worker Activation Code,Système GRM - Code d'Activation Agent Public
 Gender,Genre
+Generate name-based emails (legacy),Générer des e-mails basés sur les noms (legacy)
 Get a tracking code and monitor progress,Obtenez un code de suivi et suivez la progression
 Go to Dashboard,Aller au Tableau de bord
+Go to step,Aller à l'étape
 Government Worker Information,Informations de l'Agent Public
 Grievance Redress,Recours et Plaintes
 Grievance Redress Mechanism,Mécanisme de Recours
+Group Name,Nom du Groupe
+Group Name is required.,Le nom du groupe est requis.
+Group Type,Type de Groupe
+Group Type 1 / 2 separates two parallel demographic dimensions on the intake form.,Le type de groupe 1 / 2 sépare deux dimensions démographiques parallèles sur le formulaire.
+Head,Responsable
+Head (User),Responsable (Utilisateur)
+Heads up: '{0}' is already marked Initial — only one should be the entry point.,Attention : '{0}' est déjà marqué Initial — un seul doit être le point d'entrée.
+Heads up: project code becomes the record name and cannot be changed after save.,Attention : le code du projet devient le nom de la fiche et ne peut pas être modifié après enregistrement.
 Hierarchy,Hiérarchie
 Hierarchy Path,Chemin de Hiérarchie
+"Highest level (single value, applied to all rows)","Niveau le plus élevé (valeur unique, appliquée à toutes les lignes)"
 Home,Accueil
 How It Works,Comment ça Marche
+"How dates, numbers, and currency are formatted across the platform. Default Language drives label translations for citizens and staff.","Format des dates, nombres et devises sur la plateforme. La langue par défaut pilote les traductions pour citoyens et personnel."
 How would you like to be contacted?,Comment souhaitez-vous être contacté ?
+I confirm the project setup is complete,Je confirme que la configuration du projet est terminée
 I don't know,Je ne sais pas
 I want updates,Je veux des mises à jour
 Icon (lucide name),Icône (nom lucide)
+Identity,Identité
+Import Regions,Importer des Régions
+"Import {0}: {1} succeeded, {2} failed","Import {0} : {1} réussi(s), {2} échec(s)"
+Imported {0} regions ({1} updated). {2} errors.,{0} régions importées ({1} mises à jour). {2} erreurs.
 In Person,En Personne
 In Progress,En Cours
 In Progress Template,Modèle En Cours
 Inactive,Inactif
+Inactive projects are hidden from intake screens but stay queryable in reports.,Les projets inactifs sont masqués des écrans de réception mais restent interrogeables dans les rapports.
+Initial Status,Statut Initial
+Initial?,Initial ?
 Intake,Réception
 Intake Date,Date de Réception
 Invalid Jinja2 syntax in SMS message: {0},Syntaxe Jinja2 invalide dans le SMS : {0}
 Invalid activation_status value: {0},Valeur activation_status invalide : {0}
 Invalid email address,Adresse e-mail invalide
+Invalid email domain,Domaine e-mail invalide
 Invalid email domain: {0},Domaine e-mail invalide : {0}
 Invalid location data format,Format de données de lieu invalide
 Invalid or inactive project,Projet invalide ou inactif
@@ -270,6 +508,8 @@ Is Setup Complete,Configuration Terminée
 Issue Activity log,Journal d'activité
 Issue Assigned,Plainte Affectée
 Issue Attachments,Pièces Jointes
+Issue Categories (linked),Catégories de Plaintes (liées)
+"Issue Categories define the kinds of grievances this project handles, plus the default routing (which department or role picks them up, escalation paths, and confidentiality).","Les catégories définissent les types de plaintes que gère le projet, plus l'acheminement par défaut (département/rôle preneur, escalade, confidentialité)."
 Issue Comments,Commentaires de la Plainte
 Issue Date,Date de la Plainte
 Issue Date cannot be after Intake Date,La date de la plainte ne peut être après la date de réception
@@ -278,8 +518,10 @@ Issue Escalated,Plainte Escaladée
 Issue Escalated to You,Plainte Escaladée à Vous
 Issue Location,Lieu de la Plainte
 Issue Log,Journal de la Plainte
+Issue Statuses define the lifecycle of a case — from intake to closure. Mark exactly one status as the Initial status (the entry point) and at least one as Final (resolution / closure).,Les statuts définissent le cycle de vie — réception à clôture. Marquez exactement un statut comme Initial (point d'entrée) et au moins un comme Final (résolution/clôture).
 Issue Type,Type de Plainte
 Issue Type {0} does not belong to project {1},Le type de plainte {0} n'appartient pas au projet {1}
+"Issue Types complement categories — they describe the broader nature of a complaint (e.g. ""Service Quality"", ""Compensation"", ""Environmental"").","Les types complètent les catégories — décrivent la nature large d'une plainte (ex. ""Qualité du Service"", ""Indemnisation"", ""Environnemental"")."
 Issue accepted and assigned for processing,Plainte acceptée et affectée
 Issue cancelled,Plainte annulée
 Issue creation failed; record not found,Échec de création
@@ -297,65 +539,125 @@ Issue was accepted by {0},Plainte acceptée par {0}
 Issue was resolved by {0},Plainte résolue par {0}
 Issue {0} has been assigned to you: {1},La plainte {0} vous a été affectée : {1}
 Issue {0} has been escalated to you,La plainte {0} vous a été escaladée
+Issues in this category are routed to the user holding this role in the issue's region (or nearest ancestor) with the Investigate & Resolve duty.,Les plaintes de cette catégorie vont à l'utilisateur tenant ce rôle dans la région de la plainte (ou l'ancêtre proche) avec Investigation & Résolution.
 Job title/position,Titre du poste
 Keyboard Shortcuts,Raccourcis clavier
+Label,Étiquette
 Last Escalated On,Dernière Escalade Le
 Last Escalation Reason,Dernier Motif d'Escalade
 Latest version,Dernière version
+Leave blank for project-wide roles.,Laissez vide pour les rôles à l'échelle du projet.
 "Leave blank for shared templates, or select project for project-specific template",Laissez vide pour partagé ou sélectionnez un projet
+Legacy: builds firstname.lastname@<domain> for rows without an email. Phone-as-login takes precedence when both are checked.,Legacy : construit prenom.nom@<domaine> pour les lignes sans e-mail. Le téléphone-connexion prime si les deux sont cochés.
+Level,Niveau
+Level Name,Nom du Niveau
 Level Name '{0}' already exists for project {1}.,Le nom du niveau '{0}' existe déjà pour le projet {1}.
+Level Name '{0}' already exists for this project.,Le nom du niveau '{0}' existe déjà pour ce projet.
+Level Name is required.,Le nom du niveau est requis.
 Level Order,Ordre du Niveau
 Level Order cannot be negative,L'ordre du niveau ne peut être négatif
+Level Order must be an integer >= 1.,L'ordre du niveau doit être un entier >= 1.
+Level created.,Niveau créé.
+Level deleted.,Niveau supprimé.
+Level type,Type de niveau
+Level updated.,Niveau mis à jour.
+Levels,Niveaux
 Lifecycle Phase,Phase du Cycle de Vie
 Link to Frappe Email Template for email notifications,Lien vers le modèle d'e-mail Frappe
+Loading counts...,Chargement des compteurs…
+Loading coverage...,Chargement de la couverture…
 Loading latest version…,Chargement de la dernière version...
 Loading metrics...,Chargement des données...
 Loading reports...,Chargement des rapports...
+Loading…,Chargement…
 Local URL,URL Locale
+Locale,Locale
 Location,Lieu
 Log Entry,Entrée de Journal
 Login,Connexion
 Login required.,Connexion requise.
 Logo,Logo
+"Lower level_order = higher in the tree (1 = root). Each level defines its own SLA defaults: acknowledgment, resolution, reminder lead time, and auto-escalation.","level_order plus bas = plus haut dans l'arbre (1 = racine). Chaque niveau a ses SLA par défaut : accusé, résolution, rappel, escalade auto."
 Male,Homme
+Map each column from your file to a target field. Required fields are marked with an asterisk.,Mappez chaque colonne du fichier à un champ cible. Les champs requis sont marqués d'un astérisque.
+Map these required fields before continuing:,Mappez ces champs obligatoires avant de continuer :
+Mapping is complete — ready to preview.,Mappage terminé — prêt pour aperçu.
 Mapping is invalid. Missing required: {0}. Errors: {1},Mappage invalide. Manquants : {0}. Erreurs : {1}
 Materialized Path,Chemin Matérialisé
 Minimum 10 characters,Minimum 10 caractères
 Missing 'id' on issue payload,'id' manquant dans la charge utile
+Missing duties,Fonctions manquantes
 Missing required parameters,Paramètres requis manquants
 Mobile App,Application Mobile
+Multiple columns mapped to admin level '{0}': {1}. Pick exactly one.,Plusieurs colonnes mappées au niveau '{0}' : {1}. Choisissez-en exactement une.
+Name,Nom
+Name / Email,Nom / E-mail
 Nearing Due,Près de l'Échéance
+Needs role — edit to fix,Rôle requis — modifier pour corriger
+New Administrative Level,Nouveau Niveau Administratif
+New Age Group,Nouveau Groupe d'Âge
+New Category,Nouvelle Catégorie
+New Citizen Group,Nouveau Groupe de Citoyens
+New Department,Nouveau Département
+New Issue Type,Nouveau Type de Plainte
+New Status,Nouveau Statut
+New Template,Nouveau Modèle
 Next,Suivant
+No,Non
 No `file` part in upload.,Pas de partie `file` dans l'envoi.
 No activation code found. Please generate a code first.,Aucun code trouvé. Générez d'abord un code.
 No active Project Roles defined for this project.,Aucun rôle de projet actif défini.
 No administrative levels defined for this project.,Aucun niveau administratif défini pour ce projet.
+No administrative levels defined yet — go back to Step 2 to add them.,Aucun niveau administratif défini — retournez à l'Étape 2 pour en ajouter.
+"No administrative levels yet — click ""Add Level"" to create the first one.","Aucun niveau administratif — cliquez sur ""Ajouter un Niveau"" pour créer le premier."
+"No age groups yet — click ""Add Age Group"" to create the first one.","Aucun groupe d'âge — cliquez sur ""Ajouter un Groupe d'Âge"" pour créer le premier."
 No categories found,Aucune catégorie trouvée
+"No categories yet — click ""Add Category"" to create the first one.","Aucune catégorie — cliquez sur ""Ajouter une Catégorie"" pour créer la première."
+"No citizen groups yet — click ""Add Citizen Group"" to create the first one.","Aucun groupe de citoyens — cliquez sur ""Ajouter un Groupe de Citoyens"" pour créer le premier."
 No data,Aucune donnée
+"No departments defined yet — go back to Step 4 first to add departments, then return to this step.","Aucun département défini — retournez à l'Étape 4 pour en ajouter, puis revenez à cette étape."
+"No departments yet — click ""Add Department"" to create the first one.","Aucun département — cliquez sur ""Ajouter un Département"" pour créer le premier."
 No eligible workers found,Aucun travailleur éligible
 No file provided,Aucun fichier fourni
 No final status found for this project,Aucun statut final trouvé
 No government worker assignment found for this email,Aucune affectation d'agent public pour cet e-mail
 No government worker assignments found for this project,Aucune affectation d'agent pour ce projet
 No government worker roles configured for this project,Aucun rôle d'agent public configuré
+No issue categories defined yet — go back to Step 5 to add some.,Aucune catégorie de plainte définie — retournez à l'Étape 5 pour en ajouter.
 No issue types found,Aucun type de plainte trouvé
+"No issue types yet — click ""Add Type"" to create the first one.","Aucun type de plainte — cliquez sur ""Ajouter un Type"" pour créer le premier."
 No mobile app version is published yet.,Aucune version mobile publiée.
+"No notification templates yet — click ""Add Template"" to create the first one.","Aucun modèle de notification — cliquez sur ""Ajouter un Modèle"" pour créer le premier."
 No open status configured for this project,Aucun statut ouvert configuré
 No open status found for this project,Aucun statut ouvert trouvé
 No pending activation found for this email,Aucune activation en attente pour cet e-mail
 No permission to export activation codes,Pas de permission d'exporter les codes
 No permission to send activation codes,Pas de permission d'envoyer des codes
+No preview rows available.,Aucune ligne d'aperçu disponible.
+No project loaded.,Aucun projet chargé.
+No project to activate,Aucun projet à activer
 No projects found,Aucun projet trouvé
+No regions defined yet.,Aucune région définie pour le moment.
 No regions found,Aucune région trouvée
 No rejected status found for this project,Aucun statut rejeté trouvé
 No reopened status configured,"Aucun statut ""rouvert"" configuré"
 No reports available yet,Aucun rapport disponible pour le moment
 No resolved status configured,"Aucun statut ""résolu"" configuré"
+"No roles yet — click ""+ Add Role"" below to create the first one.","Aucun rôle — cliquez sur ""+ Ajouter un Rôle"" ci-dessous pour créer le premier."
+No rows are ready to import. Adjust your mapping or input file and try again.,Aucune ligne prête à être importée. Ajustez votre mappage ou fichier et réessayez.
+"No statuses yet — click ""Add Status"" to create the first one.","Aucun statut pour le moment — cliquez sur ""Ajouter un Statut"" pour créer le premier."
+No users assigned to this project yet. Add users below.,Aucun utilisateur attribué à ce projet pour le moment. Ajoutez des utilisateurs ci-dessous.
+No users match the current filters.,Aucun utilisateur ne correspond aux filtres actuels.
+No.,N°
+None,Aucun
 Not Resolved,Non Résolu
 Not permitted,Non autorisé
 Not satisfied? Submit an appeal,Pas satisfait ? Déposez un recours
 Notification Settings,Paramètres de Notification
+"Notification Templates control the messages sent to citizens at each stage of an issue's lifecycle (receipt, acknowledgment, status updates, escalation, SLA reminders).","Les modèles de notification contrôlent les messages envoyés aux citoyens à chaque étape (réception, accusé, mises à jour, escalade, rappels SLA)."
 Notification sent successfully,Notification envoyée avec succès
+Notify project administrators on activation,Notifier les administrateurs du projet lors de l'activation
+Number Format,Format Numérique
 Number of business days to acknowledge complaint (default: 7 per WB guidelines),Nombre de jours pour accuser réception (défaut : 7 selon BM)
 Number of business days to resolve complaint (default: 30 per WB guidelines),Nombre de jours ouvrables pour résoudre (défaut : 30 selon BM)
 Number of failed activation attempts,Nombre de tentatives d'activation échouées
@@ -364,6 +666,13 @@ On behalf of Individual,Au nom d'un Individu
 On behalf of Organization,Au nom d'une Organisation
 Only platform administrators can use bulk-import endpoints.,Seuls les administrateurs plateforme peuvent utiliser ces points.
 Open,Ouvert
+Open Status,Statut Ouvert
+Open project record,Ouvrir la fiche du projet
+Open?,Ouvert ?
+Operational Defaults,Paramètres par Défaut
+Optional. The user who oversees issues routed to this department.,Facultatif. L'utilisateur qui supervise les plaintes acheminées vers ce département.
+Optional. Used in dashboards and to gate intake outside the project window.,Facultatif. Utilisé dans les tableaux de bord et pour limiter la réception hors de la période du projet.
+Order,Ordre
 Other,Autre
 Oversight,Supervision
 Parent Region,Région Parente
@@ -374,31 +683,55 @@ Phone,Téléphone
 Phone Hotline,Ligne Téléphonique
 Phone Number,Numéro de Téléphone
 Phone number is required,Le numéro de téléphone est requis
+Pick a CSV first.,Choisissez d'abord un CSV.
+Pick at least one duty,Choisissez au moins une fonction
 Pick at least one duty for this role.,Choisissez au moins une fonction.
+Pick {0},Choisir {0}
 Please configure at least one notification channel (Email or SMS),Configurez au moins un canal (E-mail ou SMS)
+Please define {0} before continuing.,Veuillez définir {0} avant de continuer.
 Please describe your complaint in detail,Veuillez décrire votre plainte en détail
+Polling failed.,Vérification échouée.
+Position,Poste
 Position Title,Titre du Poste
 Preferred Contact Method,Méthode de Contact Préférée
+Preparing preview…,Préparation de l'aperçu…
+Prev,Précédent
 Preview,Aperçu
 Project,Projet
 Project '{0}' does not exist.,Le projet '{0}' n'existe pas.
+Project Code,Code du Projet
+Project Code is required.,Le code du projet est requis.
 Project Link,Lien du Projet
 Project Role,Rôle du Projet
 Project Role is required,Le rôle du projet est requis
 Project Role {0} does not exist,Le rôle de projet {0} n'existe pas
 Project Role {0} is not active,Le rôle de projet {0} n'est pas actif
+Project Roles,Rôles du Projet
+Project Setup Wizard,Assistant de Configuration du Projet
+Project Summary,Résumé du Projet
+Project Title,Titre du Projet
+Project activated,Projet activé
+Project already active.,Projet déjà actif.
+Project code cannot be changed after creation.,Le code du projet ne peut pas être modifié après création.
+Project created: {0},Projet créé : {0}
+Project is already active.,Le projet est déjà actif.
 Project is required,Le projet est requis
+Project not found,Projet introuvable
+Project users,Utilisateurs du Projet
 Project {0} already has an initial status: {1},Le projet {0} a déjà un statut initial : {1}
 Project {0} does not exist,Le projet {0} n'existe pas
 Project {0} not found,Projet {0} introuvable
+Project-wide behavioural defaults. You can adjust these later from project settings.,Paramètres comportementaux par défaut du projet. Vous pouvez les ajuster plus tard.
 Provide your contact details to receive status updates,Fournissez vos coordonnées pour recevoir les mises à jour
 Province,Province
+Public,Public
 Public Dashboard,Tableau de Bord Public
 Public Portal,Portail Public
 Public Portal Visibility,Visibilité Portail Public
 Public Reports,Rapports Publics
 Public citizen-comment endpoint is not available.,Le point de terminaison public n'est pas disponible.
 Public reports will appear here once generated.,Les rapports publics apparaîtront ici une fois générés.
+Publish project to citizen portal,Publier le projet sur le portail citoyen
 Raise Issue,Signaler un Problème
 Rate this resolution,Évaluez cette résolution
 Rated Date,Date d'Évaluation
@@ -416,20 +749,38 @@ Reassigned from {0} to {1}: {2},Réaffecté de {0} à {1} : {2}
 Receipt,Accusé de Réception
 Receipt Template,Modèle de Reçu
 Received,Reçu
+Redirection Protocol,Protocole de Redirection
+Region,Région
+Region Duty Coverage,Couverture des Régions
 Region Name,Nom de la Région
 Region not found,Région introuvable
+Region removal failed,Échec du retrait de la région
 Region {0} does not belong to project {1},La région {0} n'appartient pas au projet {1}
+Regions,Régions
+Regions that will be created:,Régions qui seront créées :
 Reject Information,Informations de Rejet
 Reject Reason,Motif de Rejet
 Rejected,Rejeté
 Rejected By,Rejeté Par
 Rejected Date,Date de Rejet
+Rejected Status,Statut Rejeté
+Rejected?,Rejeté ?
 Release Notes,Notes de Version
 Reload,Recharger
+Reminder Before,Rappel Avant
 Reminder Before (Days),Rappel Avant (Jours)
 Reminder days must be less than resolution days,Les jours de rappel doivent être inférieurs aux jours de résolution
+Removal is blocked for any region that still has active users.,Le retrait est bloqué pour toute région ayant encore des utilisateurs actifs.
+Remove selected regions from project,Retirer les régions sélectionnées du projet
+Remove the selected user from this project?,Retirer l'utilisateur sélectionné de ce projet ?
+Remove {0} selected region(s) from project,Retirer {0} région(s) sélectionnée(s) du projet
+Remove {0} selected users from this project?,Retirer {0} utilisateurs sélectionnés de ce projet ?
+Removed {0} region(s),{0} région(s) retirée(s)
+Removing…,Suppression…
 Reporter,Rapporteur
 Reports,Rapports
+Required fields missing,Champs obligatoires manquants
+Res Days,Jours de Résolution
 Resend code,Renvoyer le code
 Resend verification code,Renvoyer le code de vérification
 Resolution,Résolution
@@ -439,6 +790,7 @@ Resolution Agreement (Signed),Accord de Résolution (Signé)
 Resolution Breached On,Résolution Dépassée Le
 Resolution Date,Date de Résolution
 Resolution Date cannot be before Issue Date,La date de résolution ne peut être avant la date de la plainte
+Resolution Days,Jours de Résolution
 Resolution Due Date,Date Limite de Résolution
 Resolution Information,Informations de Résolution
 Resolution Rate (%),Taux de Résolution (%)
@@ -450,9 +802,15 @@ Resolved,Résolu
 Resolved By,Résolu Par
 Resolved Template,Modèle de Résolution
 Role,Rôle
+Role Name,Nom du Rôle
 Role {0} does not belong to project {1},Le rôle {0} n'appartient pas au projet {1}
 Role {0} is not allowed in bulk worker import. ,Le rôle {0} n'est pas autorisé dans l'import en masse. 
+Route To,Acheminer Vers
 Route To must be 'Role'. Department-based routing is no ,Acheminer Vers doit être 'Rôle'. L'acheminement par département n'est plus 
+Routes To,Achemine Vers
+Row {0}: Acknowledgment Days must be >= 0.,Ligne {0} : Les jours d'accusé doivent être >= 0.
+Row {0}: Resolution Days must be >= 1.,Ligne {0} : Les jours de résolution doivent être >= 1.
+Row {0}: Resolution Days must be >= Acknowledgment Days.,Ligne {0} : Les jours de résolution doivent être >= jours d'accusé.
 Rwanda,Rwanda
 SLA Acknowledgment (Days),Accusé SLA (Jours)
 SLA Configuration,Configuration SLA
@@ -461,14 +819,34 @@ SLA Reminder Template,Modèle de Rappel SLA
 SLA Resolution (Days),Résolution SLA (Jours)
 SLA Status,Statut SLA
 SLA Tracking,Suivi SLA
+SLA validation failed — see errors above.,Validation SLA échouée — voir les erreurs ci-dessus.
+SLAs are tuned per administrative level. Adjust the acknowledgment and resolution targets and toggle auto-escalation for each level.,Les SLA sont définis par niveau administratif. Ajustez les objectifs et basculez l'escalade auto pour chaque niveau.
+SLAs saved.,SLA enregistrés.
+SMS Message,Message SMS
 "SMS message template (supports Jinja2: {{ tracking_code }}, {{ status }}, etc.)","Modèle SMS (Jinja2 : {{ tracking_code }}, {{ status }}, etc.)"
 SMS service is not configured,Le service SMS n'est pas configuré
+Sample,Échantillon
+Save,Enregistrer
+Save All,Tout Enregistrer
+Save Category,Enregistrer la Catégorie
+Save Department,Enregistrer le Département
+Save Group,Enregistrer le Groupe
+Save Level,Enregistrer le Niveau
+Save Status,Enregistrer le Statut
+Save Step 1 first to create the project.,Enregistrez d'abord l'Étape 1 pour créer le projet.
+Save Step 1 to begin,Enregistrez l'Étape 1 pour commencer
+Save Template,Enregistrer le Modèle
+Save Type,Enregistrer le Type
 Save your tracking code to check the status of your complaint,Conservez votre code de suivi pour vérifier l'état de votre plainte
+Schedule,Calendrier
+Search by email or name,Rechercher par e-mail ou nom
+Search name / email / position,Rechercher nom / e-mail / poste
 Search projects...,Rechercher des projets...
 Search regions...,Rechercher des régions...
 Searching...,Recherche...
 Sector,Secteur
 See public statistics,Voir les statistiques publiques
+Seeded {0} default statuses. Tweak as needed.,{0} statuts par défaut créés. Ajustez si nécessaire.
 Select,Sélectionner
 Select Project,Choisir un Projet
 Select Region,Choisir la Région
@@ -495,12 +873,26 @@ Service Level Agreement timeframes for this administrative level,Délais SLA pou
 Session Defaults,Session par défaut
 Settings,Paramètres
 Setup State,État de Configuration
+Showing 50 of {0} gaps.,Affichage de 50 sur {0} lacunes.
+Showing up to 100 enabled users.,Affichage de jusqu'à 100 utilisateurs activés.
+Showing up to 50 Email Templates.,Affichage de jusqu'à 50 modèles e-mail.
+Single user,Utilisateur unique
 "Solution proposed, implemented, and verified","Solution proposée, mise en œuvre, et vérifiée"
+Source column,Colonne source
 Start Date,Date de Début
+Start import,Lancer l'import
+Starting import…,Démarrage de l'import…
 Status,Statut
+Status '{0}' already exists for this project.,Le statut '{0}' existe déjà pour ce projet.
+Status Name,Nom du Statut
+Status Name is required.,Le nom du statut est requis.
+Status created.,Statut créé.
+Status deleted.,Statut supprimé.
 Status retrieved successfully,Statut récupéré avec succès
+Status updated.,Statut mis à jour.
 Status {0} does not belong to project {1},Le statut {0} n'appartient pas au projet {1}
 Stay anonymous,Rester anonyme
+Step component pending — see plan tasks 3.2-B / 3.2-C,Composant d'étape en attente — voir les tâches 3.2-B / 3.2-C
 Step {0},Étape {0}
 Submission failed. Please try again.,Échec de la soumission. Veuillez réessayer.
 Submit,Soumettre
@@ -514,19 +906,43 @@ Submit through the GRM mobile application available on Android,Soumettez via l'a
 Submitted,Soumise
 Submitting...,Envoi en cours...
 Success,Succès
+"Supports Jinja2: {{ tracking_code }}, {{ status }}, {{ subject }}, {{ complainant_name }}, {{ created_date }}, etc.","Prend en charge Jinja2 : {{ tracking_code }}, {{ status }}, {{ subject }}, {{ complainant_name }}, {{ created_date }}, etc."
 Suspended,Suspendu
 Sync Name,Nom de Sync
 System Manager,Responsable Système
 System configuration error. Please try again later.,Erreur de configuration. Réessayez plus tard.
+Target,Cible
+Target field,Champ cible
+"Tell us about your project. The information below will appear across the platform — citizen-facing portals, mobile apps, and notification templates.","Parlez-nous de votre projet. Les informations ci-dessous apparaîtront sur la plateforme — portails citoyens, applications mobiles et modèles de notification."
 Tell us why you are not satisfied,Dites-nous pourquoi vous n'êtes pas satisfait
+Template '{0}' already exists for this project.,Le modèle '{0}' existe déjà pour ce projet.
+Template Active,Modèle Actif
+Template Name,Nom du Modèle
+Template Name is required.,Le nom du modèle est requis.
+Template Type,Type de Modèle
+Template Type is required.,Le type de modèle est requis.
 Template Variables Reference,Référence des Variables
+Template created.,Modèle créé.
+Template deleted.,Modèle supprimé.
+Template name is the record id and can't be changed.,Le nom du modèle est l'identifiant et ne peut pas être modifié.
+Template updated.,Modèle mis à jour.
 Template {0} belongs to another project,Le modèle {0} appartient à un autre projet
 Template {0} is not active,Le modèle {0} n'est pas actif
 Thanks for your feedback,Merci pour votre retour
 The mobile app is not available yet. Please check back later.,L'application mobile n'est pas encore disponible. Revenez plus tard.
+"There is no way to keep the descendants — descendants without an ancestor produce orphan regions, which the wizard refuses to create.","Impossible de conserver les descendants — les descendants sans ancêtre produisent des régions orphelines, refusées par l'assistant."
+These fields identify your project to staff and citizens.,Ces champs identifient votre projet auprès du personnel et des citoyens.
+These roles must be created in Step 8 (Roles) first:,Ces rôles doivent d'abord être créés à l'Étape 8 (Rôles) :
 This complaint has already been rated.,Cette plainte a déjà été évaluée.
 This complaint has no contact channel; submit your rating without a code.,Cette plainte n'a pas de canal de contact ; soumettez sans code.
+"Tick ""I confirm the project setup is complete"" to activate.","Cochez ""Je confirme que la configuration est terminée"" pour activer."
+Tick a checkbox to grant the role that duty — saves immediately.,Cochez une case pour attribuer cette fonction au rôle — sauvegarde immédiate.
+"Tick the confirmation above, then click ""Activate Project"" to mark setup complete and switch to the Platform workspace.","Cochez la confirmation ci-dessus, puis cliquez sur ""Activer le Projet"" pour terminer et passer à l'espace Plateforme."
+Tick the duties this role performs in the case lifecycle. At least one is required.,Cochez les fonctions que ce rôle remplit. Au moins une est requise.
+Time Zone,Fuseau Horaire
 Timestamp,Horodatage
+Title,Titre
+Title is required.,Le titre est requis.
 To Date,Jusqu'au
 Toggle Full Width,Changer l'affichage en pleine largeur
 Toggle Theme,Basculer le thème
@@ -540,22 +956,41 @@ Tracking Code,Code de Suivi
 Tracking Result,Résultat du Suivi
 Tracking code is required,Le code de suivi est requis
 Triage,Tri
+Type,Type
+Type '{0}' already exists for this project.,Le type '{0}' existe déjà pour ce projet.
+Type Name,Nom du Type
+Type Name is required.,Le nom du type est requis.
+Type created.,Type créé.
+Type deleted.,Type supprimé.
+Type updated.,Type mis à jour.
+"Types are project-scoped. Pick a small, stable list — citizens see these on intake forms.",Les types sont propres au projet. Choisissez une liste petite et stable — les citoyens les voient sur les formulaires.
 Unassigned,Non Attribué
+Unrouted,Non acheminé
 Unsupported file type: {0}. Use CSV or XLSX.,Type de fichier non pris en charge : {0}. Utiliser CSV ou XLSX.
 Unsupported format: {0}. Use 'csv' or 'xlsx'.,Format non pris en charge : {0}. Utiliser 'csv' ou 'xlsx'.
+Updated {0} users.,{0} utilisateurs mis à jour.
+Updated {0}; {1} failed.,{0} mis à jour ; {1} échec.
+Updated.,Mis à jour.
+"Upload a CSV with one column per administrative level (e.g. Province, District, Sector). The highest level is auto-created from the project's country.","Téléversez un CSV avec une colonne par niveau administratif (ex. Province, District, Secteur). Le niveau supérieur est créé automatiquement à partir du pays du projet."
 Upload signed resolution agreement document,Téléverser l'accord de résolution signé
 Uploaded,Téléversé
 Uploaded file has no header row,Le fichier téléversé n'a pas de ligne d'en-tête
 Uploaded file is empty,Le fichier téléversé est vide
 Uploaded file is empty.,Le fichier téléversé est vide.
+Uploaded: {0},Téléversé : {0}
+Use phone as login (no real email required),Utiliser le téléphone pour la connexion (aucun e-mail réel requis)
 User,Utilisateur
+User added.,Utilisateur ajouté.
+User and Role are required.,L'utilisateur et le rôle sont requis.
 User email is required for activation code generation,L'e-mail est requis pour générer le code
 User email is required to send activation code,L'e-mail est requis pour envoyer le code
 User is required,Utilisateur requis
 User {0} does not exist,L'utilisateur {0} n'existe pas
 User {0} is already assigned to {1},L'utilisateur {0} est déjà affecté à {1}
 User {0} is not enabled,L'utilisateur {0} n'est pas activé
+Users will log in with their phone number. Username and mobile_no are set from the phone digits; placeholder emails are auto-generated for rows without one.,Les utilisateurs se connectent avec leur numéro. Username et mobile_no proviennent des chiffres ; des e-mails de substitution sont générés pour les lignes sans.
 Validation Error,erreur de validation
+Value,Valeur
 Verification code expired. Please request a new one.,Code de vérification expiré. Demandez-en un nouveau.
 Verification code is required,Le code de vérification est requis
 Verify & Submit,Vérifier et Soumettre
@@ -582,6 +1017,9 @@ When user activated their account,Quand l'utilisateur a activé son compte
 Where did the issue occur?,Où s'est produit l'incident ?
 Which project does your complaint relate to?,À quel projet votre plainte se rapporte-t-elle ?
 Worker is already activated,Le travailleur est déjà activé
+Yes,Oui
+"Yes, remove","Oui, retirer"
+"Yes, remove regions + descendants + unassign users","Oui, retirer les régions + descendants + désaffecter les utilisateurs"
 You are not assigned to this issue,Vous n'êtes pas affecté à cette plainte
 You do not have access to this project,Vous n'avez pas accès à ce projet
 You do not have access to this region,Vous n'avez pas accès à cette région
@@ -608,14 +1046,26 @@ Your Name,Votre Nom
 Your appeal has been recorded,Votre recours a été enregistré
 Your complaint will be processed without contact information,Votre plainte sera traitée sans coordonnées
 `project` is required.,`project` est requis.
+a Final status,un statut Final
+age group,groupe d'âge
+age groups,groupes d'âge
+"all {0} region(s) have Intake, Review, and Investigate & Resolve.","{0} région(s) ont Réception, Examen, Investigation & Résolution."
+an Initial status,un statut Initial
 anonymous,anonyme
 attachment_data must be an object,attachment_data doit être un objet
 attachment_url is required,attachment_url est requis
+categories,catégories
+category,catégorie
 channel-alert,channel-alert
+citizen group,groupe de citoyens
+citizen groups,groupes de citoyens
 data_import is required,data_import est requis
 dd-mm-yyyy,jj-mm-aaaa
 dd/mm/yyyy,jj/mm/aaaa
 duties must be a JSON-encoded list of duty names,fonctions doit être une liste JSON
+e.g. 18-24,ex. 18-24
+e.g. District GRM Officer,ex. Agent GRM de District
+e.g. Issue {{ tracking_code }} is now {{ status }}.,ex. La plainte {{ tracking_code }} est maintenant {{ status }}.
 eGRM Mobile App,Application Mobile eGRM
 email,e-mail
 facilitator,facilitateur
@@ -623,7 +1073,9 @@ female,femme
 fieldname is required,fieldname est requis
 file_url is required,file_url est requis
 issue_id is required,issue_id est requis
+level,niveau
 level_type is required,level_type est requis
+levels,niveaux
 male,homme
 mm-dd-yyyy,mm-jj-aaaa
 mm/dd/yyyy,mm/jj/aaaa
@@ -631,15 +1083,49 @@ name is required,le nom est requis
 optional,facultatif
 other,autre
 phone_number,phone_number
+plus {0} descendant region(s),plus {0} région(s) descendante(s)
 project and role_name are required,projet et role_name requis
 project argument is required,L'argument projet est requis
 project is required,projet requis
 "project, category, and target are required","projet, catégorie et cible requis"
 regions must be a list of region IDs,régions doit être une liste d'IDs
+resolve the duty-coverage gaps above before activating the project.,résolvez les lacunes de couverture ci-dessus avant d'activer le projet.
 role and duty are required,rôle et fonction requis
 role is required,le rôle est requis
+row,ligne
+skipped {0},ignoré {0}
+status,statut
+statuses,statuts
+template,modèle
+templates,modèles
+type,type
+types,types
+unassigned {0} user(s),{0} utilisateur(s) non attribué(s)
+user,utilisateur
 user is required,l'utilisateur est requis
+users,utilisateurs
 whatsapp,whatsapp
 yyyy-mm-dd,aaaa-mm-jj
+{0} active,{0} actifs
+{0} active user(s),{0} utilisateur(s) actif(s)
+{0} assigned,{0} attribué(s)
+{0} data rows detected,{0} lignes de données détectées
+{0} department(s) deleted.,{0} département(s) supprimé(s).
+{0} descendant region(s),{0} région(s) descendante(s)
+{0} draft,{0} brouillon
 {0} is required,{0} est requis
 "{0} must be an integer, got {1!r}","{0} doit être un entier, reçu {1!r}"
+{0} of {1} region(s) are missing coverage:,{0} sur {1} région(s) sans couverture :
+{0} of {1} region(s) missing duty coverage,{0} sur {1} région(s) sans couverture de fonctions
+{0} of {1} regions fully covered.,{0} sur {1} régions entièrement couvertes.
+{0} of {1} regions have full duty coverage.,{0} sur {1} régions avec couverture complète.
+{0} pending,{0} en attente
+{0} region(s) missing coverage,{0} région(s) sans couverture
+{0} role(s) deleted.,{0} rôle(s) supprimé(s).
+"{0} rows ready, {1} skipped (of {2} total).","{0} lignes prêtes, {1} ignorées (sur {2} au total)."
+{0} rows selected,{0} lignes sélectionnées
+{0} selected,{0} sélectionné(s)
+{0} unmapped,{0} non mappé(s)
+{0} {1} deleted.,{0} {1} supprimé(s).
+{0}-{1} of {2},{0}-{1} sur {2}
+"{0}: {1} succeeded, {2} failed","{0} : {1} réussi(s), {2} échec(s)"
