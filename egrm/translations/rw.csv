@@ -98,6 +98,7 @@ Adding user…,Birongerwaho ukoresha...
 Admin Level,Urwego rwa Admin
 Administrative Level,Urwego rw'Ubuyobozi
 Administrative Level (optional),Urwego rw'Ubuyobozi (bidategetswe)
+Administrative Level Types,Amoko y'Inzego z'Ubuyobozi
 Administrative Levels,Inzego z'Ubuyobozi
 Administrative Levels are the geographic / organizational hierarchy used to route GRM cases (e.g. National &rarr; Region &rarr; District &rarr; Sector &rarr; Cell).,Inzego z'Ubuyobozi ni uburyo bw'ahantu / imitunganyirize bukoreshwa kohereza ibibazo bya GRM (urugero Igihugu &rarr; Intara &rarr; Akarere &rarr; Umurenge &rarr; Akagari).
 Administrative Region,Akarere k'Ubuyobozi
@@ -116,6 +117,7 @@ Agreement Notes,Inyandiko z'Amasezerano
 Agreement Parties,Abagize Amasezerano
 Agreement Signed Date,Itariki Amasezerano Yashyizweho Umukono
 All Categories,Ibyiciro Byose
+All Issues,Ibibazo Byose
 All Projects,Imishinga Yose
 All levels,Inzego zose
 All regions covered,Uturere twose twuzuye
@@ -130,6 +132,7 @@ An error occurred during bulk operation,Habayeho ikosa mu gikorwa rusange
 An error occurred while checking status. Please try again.,Habayeho ikosa mu gusuzuma imimerere. Ongera ugerageze.
 An error occurred. Please try again.,Habayeho ikosa. Mwongere mugerageze.
 Analyzing {0}…,Birasesengurwa {0}...
+Android App Versions,Verisiyo za Porogaramu ya Android
 Appeal,Ubujurire
 Appeal Date,Itariki y'Ubujurire
 Appeal Department,Ishami ry'Ubujurire
@@ -142,6 +145,7 @@ Appeal reason is required,Impamvu y'ubujurire irakenewe
 Appeal submitted by citizen,Ubujurire bwoherejwe n'umuturage
 Appeal submitted by citizen via public portal,Ubujurire bwoherejwe n'umuturage hifashishijwe urubuga rwa rubanda
 Appealed,Byajuririwe
+Appeals,Ubujurire
 Apply,Shyira mu bikorwa
 Assigned Appeal Department,Ishami ry'Ubujurire Ryahawe
 Assigned Department,Ishami Ryahawe
@@ -173,7 +177,9 @@ Auto-Escalate on SLA Breach,Kwitwaza Ako Kanya iyo SLA Yarengejwe
 Auto-create missing administrative regions,Yikore uturere tw'ubuyobozi tubura
 Automatically escalate to parent level if SLA is breached,Yikora gushyira ku rwego rwo hejuru iyo SLA yarengejwe
 "Automatically generated path for efficient hierarchy queries (e.g., Country:State:District)","Inzira yikora kugira ngo igenzura ry'urutonde rikorwe vuba (urugero, Igihugu:Intara:Akarere)"
+Average Resolution Time,Igihe cyo Gukemura ku Buringaniro
 Avg Resolution Days,Iminsi yo Gukemura ku Buringaniro
+Avg. Resolution Time (Days),Igihe cyo Gukemura ku Buringaniro (Iminsi)
 Back,Subira inyuma
 Bind this role to an admin level (e.g. District). Leave blank for project-wide roles.,Hashe iyi nshingano ku rwego (urugero Akarere). Reka ubusa ku nshingano z'umushinga wose.
 Bot verification failed,Kwemeza anti-roboti byanze
@@ -347,10 +353,12 @@ Download Excel template,Manura icyitegererezo cya Excel
 "Download a project-tailored template, fill it in with your users, then upload below.","Manura icyitegererezo cyateguriwe umushinga, kiyuzuze n'abakoresha bawe, hanyuma cyohereze hepfo."
 Download public reports,Kuramo raporo rusange
 Draft,Cyateguwe
+Drafts,Inyandiko z'Integuro
 "Drag your CSV or Excel file here, or click to browse.","Kurura dosiye yawe ya CSV cyangwa Excel hano, cyangwa ukande wishakishe."
 Due At,Igihe cyo
 Duplicate project {0} in project links,Umushinga usubirwamo {0} mu makuru y'umushinga
 Duties,Inshingano
+Duties Catalog,Igitabo cy'Inshingano
 Duty,Inshingano
 Duty coverage complete,Inshingano zuzuye
 Duty coverage incomplete,Inshingano ntizuzuye
@@ -420,6 +428,7 @@ Escalation Department,Ishami ry'Itanga
 Escalation Reason,Impamvu yo Kwitwaza
 Escalation Reasons,Impamvu zo Kwitwaza
 Escalation Tracking,Gukurikirana Itwazwa
+Escalations,Ibyitwajwe
 "Expected a list for {0}, got {1}","Hari hateganijwe urutonde rwa {0}, hagezweyo {1}"
 "Expected an object for {0}, got {1}","Hateganijwe object kuri {0}, hagezweyo {1}"
 Expired,Cyararangiye
@@ -443,9 +452,11 @@ File not found,Dosiye ntiyabonetse
 Final Status,Imimerere ya Nyuma
 Final?,Birangiye?
 "Finalise where each category's complaints are routed. Choose a Department for organisational routing, or a Role for cross-department workflows.","Soza aho ibibazo by'icyiciro byoherezwa. Hitamo Ishami ku byohereza by'imitunganyirize, cyangwa Inshingano ku mirimo ihuza amashami."
+Frappe Users (raw),Abakoresha ba Frappe (umwimerere)
 From Date cannot be after To Date,Itariki yo Gutangirira ntishobora kuba inyuma y'Iyo Kurangiza
 GRM Portal,Urubuga rwa GRM
 GRM System - Government Worker Activation Code,Sisitemu ya GRM - Kode yo Gutangiza Umukozi wa Leta
+GRM Users by Project,Abakoresha ba GRM ku Mushinga
 Gender,Igitsina
 Generate name-based emails (legacy),Kora imeyili zishingiye ku mazina (uburyo bushaje)
 Get a tracking code and monitor progress,Habwa umubare w'ikurikirana ukurikirane aho bigeze
@@ -508,6 +519,7 @@ Issue Comments,Ibitekerezo by'Ikibazo
 Issue Date,Itariki y'Ikibazo
 Issue Date cannot be after Intake Date,Itariki y'Ikibazo ntishobora kuba inyuma y'Itariki yo Kwakira
 Issue Details,Amakuru y'Ikibazo
+Issue Distribution by Type,Igabanywa ry'Ibibazo ku Bwoko
 Issue Escalated,Ikibazo Cyitwajwe
 Issue Escalated to You,Ikibazo Cyitwajwe ku Wowe
 Issue Location,Aho Ikibazo Kiri
@@ -533,6 +545,8 @@ Issue was accepted by {0},Ikibazo cyemewe na {0}
 Issue was resolved by {0},Ikibazo cyakemuwe na {0}
 Issue {0} has been assigned to you: {1},Ikibazo {0} cyatanzwe ku wowe: {1}
 Issue {0} has been escalated to you,Ikibazo {0} cyitwajwe ku wowe
+Issues by Category,Ibibazo ku Cyiciro
+Issues by Status,Ibibazo ku Mimerere
 Issues in this category are routed to the user holding this role in the issue's region (or nearest ancestor) with the Investigate & Resolve duty.,Ibibazo by'iki cyiciro byoherezwa ku ukoresha ufite iyi nshingano mu karere k'ikibazo (cyangwa ahegereye) ufite inshingano yo Gushakisha & Gukemura.
 Job title/position,Umutwe w'akazi/umwanya
 Label,Akarango
@@ -567,6 +581,7 @@ Local URL,URL ya Mahaliya
 Locale,Ururimi
 Location,Aho Biri
 Log Entry,Inyandiko
+Log a Grievance,Saba Igikorwa
 Login,Injira
 Login required.,Kwinjira birakenewe.
 Logo,Ikirango
@@ -582,7 +597,11 @@ Missing 'id' on issue payload,Habuze 'id' ku makuru y'ikibazo
 Missing duties,Inshingano zibura
 Missing required parameters,Habuze ibyangombwa bikenewe
 Mobile App,Porogaramu ya Telefoni
+Monthly Category Comparison,Iyiringaniza ry'Ibyiciro buri Kwezi
+Monthly Issue Trend,Imiterere y'Ibibazo buri Kwezi
+Monthly Type Comparison,Iyiringaniza ry'Amoko buri Kwezi
 Multiple columns mapped to admin level '{0}': {1}. Pick exactly one.,Inkingi nyinshi zashyizwe ku rwego '{0}': {1}. Hitamo imwe gusa.
+My Drafts,Iby'integuro Byanjye
 Name,Izina
 Name / Email,Izina / Imeyili
 Nearing Due,Hafi y'Igihe
@@ -657,8 +676,10 @@ Number of failed activation attempts,Umubare w'imitwe yo gutangiza yanze
 On Time,Mu Gihe
 On behalf of Individual,Mu izina ry'Umuntu
 On behalf of Organization,Mu izina ry'Umuryango
+Onboard New Project,Tangiriza Umushinga Mushya
 Only platform administrators can use bulk-import endpoints.,Abayobozi ba platform gusa ni bo bashobora gukoresha kwinjiza mu rwego rwa rusange.
 Open,Bifunguye
+Open Issues,Ibibazo Bifunguye
 Open Status,Imimerere Ifunguye
 Open project record,Fungura inyandiko y'umushinga
 Open?,Birafunguye?
@@ -672,6 +693,7 @@ Parent Region,Akarere ka Nyirise
 Parent region must belong to the same project,Akarere ka nyirise kagomba kuba ku mushinga umwe
 Pending,Bitegereje
 Pending Activation,Bitegereje Gutangizwa
+Pending Issues,Ibibazo Bitegereje
 Phone,Telefoni
 Phone Hotline,Umurongo wa Telefoni
 Phone Number,Numero ya Telefoni
@@ -715,6 +737,7 @@ Project {0} already has an initial status: {1},Umushinga {0} usanzwe ufite imime
 Project {0} does not exist,Umushinga {0} ntubaho
 Project {0} not found,Umushinga {0} ntiwabonetse
 Project-wide behavioural defaults. You can adjust these later from project settings.,Imikorere y'ibanze y'umushinga. Ushobora kubihindura nyuma mu igenamiterere.
+Projects,Imishinga
 Provide your contact details to receive status updates,Tanga aho twabagereraho kugira ngo muhabwe amakuru
 Province,Intara
 Public,Rusange
@@ -791,6 +814,7 @@ Resolution Tracking,Gukurikirana Igukemurwa
 Resolve,Gukemura
 Resolved,Byakemuwe
 Resolved By,Cyakemuwe Na
+Resolved Issues,Ibibazo Byakemuwe
 Resolved Template,Icyitegererezo cy'Igukemurwa
 Role,Inshingano
 Role Name,Izina ry'Inshingano
@@ -873,6 +897,7 @@ Start import,Tangira kohereza
 Starting import…,Gutangira kohereza...
 Status,Imimerere
 Status '{0}' already exists for this project.,Imimerere '{0}' isanzwe iriho kuri uyu mushinga.
+Status Distribution,Igabanywa ry'Imimerere
 Status Name,Izina ry'Imimerere
 Status Name is required.,Izina ry'Imimerere rirakenewe.
 Status created.,Imimerere yakozwe.
@@ -897,6 +922,7 @@ Submitting...,Birohereza...
 "Supports Jinja2: {{ tracking_code }}, {{ status }}, {{ subject }}, {{ complainant_name }}, {{ created_date }}, etc.","Yemera Jinja2: {{ tracking_code }}, {{ status }}, {{ subject }}, {{ complainant_name }}, {{ created_date }}, n'ibindi."
 Suspended,Cyahagaritswe
 Sync Name,Izina rya Sync
+System,Sisitemu
 System configuration error. Please try again later.,Ikosa mu igenamiterere rya sisitemu. Ongera ugerageze.
 Target,Aho bigana
 Target field,Aho bigana
@@ -972,6 +998,8 @@ User is required,Ukoresha arakenewe
 User {0} does not exist,Ukoresha {0} ntabaho
 User {0} is already assigned to {1},Ukoresha {0} asanzwe yahawe {1}
 User {0} is not enabled,Ukoresha {0} ntakora
+Users & Access,Abakoresha & Uburenganzira
+Users by Project,Abakoresha ku Mushinga
 Users will log in with their phone number. Username and mobile_no are set from the phone digits; placeholder emails are auto-generated for rows without one.,Abakoresha bazinjira bakoresheje numero ya telefoni. Username na mobile_no bishyirwaho biva ku mibare ya telefoni; imeyili zo guhamya zikoreshwa imirongo idafite imeyili.
 Value,Agaciro
 Verification code expired. Please request a new one.,Kode yo kwemeza yararangiye. Saba indi nshya.
@@ -1047,6 +1075,7 @@ duties must be a JSON-encoded list of duty names,inshingano zigomba kuba urutond
 e.g. 18-24,urugero 18-24
 e.g. District GRM Officer,urugero Umukozi wa GRM ku Karere
 e.g. Issue {{ tracking_code }} is now {{ status }}.,urugero Ikibazo {{ tracking_code }} ubu ni {{ status }}.
+eGRM,eGRM
 eGRM Mobile App,Porogaramu ya eGRM kuri Telefoni
 email,imeyili
 facilitator,umufasha

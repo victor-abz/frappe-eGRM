@@ -101,6 +101,7 @@ Adding user…,Ajout de l'utilisateur…
 Admin Level,Niveau Admin
 Administrative Level,Niveau Administratif
 Administrative Level (optional),Niveau Administratif (facultatif)
+Administrative Level Types,Types de Niveaux Administratifs
 Administrative Levels,Niveaux Administratifs
 Administrative Levels are the geographic / organizational hierarchy used to route GRM cases (e.g. National &rarr; Region &rarr; District &rarr; Sector &rarr; Cell).,Les niveaux administratifs sont la hiérarchie géographique/organisationnelle pour acheminer les plaintes (ex. National → Région → District → Secteur → Cellule).
 Administrative Region,Région Administrative
@@ -119,6 +120,7 @@ Agreement Notes,Notes de l'Accord
 Agreement Parties,Parties de l'Accord
 Agreement Signed Date,Date de Signature
 All Categories,Toutes les Catégories
+All Issues,Toutes les Plaintes
 All Projects,Tous les Projets
 All levels,Tous les niveaux
 All regions covered,Toutes les régions couvertes
@@ -133,6 +135,7 @@ An error occurred during bulk operation,Erreur durant l'opération en masse
 An error occurred while checking status. Please try again.,Erreur durant la vérification. Réessayez.
 An error occurred. Please try again.,Une erreur s'est produite. Veuillez réessayer.
 Analyzing {0}…,Analyse de {0}…
+Android App Versions,Versions de l'Application Android
 Appeal,Recours
 Appeal Date,Date du Recours
 Appeal Department,Département des Recours
@@ -145,6 +148,7 @@ Appeal reason is required,Le motif du recours est requis
 Appeal submitted by citizen,Recours soumis par le citoyen
 Appeal submitted by citizen via public portal,Recours soumis par citoyen via portail public
 Appealed,En Recours
+Appeals,Recours
 Apply,Appliquer
 Assigned Appeal Department,Département de Recours Attribué
 Assigned Department,Département Attribué
@@ -164,10 +168,10 @@ At least one project must be linked to the department,Au moins un projet doit ê
 At least one project must be linked to the issue category,Au moins un projet doit être lié à la catégorie
 At least one project must be linked to the issue type,Au moins un projet doit être lié au type de plainte
 At least one project must be linked to the status,Au moins un projet doit être lié au statut
-Attachment,Pièce Jointe
+Attachment,Pièce jointe
 Attachment not found,Pièce jointe introuvable
 Attachment uploaded successfully,Pièce jointe téléversée avec succès
-Attachments,Pièces Jointes
+Attachments,Pièces jointes
 Authentication required,Authentification requise
 Auto Escalate,Escalade Automatique
 Auto Escalation Days,Jours d'Escalade Automatique
@@ -176,7 +180,9 @@ Auto-Escalate on SLA Breach,Escalade Auto en cas de Dépassement SLA
 Auto-create missing administrative regions,Créer automatiquement les régions administratives manquantes
 Automatically escalate to parent level if SLA is breached,Escalader automatiquement si SLA dépassé
 "Automatically generated path for efficient hierarchy queries (e.g., Country:State:District)",Chemin auto-généré pour les requêtes hiérarchiques (ex. Pays:État:District)
+Average Resolution Time,Temps Moyen de Résolution
 Avg Resolution Days,Jours de Résolution Moyens
+Avg. Resolution Time (Days),Temps Moyen de Résolution (Jours)
 Back,Retour
 Bind this role to an admin level (e.g. District). Leave blank for project-wide roles.,Liez ce rôle à un niveau admin (ex. District). Laissez vide pour les rôles à l'échelle du projet.
 Bot verification failed,La vérification anti-robot a échoué
@@ -350,11 +356,13 @@ Download Excel template,Télécharger le modèle Excel
 "Download a project-tailored template, fill it in with your users, then upload below.","Téléchargez un modèle adapté au projet, remplissez-le avec vos utilisateurs, puis téléversez-le ci-dessous."
 Download public reports,Télécharger les rapports publics
 Draft,Brouillon
+Drafts,Brouillons
 "Drag your CSV or Excel file here, or click to browse.","Glissez votre fichier CSV ou Excel ici, ou cliquez pour parcourir."
 Due At,Échéance
 Due Date,Date d'Échéance
 Duplicate project {0} in project links,Projet en double {0}
 Duties,Fonctions
+Duties Catalog,Catalogue des Fonctions
 Duty,Fonction
 Duty coverage complete,Couverture des fonctions complète
 Duty coverage incomplete,Couverture des fonctions incomplète
@@ -424,6 +432,7 @@ Escalation Department,Département d'Escalade
 Escalation Reason,Motif de l'Escalade
 Escalation Reasons,Motifs d'Escalade
 Escalation Tracking,Suivi d'Escalade
+Escalations,Escalades
 "Expected a list for {0}, got {1}","Liste attendue pour {0}, reçu {1}"
 "Expected an object for {0}, got {1}","Objet attendu pour {0}, reçu {1}"
 Expired,Expiré
@@ -447,10 +456,12 @@ File not found,Fichier introuvable
 Final Status,Statut Final
 Final?,Final ?
 "Finalise where each category's complaints are routed. Choose a Department for organisational routing, or a Role for cross-department workflows.",Finalisez l'acheminement des plaintes par catégorie. Choisissez un Département (organisationnel) ou un Rôle (inter-départements).
+Frappe Users (raw),Utilisateurs Frappe (brut)
 From Date,A partir du
 From Date cannot be after To Date,La date de début ne peut être après la date de fin
 GRM Portal,Portail GRM
 GRM System - Government Worker Activation Code,Système GRM - Code d'Activation Agent Public
+GRM Users by Project,Utilisateurs GRM par Projet
 Gender,Genre
 Generate name-based emails (legacy),Générer des e-mails basés sur les noms (legacy)
 Get a tracking code and monitor progress,Obtenez un code de suivi et suivez la progression
@@ -514,6 +525,7 @@ Issue Comments,Commentaires de la Plainte
 Issue Date,Date de la Plainte
 Issue Date cannot be after Intake Date,La date de la plainte ne peut être après la date de réception
 Issue Details,Détails de la Plainte
+Issue Distribution by Type,Distribution des Plaintes par Type
 Issue Escalated,Plainte Escaladée
 Issue Escalated to You,Plainte Escaladée à Vous
 Issue Location,Lieu de la Plainte
@@ -539,6 +551,8 @@ Issue was accepted by {0},Plainte acceptée par {0}
 Issue was resolved by {0},Plainte résolue par {0}
 Issue {0} has been assigned to you: {1},La plainte {0} vous a été affectée : {1}
 Issue {0} has been escalated to you,La plainte {0} vous a été escaladée
+Issues by Category,Plaintes par Catégorie
+Issues by Status,Plaintes par Statut
 Issues in this category are routed to the user holding this role in the issue's region (or nearest ancestor) with the Investigate & Resolve duty.,Les plaintes de cette catégorie vont à l'utilisateur tenant ce rôle dans la région de la plainte (ou l'ancêtre proche) avec Investigation & Résolution.
 Job title/position,Titre du poste
 Keyboard Shortcuts,Raccourcis clavier
@@ -574,6 +588,7 @@ Local URL,URL Locale
 Locale,Locale
 Location,Lieu
 Log Entry,Entrée de Journal
+Log a Grievance,Déposer une Plainte
 Login,Connexion
 Login required.,Connexion requise.
 Logo,Logo
@@ -589,7 +604,11 @@ Missing 'id' on issue payload,'id' manquant dans la charge utile
 Missing duties,Fonctions manquantes
 Missing required parameters,Paramètres requis manquants
 Mobile App,Application Mobile
+Monthly Category Comparison,Comparaison Mensuelle par Catégorie
+Monthly Issue Trend,Tendance Mensuelle des Plaintes
+Monthly Type Comparison,Comparaison Mensuelle par Type
 Multiple columns mapped to admin level '{0}': {1}. Pick exactly one.,Plusieurs colonnes mappées au niveau '{0}' : {1}. Choisissez-en exactement une.
+My Drafts,Mes Brouillons
 Name,Nom
 Name / Email,Nom / E-mail
 Nearing Due,Près de l'Échéance
@@ -653,7 +672,7 @@ None,Aucun
 Not Resolved,Non Résolu
 Not permitted,Non autorisé
 Not satisfied? Submit an appeal,Pas satisfait ? Déposez un recours
-Notification Settings,Paramètres de Notification
+Notification Settings,Paramètres de notification
 "Notification Templates control the messages sent to citizens at each stage of an issue's lifecycle (receipt, acknowledgment, status updates, escalation, SLA reminders).","Les modèles de notification contrôlent les messages envoyés aux citoyens à chaque étape (réception, accusé, mises à jour, escalade, rappels SLA)."
 Notification sent successfully,Notification envoyée avec succès
 Notify project administrators on activation,Notifier les administrateurs du projet lors de l'activation
@@ -664,8 +683,10 @@ Number of failed activation attempts,Nombre de tentatives d'activation échouée
 On Time,À Temps
 On behalf of Individual,Au nom d'un Individu
 On behalf of Organization,Au nom d'une Organisation
+Onboard New Project,Démarrer un Nouveau Projet
 Only platform administrators can use bulk-import endpoints.,Seuls les administrateurs plateforme peuvent utiliser ces points.
 Open,Ouvert
+Open Issues,Plaintes Ouvertes
 Open Status,Statut Ouvert
 Open project record,Ouvrir la fiche du projet
 Open?,Ouvert ?
@@ -679,6 +700,7 @@ Parent Region,Région Parente
 Parent region must belong to the same project,La région parente doit appartenir au même projet
 Pending,En attente
 Pending Activation,En Attente d'Activation
+Pending Issues,Plaintes en Attente
 Phone,Téléphone
 Phone Hotline,Ligne Téléphonique
 Phone Number,Numéro de Téléphone
@@ -722,6 +744,7 @@ Project {0} already has an initial status: {1},Le projet {0} a déjà un statut 
 Project {0} does not exist,Le projet {0} n'existe pas
 Project {0} not found,Projet {0} introuvable
 Project-wide behavioural defaults. You can adjust these later from project settings.,Paramètres comportementaux par défaut du projet. Vous pouvez les ajuster plus tard.
+Projects,Projets
 Provide your contact details to receive status updates,Fournissez vos coordonnées pour recevoir les mises à jour
 Province,Province
 Public,Public
@@ -800,6 +823,7 @@ Resolution Tracking,Suivi de Résolution
 Resolve,Résoudre
 Resolved,Résolu
 Resolved By,Résolu Par
+Resolved Issues,Plaintes Résolues
 Resolved Template,Modèle de Résolution
 Role,Rôle
 Role Name,Nom du Rôle
@@ -884,6 +908,7 @@ Start import,Lancer l'import
 Starting import…,Démarrage de l'import…
 Status,Statut
 Status '{0}' already exists for this project.,Le statut '{0}' existe déjà pour ce projet.
+Status Distribution,Distribution des Statuts
 Status Name,Nom du Statut
 Status Name is required.,Le nom du statut est requis.
 Status created.,Statut créé.
@@ -909,6 +934,7 @@ Success,Succès
 "Supports Jinja2: {{ tracking_code }}, {{ status }}, {{ subject }}, {{ complainant_name }}, {{ created_date }}, etc.","Prend en charge Jinja2 : {{ tracking_code }}, {{ status }}, {{ subject }}, {{ complainant_name }}, {{ created_date }}, etc."
 Suspended,Suspendu
 Sync Name,Nom de Sync
+System,Système
 System Manager,Responsable Système
 System configuration error. Please try again later.,Erreur de configuration. Réessayez plus tard.
 Target,Cible
@@ -988,6 +1014,8 @@ User is required,Utilisateur requis
 User {0} does not exist,L'utilisateur {0} n'existe pas
 User {0} is already assigned to {1},L'utilisateur {0} est déjà affecté à {1}
 User {0} is not enabled,L'utilisateur {0} n'est pas activé
+Users & Access,Utilisateurs et Accès
+Users by Project,Utilisateurs par Projet
 Users will log in with their phone number. Username and mobile_no are set from the phone digits; placeholder emails are auto-generated for rows without one.,Les utilisateurs se connectent avec leur numéro. Username et mobile_no proviennent des chiffres ; des e-mails de substitution sont générés pour les lignes sans.
 Validation Error,erreur de validation
 Value,Valeur
@@ -1066,6 +1094,7 @@ duties must be a JSON-encoded list of duty names,fonctions doit être une liste 
 e.g. 18-24,ex. 18-24
 e.g. District GRM Officer,ex. Agent GRM de District
 e.g. Issue {{ tracking_code }} is now {{ status }}.,ex. La plainte {{ tracking_code }} est maintenant {{ status }}.
+eGRM,eGRM
 eGRM Mobile App,Application Mobile eGRM
 email,e-mail
 facilitator,facilitateur
