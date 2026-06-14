@@ -1,104 +1,447 @@
+  ... and {n} more,  ... n'ibindi {n}
+# ###.##,# ###.##
+"#,###.##","#,###.##"
+"#,##,###.##","#,##,###.##"
+"#.###,##","#.###,##"
+0,0
 1 Year,Umwaka 1
 30 Days,Iminsi 30
+6-digit activation code,Kode yo gutangiza y'imibare 6
 7 Days,Iminsi 7
 90 Days,Iminsi 90
+A Project Role must have at least one duty assigned.,Inshingano y'Umushinga igomba kuba ifite nibura inshingano imwe.
+A region cannot be its own parent,Akarere ntigashobora kuba ubwako nyirise
+A role named {0} already exists for this project.,Inshingano yitwa {0} isanzwe iriho kuri uyu mushinga.
+A role named {0} already exists in project {1},Inshingano yitwa {0} isanzwe iriho mu mushinga {1}
+APK File,Dosiye APK
+Accept Information,Amakuru yo Kwemera
+Accepted,Cyemewe
+Accepted Date,Itariki Cyemewe
+Access Restrictions,Imbogamizi zo Kwinjira
+Account activated successfully!,Konti yatangijwe neza!
+Account is suspended. Please contact administrator.,Konti yahagaritswe. Hamagara umuyobozi.
 Acknowledged,Cyemejwe
+Acknowledgment,Kwemeza
+Acknowledgment Breached On,Kwemeza Byarengeje Ku
+Acknowledgment Due Date,Itariki yo Kwemeza
+Acknowledgment SLA Status,Imimerere ya SLA yo Kwemeza
+Acknowledgment Template,Icyitegererezo cyo Kwemeza
+Acknowledgment days must be less than resolution days,Iminsi yo kwemeza igomba kuba munsi y'iminsi yo gukemura
+Action Taken,Ikikorwa Cyafashwe
+Action Taken By,Ikikorwa Cyafashwe Na
+Action Taken Date,Itariki Ikikorwa Cyafashwe
+Action Tracking,Gukurikirana Ibikorwa
+Action/Steps Taken,Ibikorwa/Intambwe Zafashwe
+Activated,Cyatangijwe
+Activated On,Cyatangijwe Ku
+Activation Attempts,Imitwe yo Gutangiza
+Activation Code,Kode yo Gutangiza
+Activation Expires On,Gutangiza Bizarangira Ku
+Activation Status,Imimerere yo Gutangiza
+Activation Timeline,Igihe cyo Gutangiza
+Activation code has expired. Please request a new code.,Kode yo gutangiza yararangiye. Saba indi nshya.
+Activation code sent successfully!,Kode yo gutangiza yoherejwe neza!
 Active Projects,Imishinga Ikora
+Activity Log,Inyandiko y'Ibikorwa
 Add a short comment (optional),Ongeraho igitekerezo gito (bidategetswe)
+Added steps,Hongeweho intambwe
+Administrative Region {0} does not exist,Akarere k'Ubuyobozi {0} ntikabaho
+Age Group {0} does not belong to project {1},Itsinda ry'Imyaka {0} ntiriri ku mushinga {1}
+Agreement Notes,Inyandiko z'Amasezerano
+Agreement Parties,Abagize Amasezerano
+Agreement Signed Date,Itariki Amasezerano Yashyizweho Umukono
 All Categories,Ibyiciro Byose
 All Projects,Imishinga Yose
+Amended From,Cyahindurwa Kuri
+An appeal has already been submitted for this complaint.,Ubujurire bumaze koherezwa kuri iki kibazo.
+An error occurred during activation. Please try again.,Habayeho ikosa mu gutangiza. Ongera ugerageze.
+An error occurred during bulk operation,Habayeho ikosa mu gikorwa rusange
+An error occurred while checking status. Please try again.,Habayeho ikosa mu gusuzuma imimerere. Ongera ugerageze.
 An error occurred. Please try again.,Habayeho ikosa. Mwongere mugerageze.
 Appeal,Ubujurire
+Appeal Date,Itariki y'Ubujurire
+Appeal Information,Amakuru y'Ubujurire
+Appeal Reason,Impamvu y'Ubujurire
+Appeal Submitted,Ubujurire Bwoherejwe
+Appeal has been submitted for review,Ubujurire bwoherejwe kugira ngo busuzumwe
+Appeal is only available once the complaint is resolved.,Ubujurire bushoboka gusa iyo ikibazo cyakemuwe.
+Appeal reason is required,Impamvu y'ubujurire irakenewe
+Appeal submitted by citizen,Ubujurire bwoherejwe n'umuturage
+Appeal submitted by citizen via public portal,Ubujurire bwoherejwe n'umuturage hifashishijwe urubuga rwa rubanda
+Appealed,Byajuririwe
+Assigned Appeal Department,Ishami ry'Ubujurire Ryahawe
+Assigned Department,Ishami Ryahawe
+Assigned Escalation Department,Ishami ry'Itanga Ryahawe
+Assigned Role {0} does not belong to project {1},Inshingano Yahawe {0} ntiyiri ku mushinga {1}
+Assignee,Wahawe
+Assignee not found,Uwahawe ntiyabonetse
+Assignee {0} does not have access to project {1},Wahawe {0} ntagira uburenganzira ku mushinga {1}
+Assignment Details,Amakuru yo Guha
+Assignment name is required,Izina ry'iyinjizwa rirakenewe
+At least one project must be linked to the age group,Nibura umushinga umwe ugomba kuba uhujwe n'itsinda ry'imyaka
+At least one project must be linked to the citizen group,Nibura umushinga umwe ugomba kuba uhujwe n'itsinda ry'abaturage
+At least one project must be linked to the department,Nibura umushinga umwe ugomba kuba uhujwe n'ishami
+At least one project must be linked to the issue category,Nibura umushinga umwe ugomba kuba uhujwe n'icyiciro
+At least one project must be linked to the issue type,Nibura umushinga umwe ugomba kuba uhujwe n'ubwoko bw'ikibazo
+At least one project must be linked to the status,Nibura umushinga umwe ugomba kuba uhujwe n'imimerere
+Attachment,Ifatanyirizo
+Attachment not found,Ifatanyirizo ntiryabonetse
+Attachment uploaded successfully,Ifatanyirizo ryoherejwe neza
+Attachments,Ibifatanyirizo
+Authentication required,Kwemeza birakenewe
+Auto-Escalate on SLA Breach,Kwitwaza Ako Kanya iyo SLA Yarengejwe
+Automatically escalate to parent level if SLA is breached,Yikora gushyira ku rwego rwo hejuru iyo SLA yarengejwe
+"Automatically generated path for efficient hierarchy queries (e.g., Country:State:District)","Inzira yikora kugira ngo igenzura ry'urutonde rikorwe vuba (urugero, Igihugu:Intara:Akarere)"
+Avg Resolution Days,Iminsi yo Gukemura ku Buringaniro
 Back,Subira inyuma
 Bot verification failed,Kwemeza anti-roboti byanze
+Breached,Byarengeje
 By Category,Hashingiwe ku Cyiciro
 By Region,Hashingiwe ku Karere
 By Status,Hashingiwe ku Ihagarara
 Call the GRM hotline to submit your grievance by phone,Hamagara umurongo wa GRM utange ikibazo cyawe kuri telefoni
+Cannot delete: {0} user(s) currently use this role.,Ntibyashobotse gusiba: abakoresha {0} bakoresha iyi nshingano.
+Cannot escalate - already at highest level,Ntibishoboka kwitwaza - usanzwe ku rwego rwo hejuru
+Cannot escalate: already at the top of the region chain.,Ntibishoboka kwitwaza: usanzwe hejuru y'urunigi rw'uturere.
 Category,Icyiciro
 Category & Issue Type,Icyiciro n'Ubwoko bw'Ikibazo
+Category does not belong to this project,Icyiciro ntikiri kuri uyu mushinga
+Category {0} does not belong to project {1},Icyiciro {0} ntikiri ku mushinga {1}
 Cell,Akagali
+Changed status from {0} to {1}: {2},Imimerere yahinduwe kuva kuri {0} ku {1}: {2}
 Check your status,Reba imimerere yawe
 Choose a method to file your complaint,Hitamo uburyo bwo gutanga ikirego cyawe
+Circular reference detected in region hierarchy,Habonetse ihujwa rizenguruka mu rutonde rw'uturere
+Citizen,Umuturage
+Citizen (Confidential),Umuturage (Ibanga)
+Citizen Age Group,Itsinda ry'Imyaka y'Umuturage
+Citizen Group 1,Itsinda ry'Abaturage 1
+Citizen Group 2,Itsinda ry'Abaturage 2
+Citizen Group {0} does not belong to project {1},Itsinda ry'Abaturage {0} ntiriri ku mushinga {1}
+Citizen Information,Amakuru y'Umuturage
+Citizen Type,Ubwoko bw'Umuturage
+Citizen appeal: {0},Ubujurire bw'umuturage: {0}
+"Citizen feedback collected: Resolution {0}, Rating: {1}","Igitekerezo cy'umuturage cyabonetse: Gukemura {0}, Amanota: {1}"
+Citizen feedback: {0},Igitekerezo cy'umuturage: {0}
+Citizen has provided feedback rating,Umuturage yatanze igitekerezo n'amanota
 Closed,Byarafunzwe
+Closed Template,Icyitegererezo cy'Ifunga
+Code Sent On,Kode Yoherejwe Ku
+Comment,Igitekerezo
 Complaint Submitted Successfully,Ikibazo Cyoherejwe Neza
+Complaint not found.,Ikibazo ntikiboneka.
 Complaint not found. Please check the tracking code.,Ikibazo ntikiboneka. Nyamuneka reba kode yo gukurikirana.
+Complaint not found. Please check your tracking code.,Ikibazo ntikiboneka. Reba kode yawe yo gukurikirana.
 Complete verification to submit your complaint,Uzuza iyemezwa kugira ngo wohereze ikibazo cyawe
+Configuration,Igenamiterere
+Confirmed,Cyemejwe
 Contact Information,Aho Twabageraho
+Contact Information (Confidential),Amakuru yo Kuvugana (Ibanga)
+Contact Information Type,Ubwoko bw'Amakuru yo Kuvugana
+Contact Medium,Uburyo bwo Kuvugana
 Contact a field officer who can register your complaint on your behalf,Vugana n'umukozi w'ikigo ushobora kwandikisha ikirego cyawe
 Copy,Koporora
 Could not load app information. Please try again later.,Ntibyashobotse kuzana amakuru ya porogaramu. Ongera ugerageze nyuma.
+Current Setup Step,Intambwe yo Gutegura iriho
 Dashboard,Ikibaho
+Days Remaining (Resolution),Iminsi Isigaye (Gukemura)
+Department Assignment,Guha Ishami
+Department {0} is not linked to project {1},Ishami {0} ntirihujwe n'umushinga {1}
 Describe the Issue,Sobanura Ikibazo
 "Describe what happened, when, and how it affected you...","Sobanura ibyabaye, ryari, n'uburyo byakugizeho ingaruka..."
 Description,Ibisobanuro
+Description must be at least 10 characters,Ibisobanuro bigomba kuba bifite nibura inyuguti 10
 District,Akarere
 Download APK,Manura APK
 Download public reports,Kuramo raporo rusange
+Draft,Cyateguwe
+Due At,Igihe cyo
+Duplicate project {0} in project links,Umushinga usubirwamo {0} mu makuru y'umushinga
+Duty,Inshingano
 Email,Imeyili
 Email Address,Aderesi y'Imeyili
+Email Configuration,Igenamiterere ry'Imeyili
+Email and activation code are required,Imeyili na kode yo gutangiza birakenewe
+Email domain is required when synthesizing emails.,Domeyini y'imeyili irakenewe igihe ukora imeyili.
+Email is required,Imeyili irakenewe
+Enable Automated Notifications,Tangiza Imenyekanisha Yikora
+Enable Public Dashboard,Tangiza Ikibaho cya Rubanda
+Enable Public Reports,Tangiza Raporo za Rubanda
+End Date cannot be before Start Date,Itariki yo Kurangiza ntishobora kuba mbere y'Itariki yo Gutangira
 Enter the 6-digit code,Andika kode y'imibare 6
 Enter the 6-digit code sent to {0},Andika kode y'imibare 6 yoherejwe kuri {0}
 Enter tracking code...,Andika kode yo gukurikirana...
 Enter your tracking code to check the status,Andika kode yo gukurikirana kugira ngo urebe aho bigeze
+Error accepting issue: {0},Ikosa mu kwakira ikibazo: {0}
+Error changing status: {0},Ikosa mu guhindura imimerere: {0}
+Error collecting feedback: {0},Ikosa mu kwakira igitekerezo: {0}
+Error creating default configurations. Please check the logs.,Ikosa mu gukora igenamiterere ry'ibanze. Reba inyandiko.
+Error escalating issue: {0},Ikosa mu kwitwaza ikibazo: {0}
+Error rating issue: {0},Ikosa mu gutanga amanota: {0}
+Error reassigning issue: {0},Ikosa mu kongera guha ikibazo: {0}
+Error recording resolution: {0},Ikosa mu kwandika igukemurwa: {0}
+Error recording steps: {0},Ikosa mu kwandika intambwe: {0}
+Error rejecting issue: {0},Ikosa mu kwanga ikibazo: {0}
+Error removing assignment. Please check the logs.,Ikosa mu gukuraho iyinjizwa. Reba inyandiko.
+Error retrieving citizen groups. Please try again later.,Ikosa mu kuzana amatsinda y'abaturage. Ongera ugerageze.
+Error retrieving complaint status,Ikosa mu kuzana imimerere y'ikibazo
+Error retrieving departments. Please try again later.,Ikosa mu kuzana amashami. Ongera ugerageze.
+Error setting up permissions. Please check the logs.,Ikosa mu gushyiraho uburenganzira. Reba inyandiko.
+Error submitting appeal: {0},Ikosa mu kohereza ubujurire: {0}
+Escalate Flag,Akamenyetso ko Kwitwaza
+Escalated,Cyitwajwe
+Escalated By,Cyitwajwe Na
+Escalated Date,Itariki Cyitwajwe
+Escalated Template,Icyitegererezo cy'Itwazwa
+Escalation,Kwitwaza
+Escalation Count,Umubare wo Kwitwaza
+Escalation Reason,Impamvu yo Kwitwaza
+Escalation Reasons,Impamvu zo Kwitwaza
+Escalation Tracking,Gukurikirana Itwazwa
+"Expected a list for {0}, got {1}","Hari hateganijwe urutonde rwa {0}, hagezweyo {1}"
+"Expected an object for {0}, got {1}","Hateganijwe object kuri {0}, hagezweyo {1}"
+Expired,Cyararangiye
+Failed to ingest admin-regions CSV.,Kwakira CSV y'uturere byanze.
 Failed to load dashboard data.,Kuzana amakuru y'ikibaho byanze.
+Failed to load home listings,Kuzana urutonde rwo ku rubuga byanze
+Failed to load regions,Kuzana uturere byanze
+Failed to load submission config,Kuzana igenamiterere ryo kohereza byanze
+Failed to load submission options,Kuzana amahitamo yo kohereza byanze
+Failed to save file,Kubika dosiye byanze
 Failed to send code,Kohereza kode byanze
+Failed to send verification code,Kohereza kode yo kwemeza byanze
+Feedback,Igitekerezo
 Female,Gore
 Field Officer,Umukozi w'Ikigo
+Field {0} is not editable inline,Umurima {0} ntushobora guhindurwa
+File Name,Izina rya Dosiye
 File a new grievance,Tanga ikirego gishya
+File not found,Dosiye ntiyabonetse
 "File your grievance via web, mobile, or field officer","Tanga ikirego cyawe ukoresheje urubuga, telefoni, cyangwa umukozi w'ikigo"
+From Date cannot be after To Date,Itariki yo Gutangirira ntishobora kuba inyuma y'Iyo Kurangiza
 GRM Portal,Urubuga rwa GRM
+GRM System - Government Worker Activation Code,Sisitemu ya GRM - Kode yo Gutangiza Umukozi wa Leta
 Gender,Igitsina
 Get a tracking code and monitor progress,Habwa umubare w'ikurikirana ukurikirane aho bigeze
 Go to Dashboard,Jya ku Ikibaho
+Government Worker Information,Amakuru y'Umukozi wa Leta
 Grievance Redress,Gukemura Ibibazo
 Grievance Redress Mechanism,Urwego rw'Ikemurampaka
+Hierarchy,Urutonde
+Hierarchy Path,Inzira y'Urutonde
 Home,Ahabanza
 How It Works,Uburyo Bikora
 How would you like to be contacted?,Mwifuza ko mwagezwaho mute?
 I don't know,Sinzi
 I want updates,Nshaka kumenya aho bigeze
+Icon (lucide name),Ikirango (izina rya lucide)
 In Person,Ku Muntu
+In Progress,Birakorwa
+In Progress Template,Icyitegererezo cyo Birakorwa
+Intake,Kwakira
+Intake Date,Itariki yo Kwakira
+Invalid Jinja2 syntax in SMS message: {0},Syntax ya Jinja2 si yo mu butumwa bwa SMS: {0}
+Invalid activation_status value: {0},Agaciro k'activation_status si ko: {0}
+Invalid email address,Aderesi y'imeyili si yo
+Invalid email domain: {0},Domeyini y'imeyili si yo: {0}
+Invalid location data format,Imiterere y'amakuru y'ahantu si yo
+Invalid or inactive project,Umushinga utari wo cyangwa udakora
+Invalid payload: expected a JSON object,Amakuru yatanzwe si yo: hateganijwe object ya JSON
+Invalid phone number,Numero ya telefoni si yo
+Invalid status for this project,Imimerere itari iyi y'uyu mushinga
+Invalid verification code,Kode yo kwemeza si yo
+Is Latest Version,Ni Verisiyo Nshya
+Is Setup Complete,Gutegura Byarangiye
+Issue Activity log,Inyandiko y'ibikorwa by'ikibazo
+Issue Assigned,Ikibazo Cyatanzwe
+Issue Attachments,Ibifatanyirizo by'Ikibazo
+Issue Comments,Ibitekerezo by'Ikibazo
+Issue Date,Itariki y'Ikibazo
+Issue Date cannot be after Intake Date,Itariki y'Ikibazo ntishobora kuba inyuma y'Itariki yo Kwakira
+Issue Details,Amakuru y'Ikibazo
+Issue Escalated,Ikibazo Cyitwajwe
+Issue Escalated to You,Ikibazo Cyitwajwe ku Wowe
+Issue Location,Aho Ikibazo Kiri
+Issue Log,Inyandiko y'Ikibazo
 Issue Type,Ubwoko bw'Ikibazo
+Issue Type {0} does not belong to project {1},Ubwoko bw'Ikibazo {0} ntibiri ku mushinga {1}
+Issue accepted and assigned for processing,Ikibazo cyemewe kandi cyatanzwe gukemurwa
+Issue cancelled,Ikibazo cyahagaritswe
+Issue creation failed; record not found,Gukora ikibazo byanze; inyandiko ntiyabonetse
 Issue date cannot be in the future,Itariki y'ikibazo ntishobora kuba mu gihe kizaza
+Issue escalated from {0} to {1}: {2},Ikibazo cyitwajwe kuva kuri {0} ku {1}: {2}
+Issue escalated successfully,Ikibazo cyitwajwe neza
+Issue has been marked as resolved,Ikibazo cyashyizweho akamenyetso ko cyakemuwe
+Issue not found,Ikibazo ntikiboneka
+Issue rejected with provided reason,Ikibazo cyangiwe hatangwa impamvu
+Issue reopened due to resolution rejection,Ikibazo cyongeye gufunguka bitewe no kwanga igukemurwa
+Issue submitted,Ikibazo cyoherejwe
+Issue was accepted by {0},Ikibazo cyemewe na {0}
+"Issue was rated by citizen, rating: {0}","Ikibazo cyatanzweho amanota n'umuturage, amanota: {0}"
+"Issue was rejected by {0}, reason: {1}","Ikibazo cyangiwe na {0}, impamvu: {1}"
+Issue was resolved by {0},Ikibazo cyakemuwe na {0}
+Issue {0} has been assigned to you: {1},Ikibazo {0} cyatanzwe ku wowe: {1}
+Issue {0} has been escalated to you,Ikibazo {0} cyitwajwe ku wowe
+Job title/position,Umutwe w'akazi/umwanya
+Last Escalated On,Igihe Cyaheruka Kwitwazwa
+Last Escalation Reason,Impamvu Yaheruka Kwitwaza
 Latest version,Verisiyo nshya
+"Leave blank for shared templates, or select project for project-specific template","Reka ubusa ku byitegererezo bisangiwe, cyangwa hitamo umushinga ku byitegererezo by'umwihariko"
+Level Name '{0}' already exists for project {1}.,Izina ry'Urwego '{0}' risanzwe ririho ku mushinga {1}.
+Level Order,Urutonde rw'Urwego
+Level Order cannot be negative,Urutonde rw'Urwego ntirushobora kuba rubi
+Lifecycle Phase,Igice cy'Ubuzima
+Link to Frappe Email Template for email notifications,Aho Hahuriza ku Cyitegererezo cy'Imeyili cya Frappe
 Loading latest version…,Birashakwa verisiyo nshya...
 Loading metrics...,Birashakwa imibare...
 Loading reports...,Birashakwa raporo...
+Local URL,URL ya Mahaliya
+Location,Aho Biri
+Log Entry,Inyandiko
 Login,Injira
+Login required.,Kwinjira birakenewe.
+Logo,Ikirango
 Male,Gabo
+Mapping is invalid. Missing required: {0}. Errors: {1},Gushyira mu byiciro si byo. Biburayo: {0}. Amakosa: {1}
+Materialized Path,Inzira Yashyizweho
 Minimum 10 characters,Inyuguti 10 nibura
+Missing 'id' on issue payload,Habuze 'id' ku makuru y'ikibazo
+Missing required parameters,Habuze ibyangombwa bikenewe
 Mobile App,Porogaramu ya Telefoni
+Nearing Due,Hafi y'Igihe
 Next,Komeza
+No `file` part in upload.,Nta gice `file` mu byoherejwe.
+No activation code found. Please generate a code first.,Nta kode yo gutangiza yabonetse. Banza ukore kode.
+No active Project Roles defined for this project.,Nta nshingano z'umushinga zikora zashyizweho.
+No administrative levels defined for this project.,Nta nzego z'ubuyobozi zashyizweho kuri uyu mushinga.
 No categories found,Nta byiciro byabonetse
 No data,Nta makuru
+No eligible workers found,Nta bakozi bujuje ibisabwa
+No file provided,Nta dosiye yatanzwe
+No final status found for this project,Nta mimerere ya nyuma yabonetse kuri uyu mushinga
+No government worker assignment found for this email,Nta iyinjizwa ry'umukozi wa Leta ryabonetse kuri iyi meyili
+No government worker assignments found for this project,Nta iyinjizwa ry'umukozi wa Leta ryabonetse kuri uyu mushinga
+No government worker roles configured for this project,Nta nshingano z'umukozi wa Leta zashyizweho kuri uyu mushinga
 No issue types found,Nta bwoko bw'ibibazo bwabonetse
+No mobile app version is published yet.,Nta verisiyo ya porogaramu ya telefoni yatangajwe.
+No open status configured for this project,Nta mimerere ifunguye yashyizweho kuri uyu mushinga
+No open status found for this project,Nta mimerere ifunguye yabonetse kuri uyu mushinga
+No pending activation found for this email,Nta gutangiza bitegereje byabonetse kuri iyi meyili
+No permission to export activation codes,Nta burenganzira bwo kohereza kode zo gutangiza
+No permission to send activation codes,Nta burenganzira bwo kohereza kode zo gutangiza
 No projects found,Nta mishinga yabonetse
 No regions found,Nta turere twabonetse
+No rejected status found for this project,Nta mimerere yanzwe yabonetse kuri uyu mushinga
+No reopened status configured,Nta mimerere yo kongera gufungura yashyizweho
 No reports available yet,Nta raporo zihari nubu
+No resolved status configured,Nta mimerere y'igukemurwa yashyizweho
+Not Resolved,Ntibyakemuwe
+Not permitted,Ntibyemewe
 Not satisfied? Submit an appeal,Ntimwumva bihagije? Tanga ubujurire
+Notification Settings,Igenamiterere ry'Imenyekanisha
+Notification sent successfully,Imenyekanisha ryoherejwe neza
+Number of business days to acknowledge complaint (default: 7 per WB guidelines),Umubare w'iminsi y'akazi yo kwemeza ikibazo (ibanze: 7 ku mabwiriza ya WB)
+Number of business days to resolve complaint (default: 30 per WB guidelines),Umubare w'iminsi y'akazi yo gukemura ikibazo (ibanze: 30 ku mabwiriza ya WB)
+Number of failed activation attempts,Umubare w'imitwe yo gutangiza yanze
+On Time,Mu Gihe
+On behalf of Individual,Mu izina ry'Umuntu
+On behalf of Organization,Mu izina ry'Umuryango
+Only platform administrators can use bulk-import endpoints.,Abayobozi ba platform gusa ni bo bashobora gukoresha kwinjiza mu rwego rwa rusange.
 Open,Bifunguye
 Other,Ikindi
+Oversight,Igenzura
+Parent Region,Akarere ka Nyirise
+Parent region must belong to the same project,Akarere ka nyirise kagomba kuba ku mushinga umwe
 Pending,Bitegereje
+Pending Activation,Bitegereje Gutangizwa
 Phone,Telefoni
 Phone Hotline,Umurongo wa Telefoni
 Phone Number,Numero ya Telefoni
+Phone number is required,Numero ya telefoni irakenewe
+Pick at least one duty for this role.,Hitamo nibura inshingano imwe kuri iyi nshingano.
+Please configure at least one notification channel (Email or SMS),Tegura nibura uburyo bumwe bwo kumenyesha (Imeyili cyangwa SMS)
 Please describe your complaint in detail,Mwitonze musobanure ikibazo cyanyu
+Position Title,Umutwe w'Umwanya
 Preferred Contact Method,Uburyo Mwifuza Kugezwaho
+Project '{0}' does not exist.,Umushinga '{0}' ntubaho.
+Project Link,Aho Umushinga uri
+Project Role,Inshingano y'Umushinga
+Project Role is required,Inshingano y'Umushinga irakenewe
+Project Role {0} does not exist,Inshingano y'Umushinga {0} ntibaho
+Project Role {0} is not active,Inshingano y'Umushinga {0} ntikora
+Project is required,Umushinga urakenewe
+Project {0} already has an initial status: {1},Umushinga {0} usanzwe ufite imimerere ya mbere: {1}
+Project {0} does not exist,Umushinga {0} ntubaho
+Project {0} not found,Umushinga {0} ntiwabonetse
 Provide your contact details to receive status updates,Tanga aho twabagereraho kugira ngo muhabwe amakuru
 Province,Intara
 Public Dashboard,Ikibaho cya Rubanda
 Public Portal,Urubuga rwa rubanda
+Public Portal Visibility,Kugaragara ku Rubuga rwa Rubanda
 Public Reports,Raporo za Rubanda
+Public citizen-comment endpoint is not available.,Aho abaturage batanga ibitekerezo ntihari.
 Public reports will appear here once generated.,Raporo za rubanda zizagaragara hano nyuma yo gukorwa.
 Raise Issue,Tanga Ikibazo
 Rate this resolution,Tanga amanota kuri uku gukemurwa
+Rated Date,Itariki y'Amanota
+Rating,Amanota
+Rating Comment,Igitekerezo cy'Amanota
+Rating Information,Amakuru y'Amanota
+Rating Submitted At,Amanota Yoherejwe Ku
+Rating is only available once the complaint is resolved.,Amanota ashoboka gusa iyo ikibazo cyakemuwe.
+Rating must be a number,Amanota agomba kuba umubare
+Rating must be between 0 and 5,Amanota agomba kuba hagati ya 0 na 5
+Rating must be between 1 and 5,Amanota agomba kuba hagati ya 1 na 5
+Reassigned from {0} to {1} ({2}),Yongerwa kuva kuri {0} ku {1} ({2})
+Reassigned from {0} to {1}: {2},Yongerwa kuva kuri {0} ku {1}: {2}
+Receipt,Inyemezabuguzi
+Receipt Template,Icyitegererezo cy'Inyemezabuguzi
+Received,Cyakiriwe
+Region Name,Izina ry'Akarere
+Region not found,Akarere ntikabonetse
+Region {0} does not belong to project {1},Akarere {0} ntikari ku mushinga {1}
+Reject Information,Amakuru yo Kwanga
+Reject Reason,Impamvu yo Kwanga
+Rejected,Cyanze
+Rejected By,Cyangiwe Na
+Rejected Date,Itariki Yangiwe
+Release Notes,Inyandiko z'Ikoreshwa
+Reminder Before (Days),Kwibutsa Mbere (Iminsi)
+Reminder days must be less than resolution days,Iminsi yo kwibutsa igomba kuba munsi y'iminsi yo gukemura
+Reporter,Uwabigaragaje
 Reports,Raporo
 Resend code,Wongere wohereze kode
 Resend verification code,Wongere wohereze kode yo kwemeza
+Resolution,Gukemura
+Resolution Accepted,Gukemura Cyemewe
+Resolution Agreement,Amasezerano yo Gukemura
+Resolution Agreement (Signed),Amasezerano yo Gukemura (Yashyizweho Umukono)
+Resolution Breached On,Gukemura Byarengeje Ku
+Resolution Date,Itariki yo Gukemura
+Resolution Date cannot be before Issue Date,Itariki yo Gukemura ntishobora kuba mbere y'Itariki y'Ikibazo
+Resolution Due Date,Itariki yo Gukemura
+Resolution Information,Amakuru yo Gukemura
+Resolution Rate (%),Ipfundo ryo Gukemura (%)
+Resolution SLA Status,Imimerere ya SLA yo Gukemura
+Resolution Text,Inyandiko yo Gukemura
+Resolution Tracking,Gukurikirana Igukemurwa
 Resolve,Gukemura
 Resolved,Byakemuwe
+Resolved By,Cyakemuwe Na
+Resolved Template,Icyitegererezo cy'Igukemurwa
+Role {0} does not belong to project {1},Inshingano {0} ntiyiri ku mushinga {1}
+Role {0} is not allowed in bulk worker import. ,Inshingano {0} ntiyemewe mu kwinjiza abakozi mu rwego rwa rusange. 
+Route To must be 'Role'. Department-based routing is no ,Aho bigana hagomba kuba 'Inshingano'. Kohereza hashingiwe ku Ishami si 
 Rwanda,Rwanda
+SLA Acknowledgment (Days),SLA yo Kwemeza (Iminsi)
+SLA Configuration,Igenamiterere rya SLA
+SLA Reminder,Kwibutsa SLA
+SLA Reminder Template,Icyitegererezo cyo Kwibutsa SLA
+SLA Resolution (Days),SLA yo Gukemura (Iminsi)
+SLA Status,Imimerere ya SLA
+SLA Tracking,Gukurikirana SLA
+"SMS message template (supports Jinja2: {{ tracking_code }}, {{ status }}, etc.)","Icyitegererezo cy'ubutumwa bwa SMS (cyemera Jinja2: {{ tracking_code }}, {{ status }}, etc.)"
+SMS service is not configured,Serivisi ya SMS ntiyashyizweho
 Save your tracking code to check the status of your complaint,Bika kode yo gukurikirana kugira ngo urebe aho ikibazo cyawe kigeze
 Search projects...,Shakisha imishinga...
 Search regions...,Shakisha uturere...
@@ -108,12 +451,31 @@ See public statistics,Reba imibare rusange
 Select,Hitamo
 Select Project,Hitamo Umushinga
 Select Region,Hitamo Akarere
+Selected category does not belong to this project,Icyiciro cyatoranyijwe ntikiri kuri uyu mushinga
+Selected issue type does not belong to this project,Ubwoko bw'ikibazo bwatoranyijwe ntibiri kuri uyu mushinga
+Selected project is not active,Umushinga watoranyijwe ntukora
+Selected region does not belong to this project,Akarere katoranyijwe ntikari kuri uyu mushinga
+Selected user does not have access to this project,Ukoresha watoranyijwe ntagira uburenganzira ku mushinga
+Send automated email/SMS notifications to citizens,Kohereza imenyekanisha yikora ya imeyili/SMS ku baturage
 Send code to my email,Wohereze kode kuri imeyili yanjye
 Send code to my phone,Wohereze kode kuri telefoni yanjye
+Send reminder notification this many days before SLA expires,Kohereza imenyekanisha ryo kwibutsa iminsi ingana ngo SLA itararangira
 Send verification code to {0},Wohereze kode yo kwemeza kuri {0}
 Sending...,Birohereza...
+Sent as reminder before SLA expires,Iyoherezwa nko kwibutsa mbere ya SLA irangira
+Sent immediately when complaint is submitted,Iyoherezwa ako kanya iyo ikibazo cyoherejwe
+Sent when complaint is acknowledged,Iyoherezwa iyo ikibazo cyemejwe
+Sent when complaint is closed,Iyoherezwa iyo ikibazo cyafunzwe
+Sent when complaint is escalated,Iyoherezwa iyo ikibazo cyitwajwe
+Sent when complaint is resolved,Iyoherezwa iyo ikibazo cyakemuwe
+Sent when complaint status changes to In Progress,Iyoherezwa iyo imimerere y'ikibazo ihinduye Birakorwa
+Service Level Agreement timeframes for this administrative level,Igihe cy'Amasezerano ya Serivisi (SLA) kuri uru rwego
+Settings,Igenamiterere
+Setup State,Imimerere yo Gutegura
 "Solution proposed, implemented, and verified","Igisubizo cyatanzwe, cyashyizweho, kandi cyemejwe"
 Status,Imimerere
+Status retrieved successfully,Imimerere yabonetse neza
+Status {0} does not belong to project {1},Imimerere {0} ntiyiri ku mushinga {1}
 Stay anonymous,Komeza utamenyekane
 Step {0},Intambwe ya {0}
 Submission failed. Please try again.,Kohereza byanze. Mwongere mugerageze.
@@ -127,31 +489,124 @@ Submit rating,Ohereza amanota
 Submit through the GRM mobile application available on Android,Ohereza ukoresheje porogaramu ya GRM kuri Android
 Submitted,Cyoherejwe
 Submitting...,Birohereza...
+Suspended,Cyahagaritswe
+Sync Name,Izina rya Sync
+System configuration error. Please try again later.,Ikosa mu igenamiterere rya sisitemu. Ongera ugerageze.
 Tell us why you are not satisfied,Tubwire impamvu mutanyuzwe
+Template Variables Reference,Inyandiko y'Imibarwa y'Icyitegererezo
+Template {0} belongs to another project,Icyitegererezo {0} ni icy'undi mushinga
+Template {0} is not active,Icyitegererezo {0} ntigikora
 Thanks for your feedback,Murakoze ku gitekerezo cyanyu
 The mobile app is not available yet. Please check back later.,Porogaramu ya telefoni iracyahari. Reba nyuma.
+This complaint has already been rated.,Iki kibazo cyahawe amanota.
+This complaint has no contact channel; submit your rating without a code.,Iki kibazo nta buryo bwo kuvugana bufite; ohereza amanota nta kode.
+Timestamp,Igihe
+Too many failed attempts. Account has been suspended.,Imitwe myinshi cyane yanze. Konti yahagaritswe.
 Total Issues,Ibibazo Byose
+Total Received,Byose Byakiriwe
 Track,Kurikirana
 Track Complaint,Kurikirana Ikibazo
 Track Your Complaint,Kurikirana Ikibazo Cyawe
 Tracking Code,Kode yo Gukurikirana
 Tracking Result,Igisubizo cyo Gukurikirana
+Tracking code is required,Kode yo gukurikirana irakenewe
+Triage,Gusoma Imbere
+Unassigned,Ntibyatanzwe
+Unsupported file type: {0}. Use CSV or XLSX.,Ubwoko bwa dosiye butemewe: {0}. Koresha CSV cyangwa XLSX.
+Unsupported format: {0}. Use 'csv' or 'xlsx'.,Imiterere itemewe: {0}. Koresha 'csv' cyangwa 'xlsx'.
+Upload signed resolution agreement document,Ohereza inyandiko y'amasezerano yo gukemura yashyizweho umukono
+Uploaded,Cyoherejwe
+Uploaded file has no header row,Dosiye yoherejwe nta nyandiko y'umutwe ifite
+Uploaded file is empty,Dosiye yoherejwe ni ubusa
+Uploaded file is empty.,Dosiye yoherejwe ni ubusa.
+User email is required for activation code generation,Imeyili y'ukoresha irakenewe gukora kode yo gutangiza
+User email is required to send activation code,Imeyili y'ukoresha irakenewe kohereza kode yo gutangiza
+User is required,Ukoresha arakenewe
+User {0} does not exist,Ukoresha {0} ntabaho
+User {0} is already assigned to {1},Ukoresha {0} asanzwe yahawe {1}
+User {0} is not enabled,Ukoresha {0} ntakora
+Verification code expired. Please request a new one.,Kode yo kwemeza yararangiye. Saba indi nshya.
+Verification code is required,Kode yo kwemeza irakenewe
 Verify & Submit,Emeza & Ohereza
+Version Name,Izina rya Verisiyo
 View,Reba
 View Dashboard,Reba Ikibaho
 View Reports,Reba Raporo
 Village,Umudugudu
+Visible,Kigaragara
 Visit the nearest GRM office to submit your complaint in person,Sura ibiro bya GRM biri hafi yawe utange ikirego cyawe ku muntu
 "We are here to help. Track complaints, view statistics, and submit new grievances easily.","Turi hano kubafasha. Kurikirana ibibazo, reba imibare, kandi ohereze ibibazo bishya bworoshye."
 We'll use the default project,Tuzakoresha umushinga w'ibanze
 "Web form coming soon. For now, please use one of the methods above.","Ifishi y'urubuga iri gutegurwa. Hagati aho, koresha bumwe mu buryo buvuzwe hejuru."
 What is your complaint about?,Ikibazo cyanyu kireba iki?
 What's new,Ibishya
+When activation code was last sent,Igihe kode yo gutangiza yaheruka kohereza
 When did this happen?,Ibi byabaye ryari?
+"When enabled, guest (non-authenticated) visitors can see the public Dashboard page and its homepage card. Logged-in staff always see it regardless of this setting.","Iyo bibashije, abasuye batiyemeje (Guest) barashobora kubona urupapuro rw'Ikibaho cya Rubanda. Abakozi binjiye babibona buri gihe."
+"When enabled, guest (non-authenticated) visitors can see the public Reports page and its homepage card. Logged-in staff always see it regardless of this setting.","Iyo bibashije, abasuye batiyemeje (Guest) barashobora kubona urupapuro rwa Raporo za Rubanda n'akarango kacyo. Abakozi binjiye babibona buri gihe."
+When the activation code expires,Igihe kode yo gutangiza izarangira
+When user activated their account,Igihe ukoresha yatangirije konti ye
 Where did the issue occur?,Ikibazo cyabereye he?
 Which project does your complaint relate to?,Ni uwuhe mushinga ikibazo cyanyu kireba?
+Worker is already activated,Umukozi asanzwe yatangijwe
+You are not assigned to this issue,Ntiwahawe iki kibazo
+You do not have access to this project,Ntugira uburenganzira bwo kwinjira kuri uyu mushinga
+You do not have access to this region,Ntugira uburenganzira bwo kwinjira kuri aka karere
+You do not have an active GRM duty on this project.,Ntufite inshingano ya GRM ikora kuri uyu mushinga.
+You do not have permission to access this attachment,Ntugira uburenganzira bwo kwinjira kuri iri fatanyirizo
+You do not have permission to access this issue,Ntugira uburenganzira bwo kwinjira kuri iki kibazo
+You do not have permission to access this project,Ntugira uburenganzira bwo kwinjira kuri uyu mushinga
+You do not have permission to access this region,Ntugira uburenganzira bwo kwinjira kuri aka karere
+You do not have permission to assign this issue,Ntugira uburenganzira bwo gutanga iki kibazo
+You do not have permission to bulk send activation codes.,Ntugira uburenganzira bwo kohereza kode mu rwego rwa rusange.
+You do not have permission to escalate this issue,Ntugira uburenganzira bwo kwitwaza iki kibazo
+You do not have permission to reopen this issue,Ntugira uburenganzira bwo kongera gufungura iki kibazo
+You do not have permission to resolve this issue,Ntugira uburenganzira bwo gukemura iki kibazo
+You do not have permission to update issues.,Ntugira uburenganzira bwo guhindura ibibazo.
+You do not have permission to update this issue,Ntugira uburenganzira bwo guhindura iki kibazo
+You need the Investigate & Resolve duty to escalate this issue.,Ukenera inshingano yo Gushakisha & Gukemura kugira ngo wite kuri iki kibazo.
+You need the Review duty to accept this issue.,Ukenera inshingano yo Kugenzura kugira ngo wakire iki kibazo.
+You need the Review duty to reject this issue.,Ukenera inshingano yo Kugenzura kugira ngo wange iki kibazo.
+You need the {0} duty to change {1}.,Ukenera inshingano ya {0} kugira ngo uhindure {1}.
+Your GRM rating code,Kode yawe yo gutanga amanota ya GRM
+Your GRM rating code is: {0}. Valid for 5 minutes.,Kode yawe yo gutanga amanota ya GRM ni: {0}. Ikomeza iminota 5.
+Your GRM verification code is: {0}. Valid for 5 minutes.,Kode yawe ya GRM yo kwemeza ni: {0}. Ikomeza iminota 5.
 Your Name,Izina Ryanyu
 Your appeal has been recorded,Ubujurire bwanyu bwanditswe
 Your complaint will be processed without contact information,Ikibazo cyanyu kizakorwaho nta makuru y'aho mwagerwaho
+`project` is required.,`project` irakenewe.
+anonymous,utamenyekana
+attachment_data must be an object,attachment_data igomba kuba object
+attachment_url is required,attachment_url irakenewe
+channel-alert,channel-alert
+data_import is required,data_import irakenewe
+dd-mm-yyyy,dd-mm-yyyy
+dd/mm/yyyy,dd/mm/yyyy
+duties must be a JSON-encoded list of duty names,inshingano zigomba kuba urutonde rwa JSON
 eGRM Mobile App,Porogaramu ya eGRM kuri Telefoni
+email,imeyili
+facilitator,umufasha
+female,gore
+fieldname is required,fieldname irakenewe
+file_url is required,file_url irakenewe
+issue_id is required,issue_id irakenewe
+level_type is required,level_type irakenewe
+male,gabo
+mm-dd-yyyy,mm-dd-yyyy
+mm/dd/yyyy,mm/dd/yyyy
+name is required,izina rirakenewe
 optional,bidategetswe
+other,ikindi
+phone_number,phone_number
+project and role_name are required,umushinga na role_name birakenewe
+project argument is required,umushinga urakenewe
+project is required,umushinga urakenewe
+"project, category, and target are required","umushinga, icyiciro, n'aho bigana birakenewe"
+regions must be a list of region IDs,uturere zigomba kuba urutonde rwa ID
+role and duty are required,inshingano n'inshingano birakenewe
+role is required,inshingano irakenewe
+user is required,ukoresha arakenewe
+whatsapp,whatsapp
+yyyy-mm-dd,yyyy-mm-dd
+{0} is required,{0} irakenewe
+"{0} must be an integer, got {1!r}","{0} igomba kuba umubare wuzuye, hagezweyo {1!r}"

@@ -1,140 +1,468 @@
+  ... and {n} more,  ... et {n} de plus
+# ###.##,# ###.##
+"#,###.##","#,###.##"
+"#,##,###.##","#,##,###.##"
+"#.###,##","#.###,##"
+0,0
 1 Year,1 An
 30 Days,30 Jours
+6-digit activation code,Code d'activation à 6 chiffres
 7 Days,7 Jours
 90 Days,90 Jours
+A Project Role must have at least one duty assigned.,Un rôle de projet doit avoir au moins une fonction.
+A region cannot be its own parent,Une région ne peut être son propre parent
+A role named {0} already exists for this project.,Un rôle nommé {0} existe déjà pour ce projet.
+A role named {0} already exists in project {1},Un rôle nommé {0} existe déjà dans le projet {1}
+APK File,Fichier APK
 About,A Propos
+Accept Information,Informations d'Acceptation
+Accepted,Accepté
+Accepted Date,Date d'Acceptation
+Access Restrictions,Restrictions d'Accès
+Account activated successfully!,Compte activé avec succès !
+Account is suspended. Please contact administrator.,Compte suspendu. Contactez l'administrateur.
 Acknowledged,Accusée de réception
+Acknowledgment,Accusé de Réception
+Acknowledgment Breached On,Accusé Dépassé Le
+Acknowledgment Due Date,Date Limite d'Accusé
+Acknowledgment SLA Status,Statut SLA Accusé
+Acknowledgment Template,Modèle d'Accusé
+Acknowledgment days must be less than resolution days,Les jours d'accusé doivent être inférieurs aux jours de résolution
 Action,Action
+Action Taken,Action Effectuée
+Action Taken By,Action Effectuée Par
+Action Taken Date,Date de l'Action
+Action Tracking,Suivi des Actions
+Action/Steps Taken,Actions/Étapes Effectuées
 Actions,Actions
 Activate,Activer
+Activated,Activé
+Activated On,Activé Le
+Activation Attempts,Tentatives d'Activation
+Activation Code,Code d'Activation
+Activation Expires On,Activation Expire Le
+Activation Status,Statut d'Activation
+Activation Timeline,Chronologie d'Activation
+Activation code has expired. Please request a new code.,Code d'activation expiré. Demandez-en un nouveau.
+Activation code sent successfully!,Code d'activation envoyé avec succès !
 Active,actif
 Active Projects,Projets Actifs
-Activity Log,Historique d'activité
+Activity Log,Journal d'Activité
 Add a short comment (optional),Ajoutez un court commentaire (facultatif)
+Added steps,Étapes ajoutées
+Administrative Region {0} does not exist,La région administrative {0} n'existe pas
+Age Group {0} does not belong to project {1},Le groupe d'âge {0} n'appartient pas au projet {1}
+Agreement Notes,Notes de l'Accord
+Agreement Parties,Parties de l'Accord
+Agreement Signed Date,Date de Signature
 All Categories,Toutes les Catégories
 All Projects,Tous les Projets
-Amended From,Modifié Depuis
+Amended From,Modifié À Partir De
+An appeal has already been submitted for this complaint.,Un recours a déjà été soumis pour cette plainte.
+An error occurred during activation. Please try again.,Erreur durant l'activation. Réessayez.
+An error occurred during bulk operation,Erreur durant l'opération en masse
+An error occurred while checking status. Please try again.,Erreur durant la vérification. Réessayez.
 An error occurred. Please try again.,Une erreur s'est produite. Veuillez réessayer.
 Appeal,Recours
+Appeal Date,Date du Recours
+Appeal Information,Informations du Recours
+Appeal Reason,Motif du Recours
+Appeal Submitted,Recours Soumis
+Appeal has been submitted for review,Le recours a été soumis pour examen
+Appeal is only available once the complaint is resolved.,Le recours n'est disponible qu'une fois la plainte résolue.
+Appeal reason is required,Le motif du recours est requis
+Appeal submitted by citizen,Recours soumis par le citoyen
+Appeal submitted by citizen via public portal,Recours soumis par citoyen via portail public
+Appealed,En Recours
+Assigned Appeal Department,Département de Recours Attribué
+Assigned Department,Département Attribué
+Assigned Escalation Department,Département d'Escalade Attribué
+Assigned Role {0} does not belong to project {1},Le rôle attribué {0} n'appartient pas au projet {1}
+Assignee,Affecté à
+Assignee not found,Affecté introuvable
+Assignee {0} does not have access to project {1},L'affecté {0} n'a pas accès au projet {1}
 Assignment,Affectation
-Attachment,Pièce jointe
-Attachments,Pièces jointes
+Assignment Details,Détails de l'Affectation
+Assignment name is required,Le nom de l'affectation est requis
+At least one project must be linked to the age group,Au moins un projet doit être lié au groupe d'âge
+At least one project must be linked to the citizen group,Au moins un projet doit être lié au groupe de citoyens
+At least one project must be linked to the department,Au moins un projet doit être lié au département
+At least one project must be linked to the issue category,Au moins un projet doit être lié à la catégorie
+At least one project must be linked to the issue type,Au moins un projet doit être lié au type de plainte
+At least one project must be linked to the status,Au moins un projet doit être lié au statut
+Attachment,Pièce Jointe
+Attachment not found,Pièce jointe introuvable
+Attachment uploaded successfully,Pièce jointe téléversée avec succès
+Attachments,Pièces Jointes
+Authentication required,Authentification requise
+Auto-Escalate on SLA Breach,Escalade Auto en cas de Dépassement SLA
+Automatically escalate to parent level if SLA is breached,Escalader automatiquement si SLA dépassé
+"Automatically generated path for efficient hierarchy queries (e.g., Country:State:District)",Chemin auto-généré pour les requêtes hiérarchiques (ex. Pays:État:District)
+Avg Resolution Days,Jours de Résolution Moyens
 Back,Retour
 Bot verification failed,La vérification anti-robot a échoué
+Breached,Dépassé
 By Category,Par Catégorie
 By Region,Par Région
 By Status,Par Statut
 Call the GRM hotline to submit your grievance by phone,Appelez la ligne d'assistance GRM pour soumettre votre plainte par téléphone
+Cannot delete: {0} user(s) currently use this role.,Suppression impossible : {0} utilisateur(s) utilisent ce rôle.
+Cannot escalate - already at highest level,Impossible d'escalader - déjà au plus haut niveau
+Cannot escalate: already at the top of the region chain.,Impossible d'escalader : déjà en haut de la chaîne régionale.
 Category,Catégorie
 Category & Issue Type,Catégorie et Type de Plainte
 Category Name,Nom de la Catégorie
+Category does not belong to this project,La catégorie n'appartient pas à ce projet
+Category {0} does not belong to project {1},La catégorie {0} n'appartient pas au projet {1}
 Cell,Cellule
+Changed status from {0} to {1}: {2},Statut changé de {0} à {1} : {2}
 Check your status,Vérifiez votre statut
 Choose a method to file your complaint,Choisissez une méthode pour déposer votre plainte
+Circular reference detected in region hierarchy,Référence circulaire détectée dans la hiérarchie
+Citizen,Citoyen
+Citizen (Confidential),Citoyen (Confidentiel)
+Citizen Age Group,Groupe d'Âge du Citoyen
+Citizen Group 1,Groupe de Citoyens 1
+Citizen Group 2,Groupe de Citoyens 2
+Citizen Group {0} does not belong to project {1},Le groupe de citoyens {0} n'appartient pas au projet {1}
+Citizen Information,Informations du Citoyen
+Citizen Type,Type de Citoyen
+Citizen appeal: {0},Recours citoyen : {0}
+"Citizen feedback collected: Resolution {0}, Rating: {1}","Retour citoyen : Résolution {0}, Note : {1}"
+Citizen feedback: {0},Retour citoyen : {0}
+Citizen has provided feedback rating,Le citoyen a fourni un retour
 Closed,Fermé
+Closed Template,Modèle de Clôture
+Code Sent On,Code Envoyé Le
 Comment,Commentaire
 Complaint Submitted Successfully,Plainte Soumise avec Succès
+Complaint not found.,Plainte introuvable.
 Complaint not found. Please check the tracking code.,Plainte introuvable. Vérifiez le code de suivi.
+Complaint not found. Please check your tracking code.,Plainte introuvable. Vérifiez votre code de suivi.
 Complete verification to submit your complaint,Complétez la vérification pour soumettre votre plainte
+Configuration,Configuration
 Confirmed,Confirmé
 Contact Information,Coordonnées de Contact
+Contact Information (Confidential),Coordonnées (Confidentielles)
+Contact Information Type,Type de Coordonnées
+Contact Medium,Moyen de Contact
 Contact a field officer who can register your complaint on your behalf,Contactez un agent de terrain qui peut enregistrer votre plainte en votre nom
 Copy,Copier
 Could not load app information. Please try again later.,Impossible de charger les informations de l'application. Veuillez réessayer plus tard.
+Current Setup Step,Étape de Configuration Actuelle
 Dashboard,Tableau de Bord
+Days Remaining (Resolution),Jours Restants (Résolution)
 Department,Département
+Department Assignment,Affectation du Département
+Department {0} is not linked to project {1},Le département {0} n'est pas lié au projet {1}
 Describe the Issue,Décrire la Plainte
 "Describe what happened, when, and how it affected you...","Décrivez ce qui s'est passé, quand et comment cela vous a affecté..."
 Description,Description
+Description must be at least 10 characters,La description doit faire au moins 10 caractères
 District,District
 Download APK,Télécharger APK
 Download public reports,Télécharger les rapports publics
 Draft,Brouillon
+Due At,Échéance
 Due Date,Date d'Échéance
+Duplicate project {0} in project links,Projet en double {0}
+Duty,Fonction
 Email,E-mail
 Email Address,Adresse E-mail
+Email Configuration,Configuration E-mail
 Email Template,Modèle d'email
+Email and activation code are required,L'e-mail et le code sont requis
+Email domain is required when synthesizing emails.,Domaine e-mail requis pour générer les e-mails.
+Email is required,L'e-mail est requis
+Enable Automated Notifications,Activer les Notifications Automatiques
+Enable Public Dashboard,Activer Tableau de Bord Public
+Enable Public Reports,Activer Rapports Publics
 End Date,Date de Fin
+End Date cannot be before Start Date,La date de fin ne peut être avant la date de début
 Enter the 6-digit code,Saisissez le code à 6 chiffres
 Enter the 6-digit code sent to {0},Saisissez le code à 6 chiffres envoyé à {0}
 Enter tracking code...,Saisissez le code de suivi...
 Enter your tracking code to check the status,Saisissez votre code de suivi pour vérifier l'état
 Error,Erreur
+Error accepting issue: {0},Erreur d'acceptation : {0}
+Error changing status: {0},Erreur de changement de statut : {0}
+Error collecting feedback: {0},Erreur de collecte de retour : {0}
+Error creating default configurations. Please check the logs.,Erreur de création des configurations.
+Error escalating issue: {0},Erreur d'escalade : {0}
+Error rating issue: {0},Erreur d'évaluation : {0}
+Error reassigning issue: {0},Erreur de réaffectation : {0}
+Error recording resolution: {0},Erreur d'enregistrement de la résolution : {0}
+Error recording steps: {0},Erreur d'enregistrement des étapes : {0}
+Error rejecting issue: {0},Erreur de rejet : {0}
+Error removing assignment. Please check the logs.,Erreur de suppression. Vérifiez les journaux.
+Error retrieving citizen groups. Please try again later.,Erreur de récupération des groupes.
+Error retrieving complaint status,Erreur de récupération du statut
+Error retrieving departments. Please try again later.,Erreur de récupération des départements.
+Error setting up permissions. Please check the logs.,Erreur de configuration des permissions.
+Error submitting appeal: {0},Erreur de soumission du recours : {0}
+Escalate Flag,Indicateur d'Escalade
+Escalated,Escaladé
+Escalated By,Escaladé Par
+Escalated Date,Date Escalade
+Escalated Template,Modèle d'Escalade
+Escalation,Escalade
+Escalation Count,Compteur d'Escalades
+Escalation Reason,Motif de l'Escalade
+Escalation Reasons,Motifs d'Escalade
+Escalation Tracking,Suivi d'Escalade
+"Expected a list for {0}, got {1}","Liste attendue pour {0}, reçu {1}"
+"Expected an object for {0}, got {1}","Objet attendu pour {0}, reçu {1}"
 Expired,Expiré
+Failed to ingest admin-regions CSV.,Échec de l'ingestion du CSV des régions.
 Failed to load dashboard data.,Échec du chargement des données du tableau de bord.
+Failed to load home listings,Échec du chargement de l'accueil
+Failed to load regions,Échec du chargement des régions
+Failed to load submission config,Échec du chargement de la configuration
+Failed to load submission options,Échec du chargement des options
+Failed to save file,Échec de la sauvegarde
 Failed to send code,Échec de l'envoi du code
+Failed to send verification code,Échec d'envoi du code de vérification
+Feedback,Retour
 Female,Femme
 Field Officer,Agent de Terrain
+Field {0} is not editable inline,Le champ {0} n'est pas modifiable en ligne
 File Name,Nom du Fichier
 File a new grievance,Déposer une nouvelle plainte
+File not found,Fichier introuvable
 "File your grievance via web, mobile, or field officer","Déposez votre plainte via le web, mobile, ou un agent de terrain"
 From Date,A partir du
+From Date cannot be after To Date,La date de début ne peut être après la date de fin
 GRM Portal,Portail GRM
+GRM System - Government Worker Activation Code,Système GRM - Code d'Activation Agent Public
 Gender,Genre
 Get a tracking code and monitor progress,Obtenez un code de suivi et suivez la progression
 Go to Dashboard,Aller au Tableau de bord
+Government Worker Information,Informations de l'Agent Public
 Grievance Redress,Recours et Plaintes
 Grievance Redress Mechanism,Mécanisme de Recours
+Hierarchy,Hiérarchie
+Hierarchy Path,Chemin de Hiérarchie
 Home,Accueil
 How It Works,Comment ça Marche
 How would you like to be contacted?,Comment souhaitez-vous être contacté ?
 I don't know,Je ne sais pas
 I want updates,Je veux des mises à jour
+Icon (lucide name),Icône (nom lucide)
 In Person,En Personne
-In Progress,En cours
+In Progress,En Cours
+In Progress Template,Modèle En Cours
 Inactive,Inactif
+Intake,Réception
+Intake Date,Date de Réception
+Invalid Jinja2 syntax in SMS message: {0},Syntaxe Jinja2 invalide dans le SMS : {0}
+Invalid activation_status value: {0},Valeur activation_status invalide : {0}
+Invalid email address,Adresse e-mail invalide
+Invalid email domain: {0},Domaine e-mail invalide : {0}
+Invalid location data format,Format de données de lieu invalide
+Invalid or inactive project,Projet invalide ou inactif
+Invalid payload: expected a JSON object,Charge utile invalide : objet JSON attendu
+Invalid phone number,Numéro de téléphone invalide
+Invalid status for this project,Statut invalide pour ce projet
+Invalid verification code,Code de vérification invalide
 Is Active,Est Active
+Is Latest Version,Est la Dernière Version
+Is Setup Complete,Configuration Terminée
+Issue Activity log,Journal d'activité
+Issue Assigned,Plainte Affectée
+Issue Attachments,Pièces Jointes
+Issue Comments,Commentaires de la Plainte
+Issue Date,Date de la Plainte
+Issue Date cannot be after Intake Date,La date de la plainte ne peut être après la date de réception
+Issue Details,Détails de la Plainte
+Issue Escalated,Plainte Escaladée
+Issue Escalated to You,Plainte Escaladée à Vous
+Issue Location,Lieu de la Plainte
+Issue Log,Journal de la Plainte
 Issue Type,Type de Plainte
+Issue Type {0} does not belong to project {1},Le type de plainte {0} n'appartient pas au projet {1}
+Issue accepted and assigned for processing,Plainte acceptée et affectée
+Issue cancelled,Plainte annulée
+Issue creation failed; record not found,Échec de création
 Issue date cannot be in the future,La date du problème ne peut pas être dans le futur
+Issue escalated from {0} to {1}: {2},Plainte escaladée de {0} à {1} : {2}
+Issue escalated successfully,Plainte escaladée avec succès
+Issue has been marked as resolved,La plainte a été marquée comme résolue
+Issue not found,Plainte introuvable
+Issue rejected with provided reason,Plainte rejetée avec motif fourni
+Issue reopened due to resolution rejection,Plainte rouverte suite au rejet de la résolution
+Issue submitted,Plainte soumise
+Issue was accepted by {0},Plainte acceptée par {0}
+"Issue was rated by citizen, rating: {0}","Plainte évaluée par le citoyen, note : {0}"
+"Issue was rejected by {0}, reason: {1}","Plainte rejetée par {0}, motif : {1}"
+Issue was resolved by {0},Plainte résolue par {0}
+Issue {0} has been assigned to you: {1},La plainte {0} vous a été affectée : {1}
+Issue {0} has been escalated to you,La plainte {0} vous a été escaladée
+Job title/position,Titre du poste
 Keyboard Shortcuts,Raccourcis clavier
+Last Escalated On,Dernière Escalade Le
+Last Escalation Reason,Dernier Motif d'Escalade
 Latest version,Dernière version
+"Leave blank for shared templates, or select project for project-specific template",Laissez vide pour partagé ou sélectionnez un projet
+Level Name '{0}' already exists for project {1}.,Le nom du niveau '{0}' existe déjà pour le projet {1}.
+Level Order,Ordre du Niveau
+Level Order cannot be negative,L'ordre du niveau ne peut être négatif
+Lifecycle Phase,Phase du Cycle de Vie
+Link to Frappe Email Template for email notifications,Lien vers le modèle d'e-mail Frappe
 Loading latest version…,Chargement de la dernière version...
 Loading metrics...,Chargement des données...
 Loading reports...,Chargement des rapports...
+Local URL,URL Locale
 Location,Lieu
+Log Entry,Entrée de Journal
 Login,Connexion
+Login required.,Connexion requise.
+Logo,Logo
 Male,Homme
+Mapping is invalid. Missing required: {0}. Errors: {1},Mappage invalide. Manquants : {0}. Erreurs : {1}
+Materialized Path,Chemin Matérialisé
 Minimum 10 characters,Minimum 10 caractères
+Missing 'id' on issue payload,'id' manquant dans la charge utile
+Missing required parameters,Paramètres requis manquants
 Mobile App,Application Mobile
+Nearing Due,Près de l'Échéance
 Next,Suivant
+No `file` part in upload.,Pas de partie `file` dans l'envoi.
+No activation code found. Please generate a code first.,Aucun code trouvé. Générez d'abord un code.
+No active Project Roles defined for this project.,Aucun rôle de projet actif défini.
+No administrative levels defined for this project.,Aucun niveau administratif défini pour ce projet.
 No categories found,Aucune catégorie trouvée
 No data,Aucune donnée
+No eligible workers found,Aucun travailleur éligible
+No file provided,Aucun fichier fourni
+No final status found for this project,Aucun statut final trouvé
+No government worker assignment found for this email,Aucune affectation d'agent public pour cet e-mail
+No government worker assignments found for this project,Aucune affectation d'agent pour ce projet
+No government worker roles configured for this project,Aucun rôle d'agent public configuré
 No issue types found,Aucun type de plainte trouvé
+No mobile app version is published yet.,Aucune version mobile publiée.
+No open status configured for this project,Aucun statut ouvert configuré
+No open status found for this project,Aucun statut ouvert trouvé
+No pending activation found for this email,Aucune activation en attente pour cet e-mail
+No permission to export activation codes,Pas de permission d'exporter les codes
+No permission to send activation codes,Pas de permission d'envoyer des codes
 No projects found,Aucun projet trouvé
 No regions found,Aucune région trouvée
+No rejected status found for this project,Aucun statut rejeté trouvé
+No reopened status configured,"Aucun statut ""rouvert"" configuré"
 No reports available yet,Aucun rapport disponible pour le moment
+No resolved status configured,"Aucun statut ""résolu"" configuré"
+Not Resolved,Non Résolu
+Not permitted,Non autorisé
 Not satisfied? Submit an appeal,Pas satisfait ? Déposez un recours
-Notification Settings,Paramètres de notification
+Notification Settings,Paramètres de Notification
+Notification sent successfully,Notification envoyée avec succès
+Number of business days to acknowledge complaint (default: 7 per WB guidelines),Nombre de jours pour accuser réception (défaut : 7 selon BM)
+Number of business days to resolve complaint (default: 30 per WB guidelines),Nombre de jours ouvrables pour résoudre (défaut : 30 selon BM)
+Number of failed activation attempts,Nombre de tentatives d'activation échouées
+On Time,À Temps
+On behalf of Individual,Au nom d'un Individu
+On behalf of Organization,Au nom d'une Organisation
+Only platform administrators can use bulk-import endpoints.,Seuls les administrateurs plateforme peuvent utiliser ces points.
 Open,Ouvert
 Other,Autre
+Oversight,Supervision
+Parent Region,Région Parente
+Parent region must belong to the same project,La région parente doit appartenir au même projet
 Pending,En attente
+Pending Activation,En Attente d'Activation
 Phone,Téléphone
 Phone Hotline,Ligne Téléphonique
 Phone Number,Numéro de Téléphone
+Phone number is required,Le numéro de téléphone est requis
+Pick at least one duty for this role.,Choisissez au moins une fonction.
+Please configure at least one notification channel (Email or SMS),Configurez au moins un canal (E-mail ou SMS)
 Please describe your complaint in detail,Veuillez décrire votre plainte en détail
+Position Title,Titre du Poste
 Preferred Contact Method,Méthode de Contact Préférée
 Preview,Aperçu
 Project,Projet
+Project '{0}' does not exist.,Le projet '{0}' n'existe pas.
+Project Link,Lien du Projet
+Project Role,Rôle du Projet
+Project Role is required,Le rôle du projet est requis
+Project Role {0} does not exist,Le rôle de projet {0} n'existe pas
+Project Role {0} is not active,Le rôle de projet {0} n'est pas actif
+Project is required,Le projet est requis
+Project {0} already has an initial status: {1},Le projet {0} a déjà un statut initial : {1}
+Project {0} does not exist,Le projet {0} n'existe pas
+Project {0} not found,Projet {0} introuvable
 Provide your contact details to receive status updates,Fournissez vos coordonnées pour recevoir les mises à jour
 Province,Province
 Public Dashboard,Tableau de Bord Public
 Public Portal,Portail Public
+Public Portal Visibility,Visibilité Portail Public
 Public Reports,Rapports Publics
+Public citizen-comment endpoint is not available.,Le point de terminaison public n'est pas disponible.
 Public reports will appear here once generated.,Les rapports publics apparaîtront ici une fois générés.
 Raise Issue,Signaler un Problème
 Rate this resolution,Évaluez cette résolution
+Rated Date,Date d'Évaluation
 Rating,Évaluation
+Rating Comment,Commentaire d'Évaluation
+Rating Information,Informations d'Évaluation
+Rating Submitted At,Évaluation Soumise À
+Rating is only available once the complaint is resolved.,L'évaluation n'est disponible qu'une fois la plainte résolue.
+Rating must be a number,L'évaluation doit être un nombre
+Rating must be between 0 and 5,L'évaluation doit être entre 0 et 5
+Rating must be between 1 and 5,L'évaluation doit être entre 1 et 5
 Reason,Raison
+Reassigned from {0} to {1} ({2}),Réaffecté de {0} à {1} ({2})
+Reassigned from {0} to {1}: {2},Réaffecté de {0} à {1} : {2}
+Receipt,Accusé de Réception
+Receipt Template,Modèle de Reçu
 Received,Reçu
+Region Name,Nom de la Région
+Region not found,Région introuvable
+Region {0} does not belong to project {1},La région {0} n'appartient pas au projet {1}
+Reject Information,Informations de Rejet
+Reject Reason,Motif de Rejet
 Rejected,Rejeté
+Rejected By,Rejeté Par
+Rejected Date,Date de Rejet
+Release Notes,Notes de Version
 Reload,Recharger
+Reminder Before (Days),Rappel Avant (Jours)
+Reminder days must be less than resolution days,Les jours de rappel doivent être inférieurs aux jours de résolution
+Reporter,Rapporteur
 Reports,Rapports
 Resend code,Renvoyer le code
 Resend verification code,Renvoyer le code de vérification
+Resolution,Résolution
+Resolution Accepted,Résolution Acceptée
+Resolution Agreement,Accord de Résolution
+Resolution Agreement (Signed),Accord de Résolution (Signé)
+Resolution Breached On,Résolution Dépassée Le
+Resolution Date,Date de Résolution
+Resolution Date cannot be before Issue Date,La date de résolution ne peut être avant la date de la plainte
+Resolution Due Date,Date Limite de Résolution
+Resolution Information,Informations de Résolution
+Resolution Rate (%),Taux de Résolution (%)
+Resolution SLA Status,Statut SLA Résolution
+Resolution Text,Texte de Résolution
+Resolution Tracking,Suivi de Résolution
 Resolve,Résoudre
 Resolved,Résolu
+Resolved By,Résolu Par
+Resolved Template,Modèle de Résolution
 Role,Rôle
+Role {0} does not belong to project {1},Le rôle {0} n'appartient pas au projet {1}
+Role {0} is not allowed in bulk worker import. ,Le rôle {0} n'est pas autorisé dans l'import en masse. 
+Route To must be 'Role'. Department-based routing is no ,Acheminer Vers doit être 'Rôle'. L'acheminement par département n'est plus 
 Rwanda,Rwanda
+SLA Acknowledgment (Days),Accusé SLA (Jours)
+SLA Configuration,Configuration SLA
+SLA Reminder,Rappel SLA
+SLA Reminder Template,Modèle de Rappel SLA
+SLA Resolution (Days),Résolution SLA (Jours)
+SLA Status,Statut SLA
+SLA Tracking,Suivi SLA
+"SMS message template (supports Jinja2: {{ tracking_code }}, {{ status }}, etc.)","Modèle SMS (Jinja2 : {{ tracking_code }}, {{ status }}, etc.)"
+SMS service is not configured,Le service SMS n'est pas configuré
 Save your tracking code to check the status of your complaint,Conservez votre code de suivi pour vérifier l'état de votre plainte
 Search projects...,Rechercher des projets...
 Search regions...,Rechercher des régions...
@@ -144,16 +472,34 @@ See public statistics,Voir les statistiques publiques
 Select,Sélectionner
 Select Project,Choisir un Projet
 Select Region,Choisir la Région
+Selected category does not belong to this project,La catégorie sélectionnée n'appartient pas à ce projet
+Selected issue type does not belong to this project,Le type de plainte sélectionné n'appartient pas à ce projet
+Selected project is not active,Le projet sélectionné n'est pas actif
+Selected region does not belong to this project,La région sélectionnée n'appartient pas à ce projet
+Selected user does not have access to this project,L'utilisateur sélectionné n'a pas accès
 Send,Envoyer
+Send automated email/SMS notifications to citizens,Envoyer des notifications automatisées aux citoyens
 Send code to my email,Envoyer le code par e-mail
 Send code to my phone,Envoyer le code sur mon téléphone
+Send reminder notification this many days before SLA expires,Envoyer rappel ce nombre de jours avant expiration SLA
 Send verification code to {0},Envoyer le code de vérification à {0}
 Sending...,Envoi...
+Sent as reminder before SLA expires,Envoyé comme rappel avant expiration SLA
+Sent immediately when complaint is submitted,Envoyé immédiatement à la soumission
+Sent when complaint is acknowledged,Envoyé à l'accusé de réception
+Sent when complaint is closed,Envoyé à la clôture
+Sent when complaint is escalated,Envoyé lors de l'escalade
+Sent when complaint is resolved,Envoyé à la résolution
+Sent when complaint status changes to In Progress,Envoyé quand le statut passe à En Cours
+Service Level Agreement timeframes for this administrative level,Délais SLA pour ce niveau administratif
 Session Defaults,Session par défaut
 Settings,Paramètres
+Setup State,État de Configuration
 "Solution proposed, implemented, and verified","Solution proposée, mise en œuvre, et vérifiée"
 Start Date,Date de Début
 Status,Statut
+Status retrieved successfully,Statut récupéré avec succès
+Status {0} does not belong to project {1},Le statut {0} n'appartient pas au projet {1}
 Stay anonymous,Rester anonyme
 Step {0},Étape {0}
 Submission failed. Please try again.,Échec de la soumission. Veuillez réessayer.
@@ -168,28 +514,58 @@ Submit through the GRM mobile application available on Android,Soumettez via l'a
 Submitted,Soumise
 Submitting...,Envoi en cours...
 Success,Succès
+Suspended,Suspendu
+Sync Name,Nom de Sync
 System Manager,Responsable Système
+System configuration error. Please try again later.,Erreur de configuration. Réessayez plus tard.
 Tell us why you are not satisfied,Dites-nous pourquoi vous n'êtes pas satisfait
+Template Variables Reference,Référence des Variables
+Template {0} belongs to another project,Le modèle {0} appartient à un autre projet
+Template {0} is not active,Le modèle {0} n'est pas actif
 Thanks for your feedback,Merci pour votre retour
 The mobile app is not available yet. Please check back later.,L'application mobile n'est pas encore disponible. Revenez plus tard.
+This complaint has already been rated.,Cette plainte a déjà été évaluée.
+This complaint has no contact channel; submit your rating without a code.,Cette plainte n'a pas de canal de contact ; soumettez sans code.
 Timestamp,Horodatage
 To Date,Jusqu'au
 Toggle Full Width,Changer l'affichage en pleine largeur
 Toggle Theme,Basculer le thème
+Too many failed attempts. Account has been suspended.,Trop de tentatives échouées. Compte suspendu.
 Total Issues,Total des Plaintes
+Total Received,Total Reçu
 Track,Suivre
 Track Complaint,Suivre la Plainte
 Track Your Complaint,Suivre votre Plainte
 Tracking Code,Code de Suivi
 Tracking Result,Résultat du Suivi
+Tracking code is required,Le code de suivi est requis
+Triage,Tri
+Unassigned,Non Attribué
+Unsupported file type: {0}. Use CSV or XLSX.,Type de fichier non pris en charge : {0}. Utiliser CSV ou XLSX.
+Unsupported format: {0}. Use 'csv' or 'xlsx'.,Format non pris en charge : {0}. Utiliser 'csv' ou 'xlsx'.
+Upload signed resolution agreement document,Téléverser l'accord de résolution signé
+Uploaded,Téléversé
+Uploaded file has no header row,Le fichier téléversé n'a pas de ligne d'en-tête
+Uploaded file is empty,Le fichier téléversé est vide
+Uploaded file is empty.,Le fichier téléversé est vide.
 User,Utilisateur
+User email is required for activation code generation,L'e-mail est requis pour générer le code
+User email is required to send activation code,L'e-mail est requis pour envoyer le code
+User is required,Utilisateur requis
+User {0} does not exist,L'utilisateur {0} n'existe pas
+User {0} is already assigned to {1},L'utilisateur {0} est déjà affecté à {1}
+User {0} is not enabled,L'utilisateur {0} n'est pas activé
 Validation Error,erreur de validation
+Verification code expired. Please request a new one.,Code de vérification expiré. Demandez-en un nouveau.
+Verification code is required,Le code de vérification est requis
 Verify & Submit,Vérifier et Soumettre
+Version Name,Nom de Version
 View,Voir
 View Dashboard,Voir le Tableau de Bord
 View Reports,Voir les Rapports
 View Website,Voir Le Site Web
 Village,Village
+Visible,Visible
 Visit the nearest GRM office to submit your complaint in person,Rendez-vous au bureau GRM le plus proche pour déposer votre plainte en personne
 Warning,Avertissement
 "We are here to help. Track complaints, view statistics, and submit new grievances easily.","Nous sommes là pour vous aider. Suivez vos plaintes, consultez les statistiques et déposez de nouvelles plaintes facilement."
@@ -197,11 +573,73 @@ We'll use the default project,Nous utiliserons le projet par défaut
 "Web form coming soon. For now, please use one of the methods above.","Formulaire web bientôt disponible. En attendant, veuillez utiliser l'une des méthodes ci-dessus."
 What is your complaint about?,De quoi parle votre plainte ?
 What's new,Nouveautés
+When activation code was last sent,Dernière fois que le code a été envoyé
 When did this happen?,Quand cela s'est-il produit ?
+"When enabled, guest (non-authenticated) visitors can see the public Dashboard page and its homepage card. Logged-in staff always see it regardless of this setting.",Activé : les visiteurs non authentifiés voient le Tableau de bord public. Le personnel connecté le voit toujours.
+"When enabled, guest (non-authenticated) visitors can see the public Reports page and its homepage card. Logged-in staff always see it regardless of this setting.",Activé : les visiteurs non authentifiés voient la page Rapports publics. Le personnel connecté la voit toujours.
+When the activation code expires,Quand le code d'activation expire
+When user activated their account,Quand l'utilisateur a activé son compte
 Where did the issue occur?,Où s'est produit l'incident ?
 Which project does your complaint relate to?,À quel projet votre plainte se rapporte-t-elle ?
+Worker is already activated,Le travailleur est déjà activé
+You are not assigned to this issue,Vous n'êtes pas affecté à cette plainte
+You do not have access to this project,Vous n'avez pas accès à ce projet
+You do not have access to this region,Vous n'avez pas accès à cette région
+You do not have an active GRM duty on this project.,Vous n'avez pas de fonction GRM active sur ce projet.
+You do not have permission to access this attachment,Vous n'avez pas la permission d'accéder à cette pièce jointe
+You do not have permission to access this issue,Vous n'avez pas la permission d'accéder à cette plainte
+You do not have permission to access this project,Vous n'avez pas la permission d'accéder à ce projet
+You do not have permission to access this region,Vous n'avez pas la permission d'accéder à cette région
+You do not have permission to assign this issue,Vous n'avez pas la permission d'affecter cette plainte
+You do not have permission to bulk send activation codes.,Pas de permission d'envoi en masse des codes.
+You do not have permission to escalate this issue,Vous n'avez pas la permission d'escalader cette plainte
+You do not have permission to reopen this issue,Vous n'avez pas la permission de rouvrir cette plainte
+You do not have permission to resolve this issue,Vous n'avez pas la permission de résoudre cette plainte
+You do not have permission to update issues.,Vous n'avez pas la permission de modifier les plaintes.
+You do not have permission to update this issue,Vous n'avez pas la permission de modifier cette plainte
+You need the Investigate & Resolve duty to escalate this issue.,Vous avez besoin de la fonction Investigation & Résolution pour escalader.
+You need the Review duty to accept this issue.,Vous avez besoin de la fonction Examen pour accepter.
+You need the Review duty to reject this issue.,Vous avez besoin de la fonction Examen pour rejeter.
+You need the {0} duty to change {1}.,Vous avez besoin de la fonction {0} pour changer {1}.
+Your GRM rating code,Votre code GRM
+Your GRM rating code is: {0}. Valid for 5 minutes.,Votre code GRM : {0}. Valable 5 minutes.
+Your GRM verification code is: {0}. Valid for 5 minutes.,Votre code de vérification GRM : {0}. Valable 5 minutes.
 Your Name,Votre Nom
 Your appeal has been recorded,Votre recours a été enregistré
 Your complaint will be processed without contact information,Votre plainte sera traitée sans coordonnées
+`project` is required.,`project` est requis.
+anonymous,anonyme
+attachment_data must be an object,attachment_data doit être un objet
+attachment_url is required,attachment_url est requis
+channel-alert,channel-alert
+data_import is required,data_import est requis
+dd-mm-yyyy,jj-mm-aaaa
+dd/mm/yyyy,jj/mm/aaaa
+duties must be a JSON-encoded list of duty names,fonctions doit être une liste JSON
 eGRM Mobile App,Application Mobile eGRM
+email,e-mail
+facilitator,facilitateur
+female,femme
+fieldname is required,fieldname est requis
+file_url is required,file_url est requis
+issue_id is required,issue_id est requis
+level_type is required,level_type est requis
+male,homme
+mm-dd-yyyy,mm-jj-aaaa
+mm/dd/yyyy,mm/jj/aaaa
+name is required,le nom est requis
 optional,facultatif
+other,autre
+phone_number,phone_number
+project and role_name are required,projet et role_name requis
+project argument is required,L'argument projet est requis
+project is required,projet requis
+"project, category, and target are required","projet, catégorie et cible requis"
+regions must be a list of region IDs,régions doit être une liste d'IDs
+role and duty are required,rôle et fonction requis
+role is required,le rôle est requis
+user is required,l'utilisateur est requis
+whatsapp,whatsapp
+yyyy-mm-dd,aaaa-mm-jj
+{0} is required,{0} est requis
+"{0} must be an integer, got {1!r}","{0} doit être un entier, reçu {1!r}"
