@@ -2,89 +2,268 @@
 30 Days,Iminsi 30
 7 Days,Iminsi 7
 90 Days,Iminsi 90
+ALL,BYOSE
 Acknowledged,Cyemejwe
+Actions,Ibikorwa
 Active Projects,Imishinga Ikora
+Activity,Igikorwa
+Add,Ongeraho
+Add Column,Ongeraho Inkingi
+Add New,Ongeraho Gishya
+Add a Filter,Ongeraho Akamenyetso
 Add a short comment (optional),Ongeraho igitekerezo gito (bidategetswe)
+Add column,Ongeraho inkingi
+Add row,Ongeraho umurongo
+Add {0},Ongeraho {0}
+Administrator,Umuyobozi
+Advanced,Birenze
+All,Byose
 All Categories,Ibyiciro Byose
 All Projects,Imishinga Yose
+Allow,Emerera
+Always,Buri Gihe
 An error occurred. Please try again.,Habayeho ikosa. Mwongere mugerageze.
 Appeal,Ubujurire
+Apply,Shyira mu Bikorwa
+Apply Filters,Shyira Akamenyetso mu Bikorwa
+Assign,Tanga
+Assigned,Cyatanzwe
+Assigned To,Cyahawe
+Assignment,Iyinjizwa
+Attach,Ongeraho
+Attachment,Ifatanyirizo
+Attachments,Ibifatanyirizo
 Back,Subira inyuma
+Before,Mbere
+Between,Hagati
 Bot verification failed,Kwemeza anti-roboti byanze
+Browse,Shakisha
+Bulk Actions,Ibikorwa rusange
+By,Na
 By Category,Hashingiwe ku Cyiciro
 By Region,Hashingiwe ku Karere
 By Status,Hashingiwe ku Ihagarara
 Call the GRM hotline to submit your grievance by phone,Hamagara umurongo wa GRM utange ikibazo cyawe kuri telefoni
+Cancel,Hagarika
 Category,Icyiciro
 Category & Issue Type,Icyiciro n'Ubwoko bw'Ikibazo
 Cell,Akagali
+Change,Hindura
+Changes,Impinduka
 Check your status,Reba imimerere yawe
+Choose,Hitamo
 Choose a method to file your complaint,Hitamo uburyo bwo gutanga ikirego cyawe
-Closed,Byarafunzwe
+Clear,Siba
+Clear Filters,Siba Utumenyetso
+Click,Kanda
+Close,Funga
+Closed,Cyafunzwe
+Code,Kode
+Collapse,Kunyaganya
+Color,Ibara
+Column,Inkingi
+Columns,Inkingi
+Comment,Igitekerezo
+Comments,Ibitekerezo
 Complaint Submitted Successfully,Ikibazo Cyoherejwe Neza
 Complaint not found. Please check the tracking code.,Ikibazo ntikiboneka. Nyamuneka reba kode yo gukurikirana.
 Complete verification to submit your complaint,Uzuza iyemezwa kugira ngo wohereze ikibazo cyawe
+Confirm,Emeza
+Connections,Aho Hahuriza
 Contact Information,Aho Twabageraho
 Contact a field officer who can register your complaint on your behalf,Vugana n'umukozi w'ikigo ushobora kwandikisha ikirego cyawe
+Continue,Komeza
 Copy,Koporora
 Could not load app information. Please try again later.,Ntibyashobotse kuzana amakuru ya porogaramu. Ongera ugerageze nyuma.
+Create,Kora
+Create New,Kora Gishya
+Create your first {0},Kora {0} cyawe cya mbere
+Created,Byakozwe
+Created By,Cyakozwe Na
+Created On,Cyakozwe Ku
+Currency,Ifaranga
+Current,Iriho
+Custom,Bigenwe
+Customize,Hindura
+DELETE,SIBA
+DRAFT,CYATEGUWE
 Dashboard,Ikibaho
+Date,Itariki
+Days,Iminsi
+Default,Ibanze
+Delete,Siba
+Delete Column,Siba Inkingi
+Delete column,Siba inkingi
+Delete row,Siba umurongo
 Describe the Issue,Sobanura Ikibazo
 "Describe what happened, when, and how it affected you...","Sobanura ibyabaye, ryari, n'uburyo byakugizeho ingaruka..."
 Description,Ibisobanuro
+Details,Amakuru Arambuye
+Disabled,Bidakora
+Discard,Reka
+Display,Garagaza
 District,Akarere
+Documentation,Inyandiko z'Imikoreshereze
+Done,Byarangiye
+Download,Manura
 Download APK,Manura APK
 Download public reports,Kuramo raporo rusange
+Draft,Cyateguwe
+Duplicate,Subiramo
+Edit,Hindura
+Edit Filters,Hindura Utumenyetso
 Email,Imeyili
 Email Address,Aderesi y'Imeyili
+Enable,Tangiza
+Enabled,Birakora
 Enter the 6-digit code,Andika kode y'imibare 6
 Enter the 6-digit code sent to {0},Andika kode y'imibare 6 yoherejwe kuri {0}
 Enter tracking code...,Andika kode yo gukurikirana...
 Enter your tracking code to check the status,Andika kode yo gukurikirana kugira ngo urebe aho bigeze
+Equals,Bihwanye Na
+Error,Ikosa
+Example,Urugero
+Expand,Yagura
+Export,Kohereza
+Failed,Byanze
 Failed to load dashboard data.,Kuzana amakuru y'ikibaho byanze.
 Failed to send code,Kohereza kode byanze
 Female,Gore
+Field,Umurima
 Field Officer,Umukozi w'Ikigo
+Fields,Imirima
+File,Dosiye
 File a new grievance,Tanga ikirego gishya
 "File your grievance via web, mobile, or field officer","Tanga ikirego cyawe ukoresheje urubuga, telefoni, cyangwa umukozi w'ikigo"
+Files,Dosiye
+Filter,Akamenyetso
+Filters,Utumenyetso
+First,Mbere
+From,Kuva
 GRM Portal,Urubuga rwa GRM
 Gender,Igitsina
 Get a tracking code and monitor progress,Habwa umubare w'ikurikirana ukurikirane aho bigeze
 Go to Dashboard,Jya ku Ikibaho
+Greater Than,Birenze
 Grievance Redress,Gukemura Ibibazo
 Grievance Redress Mechanism,Urwego rw'Ikemurampaka
+Group By,Tondeka Ku
+Header,Umutwe
+Help,Ubufasha
+Hide,Hisha
+Hide Tags,Hisha Utumenyetso
 Home,Ahabanza
 How It Works,Uburyo Bikora
 How would you like to be contacted?,Mwifuza ko mwagezwaho mute?
 I don't know,Sinzi
 I want updates,Nshaka kumenya aho bigeze
+ID,ID
+Image,Ifoto
+In,Muri
 In Person,Ku Muntu
+Inactive,Bidakora
+Include,Ongeraho
+Index,Urutonde
+Insert,Shyiramo
+Invalid,Ntibyemewe
+Is,Ni
 Issue Type,Ubwoko bw'Ikibazo
 Issue date cannot be in the future,Itariki y'ikibazo ntishobora kuba mu gihe kizaza
+Items,Ibintu
+Key,Urufunguzo
+Label,Akarango
+Language,Ururimi
+Last,Bya nyuma
+Last Created,Bya Mbere
+Last Modified,Byaheruka Guhindurwa
+Last Updated On,Byaherukaga Kuvugururwa
 Latest version,Verisiyo nshya
+Less Than,Munsi ya
+Letter,Inyuguti
+Like,Kunda
+Liked,Cyakundwa
+Liked by me,Nzi nayikunze
+Link,Aho Hahuriza
+Links,Aho Hahuriza
+Load More,Pakira Ibindi
+Load more,Pakira ibindi
+Loading,Birashakwa
 Loading latest version…,Birashakwa verisiyo nshya...
 Loading metrics...,Birashakwa imibare...
 Loading reports...,Birashakwa raporo...
+Loading...,Birashakwa...
 Login,Injira
+Logout,Sohoka
 Male,Gabo
+Mandatory,Birakenewe
+Maximum,Hejuru
+Menu,Urutonde
+Message,Ubutumwa
+Minimum,Hasi
 Minimum 10 characters,Inyuguti 10 nibura
 Mobile App,Porogaramu ya Telefoni
+Module,Igice
+Month,Ukwezi
+Move,Imura
+Name,Izina
+Navigate to main content,Jya ku makuru y'ingenzi
+New,Gishya
+New Email,Imeyili Nshya
 Next,Komeza
+No,Oya
+No Comments,Nta Bitekerezo
+No Data,Nta Makuru
+No Preview Available,Nta reba mbere ihari
+No Results found,Nta gisubizo cyabonetse
 No categories found,Nta byiciro byabonetse
 No data,Nta makuru
+No filters found,Nta tumenyetso twabonetse
 No issue types found,Nta bwoko bw'ibibazo bwabonetse
+No items,Nta bintu
+No items found,Nta bintu byabonetse
+No matching,Nta gihuye
 No projects found,Nta mishinga yabonetse
 No regions found,Nta turere twabonetse
 No reports available yet,Nta raporo zihari nubu
+No {0} found,Nta {0} yabonetse
+None,Nta kimwe
+Not Found,Ntibyabonetse
+Not Like,Si nka
+Not Set,Ntibyashyizweho
+Not found,Ntibyabonetse
 Not satisfied? Submit an appeal,Ntimwumva bihagije? Tanga ubujurire
-Open,Bifunguye
+Note,Inyandiko
+Notes,Inyandiko
+Notification,Imenyekanisha
+Notifications,Imenyekanisha
+Now,Ubu
+Number,Umubare
+OK,Yego
+OPTIONS,AMAHITAMO
+OR,CYANGWA
+Off,Birafunze
+On,Birafunguye
+Open,Fungura
+Optional,Bidategetswe
+Options,Amahitamo
+Order,Urutonde
 Other,Ikindi
+Owner,Nyirayo
+Page,Urupapuro
+Paste,Komeka
 Pending,Bitegereje
 Phone,Telefoni
 Phone Hotline,Umurongo wa Telefoni
 Phone Number,Numero ya Telefoni
+Please,Mwitonze
 Please describe your complaint in detail,Mwitonze musobanure ikibazo cyanyu
 Preferred Contact Method,Uburyo Mwifuza Kugezwaho
+Press {0} to access this menu,Kanda {0} kugira ngo wagere kuri uru rutonde
+Preview,Reba Mbere
+Previous,Mbere
+Print,Chapisha
+Print View,Reba Mbere yo Chapisha
+Project,Umushinga
 Provide your contact details to receive status updates,Tanga aho twabagereraho kugira ngo muhabwe amakuru
 Province,Intara
 Public Dashboard,Ikibaho cya Rubanda
@@ -93,29 +272,77 @@ Public Reports,Raporo za Rubanda
 Public reports will appear here once generated.,Raporo za rubanda zizagaragara hano nyuma yo gukorwa.
 Raise Issue,Tanga Ikibazo
 Rate this resolution,Tanga amanota kuri uku gukemurwa
+Read,Soma
+Reason,Impamvu
+Refresh,Vugurura
+Reject,Anga
+Reload,Yongera Pakira
+Remove,Kura
+Rename,Hindura Izina
+Replace,Simbuza
+Report,Raporo
 Reports,Raporo
+Required,Birakenewe
 Resend code,Wongere wohereze kode
 Resend verification code,Wongere wohereze kode yo kwemeza
+Reset,Yongera Saba
 Resolve,Gukemura
 Resolved,Byakemuwe
+Restore,Subizaho
+Result,Igisubizo
+Role,Inshingano
+Roles,Inshingano
+Row,Umurongo
+Rows,Imirongo
 Rwanda,Rwanda
+SUCCESS,BYAGENZE NEZA
+Save,Bika
 Save your tracking code to check the status of your complaint,Bika kode yo gukurikirana kugira ngo urebe aho ikibazo cyawe kigeze
+Saved,Byabitswe
+Saved Filters,Utumenyetso Twabitswe
+Saved Reports,Raporo Zabitswe
+Saving,Birabikwa
+Saving...,Birabikwa...
+Search,Shakisha
+Search ...,Shakisha ...
 Search projects...,Shakisha imishinga...
 Search regions...,Shakisha uturere...
 Searching...,Birashakishwa...
+Section,Igice
 Sector,Umurenge
 See public statistics,Reba imibare rusange
 Select,Hitamo
+Select All,Hitamo Byose
 Select Project,Hitamo Umushinga
 Select Region,Hitamo Akarere
+Selected,Byatoranyijwe
+Send,Ohereza
 Send code to my email,Wohereze kode kuri imeyili yanjye
 Send code to my phone,Wohereze kode kuri telefoni yanjye
 Send verification code to {0},Wohereze kode yo kwemeza kuri {0}
 Sending...,Birohereza...
+Sent,Cyoherejwe
+Set,Shyiraho
+Settings,Igenamiterere
+Setup,Gutegura
+Share,Sangiza
+Show,Garagaza
+Show Tags,Garagaza Utumenyetso
+Show {0} more,Garagaza {0} ndi
+Sidebar,Urutonde
+Size,Ingano
 "Solution proposed, implemented, and verified","Igisubizo cyatanzwe, cyashyizweho, kandi cyemejwe"
+Sort,Tondeka
+Sort By,Tondeka Ku
+Sort by,Tondeka ku
+Source,Inkomoko
+Standard,Bisanzwe
+Start,Tangira
 Status,Imimerere
 Stay anonymous,Komeza utamenyekane
 Step {0},Intambwe ya {0}
+Stop,Hagarika
+Subject,Umutwe
 Submission failed. Please try again.,Kohereza byanze. Mwongere mugerageze.
 Submit,Ohereza
 Submit Another Complaint,Ohereza Ikindi Kibazo
@@ -127,31 +354,100 @@ Submit rating,Ohereza amanota
 Submit through the GRM mobile application available on Android,Ohereza ukoresheje porogaramu ya GRM kuri Android
 Submitted,Cyoherejwe
 Submitting...,Birohereza...
+Success,Byagenze Neza
+Switch User,Hindura Ukoresha
+Sync,Huza
+System,Sisitemu
+Tab,Igitabo
+Table,Imbonerahamwe
+Tag,Akarango
+Tags,Utumenyetso
+Tasks,Imirimo
 Tell us why you are not satisfied,Tubwire impamvu mutanyuzwe
+Template,Icyitegererezo
+Templates,Ibyitegererezo
+Text,Inyandiko
 Thanks for your feedback,Murakoze ku gitekerezo cyanyu
 The mobile app is not available yet. Please check back later.,Porogaramu ya telefoni iracyahari. Reba nyuma.
+Time,Igihe
+Title,Umutwe
+To,Ku
+Today,Uyu munsi
+Toggle,Hindura
+Toggle Filter,Hindura Akamenyetso
+Toggle Sidebar,Hindura Urutonde
+Toggle sidebar,Hindura urutonde
+Total,Byose
 Total Issues,Ibibazo Byose
 Track,Kurikirana
 Track Complaint,Kurikirana Ikibazo
 Track Your Complaint,Kurikirana Ikibazo Cyawe
 Tracking Code,Kode yo Gukurikirana
 Tracking Result,Igisubizo cyo Gukurikirana
+Type,Ubwoko
+URL,URL
+Undo,Subiraho
+Unique,Cyihariye
+Update,Vugurura
+Updated,Byavuguruwe
+Upload,Ohereza
+Url,URL
+User,Ukoresha
+Username,Izina ry'Ukoresha
+Users,Abakoresha
+Valid,Byemewe
+Value,Agaciro
+Verify,Emeza
 Verify & Submit,Emeza & Ohereza
+Version,Verisiyo
 View,Reba
+View All,Reba Byose
 View Dashboard,Reba Ikibaho
 View Reports,Reba Raporo
 Village,Umudugudu
 Visit the nearest GRM office to submit your complaint in person,Sura ibiro bya GRM biri hafi yawe utange ikirego cyawe ku muntu
+Warning,Iburira
 "We are here to help. Track complaints, view statistics, and submit new grievances easily.","Turi hano kubafasha. Kurikirana ibibazo, reba imibare, kandi ohereze ibibazo bishya bworoshye."
 We'll use the default project,Tuzakoresha umushinga w'ibanze
 "Web form coming soon. For now, please use one of the methods above.","Ifishi y'urubuga iri gutegurwa. Hagati aho, koresha bumwe mu buryo buvuzwe hejuru."
+Week,Icyumweru
+Welcome,Murakaza neza
 What is your complaint about?,Ikibazo cyanyu kireba iki?
 What's new,Ibishya
 When did this happen?,Ibi byabaye ryari?
 Where did the issue occur?,Ikibazo cyabereye he?
 Which project does your complaint relate to?,Ni uwuhe mushinga ikibazo cyanyu kireba?
+Write,Andika
+Year,Umwaka
+Yes,Yego
+You,Wowe
 Your Name,Izina Ryanyu
 Your appeal has been recorded,Ubujurire bwanyu bwanditswe
 Your complaint will be processed without contact information,Ikibazo cyanyu kizakorwaho nta makuru y'aho mwagerwaho
+and,na
+cancel,hagarika
+clear,siba
+create,kora
+default,ibanze
+delete,siba
 eGRM Mobile App,Porogaramu ya eGRM kuri Telefoni
+email,imeyili
+empty,ubusa
+export,kohereza
+failed,byanze
+label,akarango
+new,gishya
+none,nta kimwe
+now,ubu
+of,cya
 optional,bidategetswe
+or,cyangwa
+print,chapisha
+read,soma
+report,raporo
+row,umurongo
+rows,imirongo
+select,hitamo
+share,sangiza
+submit,ohereza
+write,andika

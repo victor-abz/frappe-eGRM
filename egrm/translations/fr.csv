@@ -2,6 +2,7 @@
 30 Days,30 Jours
 7 Days,7 Jours
 90 Days,90 Jours
+ALL,TOUS
 About,A Propos
 Acknowledged,Accusée de réception
 Action,Action
@@ -9,111 +10,279 @@ Actions,Actions
 Activate,Activer
 Active,actif
 Active Projects,Projets Actifs
+Activity,Activité
 Activity Log,Historique d'activité
+Add,Ajouter
+Add Column,Ajouter une Colonne
+Add New,Ajouter Nouveau
+Add a Filter,Ajouter un Filtre
 Add a short comment (optional),Ajoutez un court commentaire (facultatif)
+Add column,Ajouter une colonne
+Add row,Ajouter une ligne
+Add {0},Ajouter {0}
+Administrator,Administrateur
+Advanced,Avancé
+All,Tous
 All Categories,Toutes les Catégories
 All Projects,Tous les Projets
+Allow,Autoriser
+Always,Toujours
 Amended From,Modifié Depuis
 An error occurred. Please try again.,Une erreur s'est produite. Veuillez réessayer.
 Appeal,Recours
+Apply,Appliquer
+Apply Filters,Appliquer les Filtres
+Assign,Affecter
+Assigned,Affecté
+Assigned To,Affecté À
 Assignment,Affectation
-Attachment,Pièce jointe
-Attachments,Pièces jointes
+Attach,Joindre
+Attachment,Pièce Jointe
+Attachments,Pièces Jointes
 Back,Retour
+Before,Avant
+Between,Entre
 Bot verification failed,La vérification anti-robot a échoué
+Browse,Parcourir
+Bulk Actions,Actions en masse
+By,Par
 By Category,Par Catégorie
 By Region,Par Région
 By Status,Par Statut
 Call the GRM hotline to submit your grievance by phone,Appelez la ligne d'assistance GRM pour soumettre votre plainte par téléphone
+Cancel,Annuler
 Category,Catégorie
 Category & Issue Type,Catégorie et Type de Plainte
 Category Name,Nom de la Catégorie
 Cell,Cellule
+Change,Changer
+Changes,Modifications
 Check your status,Vérifiez votre statut
+Choose,Choisir
 Choose a method to file your complaint,Choisissez une méthode pour déposer votre plainte
+Clear,Effacer
+Clear Filters,Effacer les Filtres
+Click,Cliquer
+Close,Fermer
 Closed,Fermé
+Code,Code
+Collapse,Réduire
+Color,Couleur
+Column,Colonne
+Columns,Colonnes
 Comment,Commentaire
+Comments,Commentaires
 Complaint Submitted Successfully,Plainte Soumise avec Succès
 Complaint not found. Please check the tracking code.,Plainte introuvable. Vérifiez le code de suivi.
 Complete verification to submit your complaint,Complétez la vérification pour soumettre votre plainte
+Confirm,Confirmer
 Confirmed,Confirmé
+Connections,Connexions
 Contact Information,Coordonnées de Contact
 Contact a field officer who can register your complaint on your behalf,Contactez un agent de terrain qui peut enregistrer votre plainte en votre nom
+Continue,Continuer
 Copy,Copier
 Could not load app information. Please try again later.,Impossible de charger les informations de l'application. Veuillez réessayer plus tard.
+Create,Créer
+Create New,Créer Nouveau
+Create your first {0},Créez votre premier {0}
+Created,Créé
+Created By,Créé Par
+Created On,Créé Le
+Currency,Devise
+Current,Actuel
+Custom,Personnalisé
+Customize,Personnaliser
+DELETE,SUPPRIMER
+DRAFT,BROUILLON
 Dashboard,Tableau de Bord
+Date,Date
+Days,Jours
+Default,Par Défaut
+Delete,Supprimer
+Delete Column,Supprimer la Colonne
+Delete column,Supprimer la colonne
+Delete row,Supprimer la ligne
 Department,Département
 Describe the Issue,Décrire la Plainte
 "Describe what happened, when, and how it affected you...","Décrivez ce qui s'est passé, quand et comment cela vous a affecté..."
 Description,Description
+Details,Détails
+Disabled,Désactivé
+Discard,Annuler
+Display,Afficher
 District,District
+Documentation,Documentation
+Done,Terminé
+Download,Télécharger
 Download APK,Télécharger APK
 Download public reports,Télécharger les rapports publics
 Draft,Brouillon
 Due Date,Date d'Échéance
+Duplicate,Dupliquer
+Edit,Modifier
+Edit Filters,Modifier les Filtres
 Email,E-mail
 Email Address,Adresse E-mail
 Email Template,Modèle d'email
+Enable,Activer
+Enabled,Activé
 End Date,Date de Fin
 Enter the 6-digit code,Saisissez le code à 6 chiffres
 Enter the 6-digit code sent to {0},Saisissez le code à 6 chiffres envoyé à {0}
 Enter tracking code...,Saisissez le code de suivi...
 Enter your tracking code to check the status,Saisissez votre code de suivi pour vérifier l'état
+Equals,Égale
 Error,Erreur
+Example,Exemple
+Expand,Développer
 Expired,Expiré
+Export,Exporter
+Failed,Échoué
 Failed to load dashboard data.,Échec du chargement des données du tableau de bord.
 Failed to send code,Échec de l'envoi du code
 Female,Femme
+Field,Champ
 Field Officer,Agent de Terrain
+Fields,Champs
+File,Fichier
 File Name,Nom du Fichier
 File a new grievance,Déposer une nouvelle plainte
 "File your grievance via web, mobile, or field officer","Déposez votre plainte via le web, mobile, ou un agent de terrain"
+Files,Fichiers
+Filter,Filtre
+Filters,Filtres
+First,Premier
+From,De
 From Date,A partir du
 GRM Portal,Portail GRM
 Gender,Genre
 Get a tracking code and monitor progress,Obtenez un code de suivi et suivez la progression
 Go to Dashboard,Aller au Tableau de bord
+Greater Than,Supérieur à
 Grievance Redress,Recours et Plaintes
 Grievance Redress Mechanism,Mécanisme de Recours
+Group By,Grouper Par
+Header,En-tête
+Help,Aide
+Hide,Masquer
+Hide Tags,Masquer les Tags
 Home,Accueil
 How It Works,Comment ça Marche
 How would you like to be contacted?,Comment souhaitez-vous être contacté ?
 I don't know,Je ne sais pas
 I want updates,Je veux des mises à jour
+ID,ID
+Image,Image
+In,Dans
 In Person,En Personne
 In Progress,En cours
 Inactive,Inactif
+Include,Inclure
+Index,Index
+Insert,Insérer
+Invalid,Invalide
+Is,Est
 Is Active,Est Active
 Issue Type,Type de Plainte
 Issue date cannot be in the future,La date du problème ne peut pas être dans le futur
+Items,Articles
+Key,Clé
 Keyboard Shortcuts,Raccourcis clavier
+Label,Étiquette
+Language,Langue
+Last,Dernier
+Last Created,Dernier Créé
+Last Modified,Dernière Modification
+Last Updated On,Dernière Mise à Jour
 Latest version,Dernière version
+Less Than,Inférieur à
+Letter,Lettre
+Like,Aimer
+Liked,Aimé
+Liked by me,Aimé par moi
+Link,Lien
+Links,Liens
+Load More,Charger Plus
+Load more,Charger plus
+Loading,Chargement
 Loading latest version…,Chargement de la dernière version...
 Loading metrics...,Chargement des données...
 Loading reports...,Chargement des rapports...
+Loading...,Chargement...
 Location,Lieu
 Login,Connexion
+Logout,Déconnexion
 Male,Homme
+Mandatory,Obligatoire
+Maximum,Maximum
+Menu,Menu
+Message,Message
+Minimum,Minimum
 Minimum 10 characters,Minimum 10 caractères
 Mobile App,Application Mobile
+Module,Module
+Month,Mois
+Move,Déplacer
+Name,Nom
+Navigate to main content,Aller au contenu principal
+New,Nouveau
+New Email,Nouvel E-mail
 Next,Suivant
+No,Non
+No Comments,Aucun Commentaire
+No Data,Aucune Donnée
+No Preview Available,Aucun aperçu disponible
+No Results found,Aucun résultat trouvé
 No categories found,Aucune catégorie trouvée
 No data,Aucune donnée
+No filters found,Aucun filtre trouvé
 No issue types found,Aucun type de plainte trouvé
+No items,Aucun élément
+No items found,Aucun élément trouvé
+No matching,Aucune correspondance
 No projects found,Aucun projet trouvé
 No regions found,Aucune région trouvée
 No reports available yet,Aucun rapport disponible pour le moment
+No {0} found,Aucun {0} trouvé
+None,Aucun
+Not Found,Introuvable
+Not Like,N'est pas comme
+Not Set,Non défini
+Not found,Introuvable
 Not satisfied? Submit an appeal,Pas satisfait ? Déposez un recours
+Note,Note
+Notes,Notes
+Notification,Notification
 Notification Settings,Paramètres de notification
+Notifications,Notifications
+Now,Maintenant
+Number,Numéro
+OK,OK
+OPTIONS,OPTIONS
+OR,OU
+Off,Désactivé
+On,Activé
 Open,Ouvert
+Optional,Facultatif
+Options,Options
+Order,Ordre
 Other,Autre
+Owner,Propriétaire
+Page,Page
+Paste,Coller
 Pending,En attente
 Phone,Téléphone
 Phone Hotline,Ligne Téléphonique
 Phone Number,Numéro de Téléphone
+Please,S'il vous plaît
 Please describe your complaint in detail,Veuillez décrire votre plainte en détail
 Preferred Contact Method,Méthode de Contact Préférée
+Press {0} to access this menu,Appuyez sur {0} pour accéder à ce menu
 Preview,Aperçu
+Previous,Précédent
+Print,Imprimer
+Print View,Aperçu d'Impression
 Project,Projet
 Provide your contact details to receive status updates,Fournissez vos coordonnées pour recevoir les mises à jour
 Province,Province
@@ -124,38 +293,81 @@ Public reports will appear here once generated.,Les rapports publics apparaîtro
 Raise Issue,Signaler un Problème
 Rate this resolution,Évaluez cette résolution
 Rating,Évaluation
-Reason,Raison
+Read,Lire
+Reason,Motif
 Received,Reçu
+Refresh,Actualiser
+Reject,Rejeter
 Rejected,Rejeté
 Reload,Recharger
+Remove,Retirer
+Rename,Renommer
+Replace,Remplacer
+Report,Rapport
 Reports,Rapports
+Required,Requis
 Resend code,Renvoyer le code
 Resend verification code,Renvoyer le code de vérification
+Reset,Réinitialiser
 Resolve,Résoudre
 Resolved,Résolu
+Restore,Restaurer
+Result,Résultat
 Role,Rôle
+Roles,Rôles
+Row,Ligne
+Rows,Lignes
 Rwanda,Rwanda
+SUCCESS,SUCCÈS
+Save,Enregistrer
 Save your tracking code to check the status of your complaint,Conservez votre code de suivi pour vérifier l'état de votre plainte
+Saved,Enregistré
+Saved Filters,Filtres Enregistrés
+Saved Reports,Rapports Enregistrés
+Saving,Enregistrement
+Saving...,Enregistrement...
+Search,Rechercher
+Search ...,Rechercher ...
 Search projects...,Rechercher des projets...
 Search regions...,Rechercher des régions...
 Searching...,Recherche...
+Section,Section
 Sector,Secteur
 See public statistics,Voir les statistiques publiques
 Select,Sélectionner
+Select All,Tout Sélectionner
 Select Project,Choisir un Projet
 Select Region,Choisir la Région
+Selected,Sélectionné
 Send,Envoyer
 Send code to my email,Envoyer le code par e-mail
 Send code to my phone,Envoyer le code sur mon téléphone
 Send verification code to {0},Envoyer le code de vérification à {0}
 Sending...,Envoi...
+Sent,Envoyé
 Session Defaults,Session par défaut
+Set,Définir
 Settings,Paramètres
+Setup,Configuration
+Share,Partager
+Show,Afficher
+Show Tags,Afficher les Tags
+Show {0} more,Afficher {0} de plus
+Sidebar,Barre Latérale
+Size,Taille
 "Solution proposed, implemented, and verified","Solution proposée, mise en œuvre, et vérifiée"
+Sort,Trier
+Sort By,Trier Par
+Sort by,Trier par
+Source,Source
+Standard,Standard
+Start,Démarrer
 Start Date,Date de Début
 Status,Statut
 Stay anonymous,Rester anonyme
 Step {0},Étape {0}
+Stop,Arrêter
+Subject,Sujet
 Submission failed. Please try again.,Échec de la soumission. Veuillez réessayer.
 Submit,Soumettre
 Submit Another Complaint,Soumettre une Autre Plainte
@@ -165,27 +377,62 @@ Submit an appeal,Déposer un recours
 Submit appeal,Envoyer le recours
 Submit rating,Soumettre l'évaluation
 Submit through the GRM mobile application available on Android,Soumettez via l'application mobile GRM disponible sur Android
-Submitted,Soumise
+Submitted,Soumis
 Submitting...,Envoi en cours...
 Success,Succès
+Switch User,Changer d'utilisateur
+Sync,Synchroniser
+System,Système
 System Manager,Responsable Système
+Tab,Onglet
+Table,Tableau
+Tag,Tag
+Tags,Tags
+Tasks,Tâches
 Tell us why you are not satisfied,Dites-nous pourquoi vous n'êtes pas satisfait
+Template,Modèle
+Templates,Modèles
+Text,Texte
 Thanks for your feedback,Merci pour votre retour
 The mobile app is not available yet. Please check back later.,L'application mobile n'est pas encore disponible. Revenez plus tard.
+Time,Heure
 Timestamp,Horodatage
+Title,Titre
+To,À
 To Date,Jusqu'au
+Today,Aujourd'hui
+Toggle,Basculer
+Toggle Filter,Basculer le Filtre
 Toggle Full Width,Changer l'affichage en pleine largeur
+Toggle Sidebar,Basculer la Barre Latérale
 Toggle Theme,Basculer le thème
+Toggle sidebar,Basculer la barre latérale
+Total,Total
 Total Issues,Total des Plaintes
 Track,Suivre
 Track Complaint,Suivre la Plainte
 Track Your Complaint,Suivre votre Plainte
 Tracking Code,Code de Suivi
 Tracking Result,Résultat du Suivi
+Type,Type
+URL,URL
+Undo,Annuler
+Unique,Unique
+Update,Mettre à jour
+Updated,Mis à jour
+Upload,Téléverser
+Url,URL
 User,Utilisateur
+Username,Nom d'utilisateur
+Users,Utilisateurs
+Valid,Valide
 Validation Error,erreur de validation
+Value,Valeur
+Verify,Vérifier
 Verify & Submit,Vérifier et Soumettre
+Version,Version
 View,Voir
+View All,Voir Tout
 View Dashboard,Voir le Tableau de Bord
 View Reports,Voir les Rapports
 View Website,Voir Le Site Web
@@ -195,13 +442,44 @@ Warning,Avertissement
 "We are here to help. Track complaints, view statistics, and submit new grievances easily.","Nous sommes là pour vous aider. Suivez vos plaintes, consultez les statistiques et déposez de nouvelles plaintes facilement."
 We'll use the default project,Nous utiliserons le projet par défaut
 "Web form coming soon. For now, please use one of the methods above.","Formulaire web bientôt disponible. En attendant, veuillez utiliser l'une des méthodes ci-dessus."
+Week,Semaine
+Welcome,Bienvenue
 What is your complaint about?,De quoi parle votre plainte ?
 What's new,Nouveautés
 When did this happen?,Quand cela s'est-il produit ?
 Where did the issue occur?,Où s'est produit l'incident ?
 Which project does your complaint relate to?,À quel projet votre plainte se rapporte-t-elle ?
+Write,Écrire
+Year,Année
+Yes,Oui
+You,Vous
 Your Name,Votre Nom
 Your appeal has been recorded,Votre recours a été enregistré
 Your complaint will be processed without contact information,Votre plainte sera traitée sans coordonnées
+and,et
+cancel,annuler
+clear,effacer
+create,créer
+default,défaut
+delete,supprimer
 eGRM Mobile App,Application Mobile eGRM
+email,e-mail
+empty,vide
+export,exporter
+failed,échoué
+label,étiquette
+new,nouveau
+none,aucun
+now,maintenant
+of,de
 optional,facultatif
+or,ou
+print,imprimer
+read,lire
+report,rapport
+row,ligne
+rows,lignes
+select,sélectionner
+share,partager
+submit,soumettre
+write,écrire
