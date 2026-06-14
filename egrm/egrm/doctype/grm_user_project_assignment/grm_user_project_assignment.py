@@ -613,7 +613,7 @@ class GRMUserProjectAssignment(Document):
 
         except Exception as e:
             frappe.log_error(f"Error sending activation email: {str(e)}")
-            frappe.throw(_(f"Error sending activation email: {str(e)}"))
+            frappe.throw(_("Error sending activation email: {0}").format(str(e)))
 
     @frappe.whitelist()
     def activate_worker(self, activation_code, new_password=None):
@@ -836,7 +836,7 @@ class GRMUserProjectAssignment(Document):
 
         except Exception as e:
             frappe.log_error(f"Error exporting activation codes: {str(e)}")
-            frappe.throw(_(f"Error exporting activation codes: {str(e)}"))
+            frappe.throw(_("Error exporting activation codes: {0}").format(str(e)))
 
 
 # Static method for bulk export
@@ -946,7 +946,7 @@ def export_project_activation_codes(project_code):
 
     except Exception as e:
         frappe.log_error(f"Error exporting project activation codes: {str(e)}")
-        frappe.throw(_(f"Error exporting activation codes: {str(e)}"))
+        frappe.throw(_("Error exporting activation codes: {0}").format(str(e)))
 
 
 @frappe.whitelist()

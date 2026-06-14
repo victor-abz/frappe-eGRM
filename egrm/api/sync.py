@@ -188,7 +188,7 @@ def pull_changes(lastPulledAt=None):
             f"❌ [SYNC_BACKEND] pullChanges failed after {total_duration:.3f}s: {str(e)}"
         )
         frappe.log_error(f"Pull changes failed: {str(e)}")
-        frappe.throw("Sync failed. Please try again.")
+        frappe.throw(_("Sync failed. Please try again."))
 
 
 @frappe.whitelist()
@@ -353,7 +353,7 @@ def push_changes():
                 f"❌ [SYNC_BACKEND] Transaction failed after {transaction_duration:.3f}s: {str(e)}"
             )
             frappe.log_error(f"Push changes failed: {str(e)}")
-            frappe.throw("Failed to save changes. Please try again.")
+            frappe.throw(_("Failed to save changes. Please try again."))
 
         total_duration = time.time() - start_time
         frappe.log(
@@ -366,7 +366,7 @@ def push_changes():
             f"❌ [SYNC_BACKEND] pushChanges failed after {total_duration:.3f}s: {str(e)}"
         )
         frappe.log_error(f"Push changes failed: {str(e)}")
-        frappe.throw("Failed to process push changes request.")
+        frappe.throw(_("Failed to process push changes request."))
 
 
 def get_deleted_records(doctype, since_timestamp):
@@ -619,7 +619,7 @@ def get_user_filters_for_doctype(doctype, user_projects, accessible_region_ids, 
     # If user has no project access, they get no data
     if not user_accessible_projects:
         log.warning(f"⚠️ [SYNC_BACKEND] User {user} has no project assignments")
-        frappe.throw("User has no access to any project")
+        frappe.throw(_("User has no access to any project"))
 
     filters = {}
 
