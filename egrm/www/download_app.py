@@ -39,7 +39,7 @@ def get_context(context):
 
             # Try to find version marked as latest
             filters = {"is_latest": 1}
-            fields = ["version_name", "apk_file"]  # Only fetch essential fields that exist
+            fields = ["version_name", "apk_file", "release_notes"]
         except Exception as db_error:
             frappe.log({
                 "event": "database_error",
@@ -87,8 +87,7 @@ def get_context(context):
 
                 context.download_url = file_url
                 context.version_name = version.get("version_name")
-                # Don't set release notes since the column doesn't exist yet
-                context.release_notes = None
+                context.release_notes = version.get("release_notes")
 
                 frappe.log({
                     "event": "context_set",

@@ -5,6 +5,7 @@ import DashboardPage from "./pages/DashboardPage";
 import TrackPage from "./pages/TrackPage";
 import SubmitPage from "./pages/SubmitPage";
 import ReportsPage from "./pages/ReportsPage";
+import DownloadAppPage from "./pages/DownloadAppPage";
 import GatedRoute from "./components/GatedRoute";
 
 const router = createBrowserRouter([
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
             <ReportsPage />
           </GatedRoute>
         ),
+      },
+      {
+        path: "download",
+        element: <DownloadAppPage />,
       },
     ],
   },

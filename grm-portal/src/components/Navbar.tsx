@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ShieldCheck, BarChart3, Search, Send, FileText, Globe, LogIn, LayoutDashboard } from "lucide-react";
+import { ShieldCheck, BarChart3, Search, Send, FileText, Globe, LogIn, LayoutDashboard, Smartphone } from "lucide-react";
 import { useTranslate } from "@/hooks/useTranslate";
 import { usePortalConfig } from "@/hooks/usePortalConfig";
 
@@ -16,6 +16,7 @@ const ALL_LINKS: NavLink[] = [
   { to: "/grm-portal/track", label: "Track", icon: Search },
   { to: "/grm-portal/submit", label: "Submit", icon: Send },
   { to: "/grm-portal/reports", label: "Reports", icon: FileText, gate: "reports" },
+  { to: "/grm-portal/download", label: "Mobile App", icon: Smartphone },
 ];
 
 const LOGIN_URL = "/login";
