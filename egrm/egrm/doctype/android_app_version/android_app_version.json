@@ -30,14 +30,14 @@
   },
   {
    "fieldname": "release_notes",
-   "fieldtype": "HTML",
+   "fieldtype": "Text Editor",
    "label": "Release Notes"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-17 17:52:20.450608",
+ "modified": "2026-06-14 18:30:00.000000",
  "modified_by": "Administrator",
  "module": "egrm",
  "name": "Android App Version",
