@@ -5,10 +5,16 @@
 Acknowledged,Cyemejwe
 Active Projects,Imishinga Ikora
 Add a short comment (optional),Ongeraho igitekerezo gito (bidategetswe)
+Administrative Level Types,Amoko y'Inzego z'Ubuyobozi
 All Categories,Ibyiciro Byose
+All Issues,Ibibazo Byose
 All Projects,Imishinga Yose
 An error occurred. Please try again.,Habayeho ikosa. Mwongere mugerageze.
+Android App Versions,Verisiyo za Porogaramu ya Android
 Appeal,Ubujurire
+Appeals,Ubujurire
+Average Resolution Time,Igihe cyo Gukemura ku Buringaniro
+Avg. Resolution Time (Days),Igihe cyo Gukemura ku Buringaniro (Iminsi)
 Back,Subira inyuma
 Bot verification failed,Kwemeza anti-roboti byanze
 By Category,Hashingiwe ku Cyiciro
@@ -35,19 +41,24 @@ Description,Ibisobanuro
 District,Akarere
 Download APK,Manura APK
 Download public reports,Kuramo raporo rusange
+Drafts,Inyandiko z'Integuro
+Duties Catalog,Igitabo cy'Inshingano
 Email,Imeyili
 Email Address,Aderesi y'Imeyili
 Enter the 6-digit code,Andika kode y'imibare 6
 Enter the 6-digit code sent to {0},Andika kode y'imibare 6 yoherejwe kuri {0}
 Enter tracking code...,Andika kode yo gukurikirana...
 Enter your tracking code to check the status,Andika kode yo gukurikirana kugira ngo urebe aho bigeze
+Escalations,Ibyitwajwe
 Failed to load dashboard data.,Kuzana amakuru y'ikibaho byanze.
 Failed to send code,Kohereza kode byanze
 Female,Gore
 Field Officer,Umukozi w'Ikigo
 File a new grievance,Tanga ikirego gishya
 "File your grievance via web, mobile, or field officer","Tanga ikirego cyawe ukoresheje urubuga, telefoni, cyangwa umukozi w'ikigo"
+Frappe Users (raw),Abakoresha ba Frappe (umwimerere)
 GRM Portal,Urubuga rwa GRM
+GRM Users by Project,Abakoresha ba GRM ku Mushinga
 Gender,Igitsina
 Get a tracking code and monitor progress,Habwa umubare w'ikurikirana ukurikirane aho bigeze
 Go to Dashboard,Jya ku Ikibaho
@@ -59,16 +70,24 @@ How would you like to be contacted?,Mwifuza ko mwagezwaho mute?
 I don't know,Sinzi
 I want updates,Nshaka kumenya aho bigeze
 In Person,Ku Muntu
+Issue Distribution by Type,Igabanywa ry'Ibibazo ku Bwoko
 Issue Type,Ubwoko bw'Ikibazo
 Issue date cannot be in the future,Itariki y'ikibazo ntishobora kuba mu gihe kizaza
+Issues by Category,Ibibazo ku Cyiciro
+Issues by Status,Ibibazo ku Mimerere
 Latest version,Verisiyo nshya
 Loading latest version…,Birashakwa verisiyo nshya...
 Loading metrics...,Birashakwa imibare...
 Loading reports...,Birashakwa raporo...
+Log a Grievance,Saba Igikorwa
 Login,Injira
 Male,Gabo
 Minimum 10 characters,Inyuguti 10 nibura
 Mobile App,Porogaramu ya Telefoni
+Monthly Category Comparison,Iyiringaniza ry'Ibyiciro buri Kwezi
+Monthly Issue Trend,Imiterere y'Ibibazo buri Kwezi
+Monthly Type Comparison,Iyiringaniza ry'Amoko buri Kwezi
+My Drafts,Iby'integuro Byanjye
 Next,Komeza
 No categories found,Nta byiciro byabonetse
 No data,Nta makuru
@@ -77,14 +96,19 @@ No projects found,Nta mishinga yabonetse
 No regions found,Nta turere twabonetse
 No reports available yet,Nta raporo zihari nubu
 Not satisfied? Submit an appeal,Ntimwumva bihagije? Tanga ubujurire
+Onboard New Project,Tangiriza Umushinga Mushya
 Open,Bifunguye
+Open Issues,Ibibazo Bifunguye
 Other,Ikindi
 Pending,Bitegereje
+Pending Issues,Ibibazo Bitegereje
 Phone,Telefoni
 Phone Hotline,Umurongo wa Telefoni
 Phone Number,Numero ya Telefoni
 Please describe your complaint in detail,Mwitonze musobanure ikibazo cyanyu
 Preferred Contact Method,Uburyo Mwifuza Kugezwaho
+Project Setup Wizard,Umufasha wo Gutegura Umushinga
+Projects,Imishinga
 Provide your contact details to receive status updates,Tanga aho twabagereraho kugira ngo muhabwe amakuru
 Province,Intara
 Public Dashboard,Ikibaho cya Rubanda
@@ -98,6 +122,7 @@ Resend code,Wongere wohereze kode
 Resend verification code,Wongere wohereze kode yo kwemeza
 Resolve,Gukemura
 Resolved,Byakemuwe
+Resolved Issues,Ibibazo Byakemuwe
 Rwanda,Rwanda
 Save your tracking code to check the status of your complaint,Bika kode yo gukurikirana kugira ngo urebe aho ikibazo cyawe kigeze
 Search projects...,Shakisha imishinga...
@@ -114,6 +139,7 @@ Send verification code to {0},Wohereze kode yo kwemeza kuri {0}
 Sending...,Birohereza...
 "Solution proposed, implemented, and verified","Igisubizo cyatanzwe, cyashyizweho, kandi cyemejwe"
 Status,Imimerere
+Status Distribution,Igabanywa ry'Imimerere
 Stay anonymous,Komeza utamenyekane
 Step {0},Intambwe ya {0}
 Submission failed. Please try again.,Kohereza byanze. Mwongere mugerageze.
@@ -127,6 +153,7 @@ Submit rating,Ohereza amanota
 Submit through the GRM mobile application available on Android,Ohereza ukoresheje porogaramu ya GRM kuri Android
 Submitted,Cyoherejwe
 Submitting...,Birohereza...
+System,Sisitemu
 Tell us why you are not satisfied,Tubwire impamvu mutanyuzwe
 Thanks for your feedback,Murakoze ku gitekerezo cyanyu
 The mobile app is not available yet. Please check back later.,Porogaramu ya telefoni iracyahari. Reba nyuma.
@@ -136,6 +163,8 @@ Track Complaint,Kurikirana Ikibazo
 Track Your Complaint,Kurikirana Ikibazo Cyawe
 Tracking Code,Kode yo Gukurikirana
 Tracking Result,Igisubizo cyo Gukurikirana
+Users & Access,Abakoresha & Uburenganzira
+Users by Project,Abakoresha ku Mushinga
 Verify & Submit,Emeza & Ohereza
 View,Reba
 View Dashboard,Reba Ikibaho
@@ -153,5 +182,6 @@ Which project does your complaint relate to?,Ni uwuhe mushinga ikibazo cyanyu ki
 Your Name,Izina Ryanyu
 Your appeal has been recorded,Ubujurire bwanyu bwanditswe
 Your complaint will be processed without contact information,Ikibazo cyanyu kizakorwaho nta makuru y'aho mwagerwaho
+eGRM,eGRM
 eGRM Mobile App,Porogaramu ya eGRM kuri Telefoni
 optional,bidategetswe

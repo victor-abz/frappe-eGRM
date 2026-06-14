@@ -11,14 +11,20 @@ Active,actif
 Active Projects,Projets Actifs
 Activity Log,Historique d'activité
 Add a short comment (optional),Ajoutez un court commentaire (facultatif)
+Administrative Level Types,Types de Niveaux Administratifs
 All Categories,Toutes les Catégories
+All Issues,Toutes les Plaintes
 All Projects,Tous les Projets
 Amended From,Modifié Depuis
 An error occurred. Please try again.,Une erreur s'est produite. Veuillez réessayer.
+Android App Versions,Versions de l'Application Android
 Appeal,Recours
+Appeals,Recours
 Assignment,Affectation
 Attachment,Pièce jointe
 Attachments,Pièces jointes
+Average Resolution Time,Temps Moyen de Résolution
+Avg. Resolution Time (Days),Temps Moyen de Résolution (Jours)
 Back,Retour
 Bot verification failed,La vérification anti-robot a échoué
 By Category,Par Catégorie
@@ -50,7 +56,9 @@ District,District
 Download APK,Télécharger APK
 Download public reports,Télécharger les rapports publics
 Draft,Brouillon
+Drafts,Brouillons
 Due Date,Date d'Échéance
+Duties Catalog,Catalogue des Fonctions
 Email,E-mail
 Email Address,Adresse E-mail
 Email Template,Modèle d'email
@@ -60,6 +68,7 @@ Enter the 6-digit code sent to {0},Saisissez le code à 6 chiffres envoyé à {0
 Enter tracking code...,Saisissez le code de suivi...
 Enter your tracking code to check the status,Saisissez votre code de suivi pour vérifier l'état
 Error,Erreur
+Escalations,Escalades
 Expired,Expiré
 Failed to load dashboard data.,Échec du chargement des données du tableau de bord.
 Failed to send code,Échec de l'envoi du code
@@ -68,8 +77,10 @@ Field Officer,Agent de Terrain
 File Name,Nom du Fichier
 File a new grievance,Déposer une nouvelle plainte
 "File your grievance via web, mobile, or field officer","Déposez votre plainte via le web, mobile, ou un agent de terrain"
+Frappe Users (raw),Utilisateurs Frappe (brut)
 From Date,A partir du
 GRM Portal,Portail GRM
+GRM Users by Project,Utilisateurs GRM par Projet
 Gender,Genre
 Get a tracking code and monitor progress,Obtenez un code de suivi et suivez la progression
 Go to Dashboard,Aller au Tableau de bord
@@ -84,18 +95,26 @@ In Person,En Personne
 In Progress,En cours
 Inactive,Inactif
 Is Active,Est Active
+Issue Distribution by Type,Distribution des Plaintes par Type
 Issue Type,Type de Plainte
 Issue date cannot be in the future,La date du problème ne peut pas être dans le futur
+Issues by Category,Plaintes par Catégorie
+Issues by Status,Plaintes par Statut
 Keyboard Shortcuts,Raccourcis clavier
 Latest version,Dernière version
 Loading latest version…,Chargement de la dernière version...
 Loading metrics...,Chargement des données...
 Loading reports...,Chargement des rapports...
 Location,Lieu
+Log a Grievance,Déposer une Plainte
 Login,Connexion
 Male,Homme
 Minimum 10 characters,Minimum 10 caractères
 Mobile App,Application Mobile
+Monthly Category Comparison,Comparaison Mensuelle par Catégorie
+Monthly Issue Trend,Tendance Mensuelle des Plaintes
+Monthly Type Comparison,Comparaison Mensuelle par Type
+My Drafts,Mes Brouillons
 Next,Suivant
 No categories found,Aucune catégorie trouvée
 No data,Aucune donnée
@@ -105,9 +124,12 @@ No regions found,Aucune région trouvée
 No reports available yet,Aucun rapport disponible pour le moment
 Not satisfied? Submit an appeal,Pas satisfait ? Déposez un recours
 Notification Settings,Paramètres de notification
+Onboard New Project,Démarrer un Nouveau Projet
 Open,Ouvert
+Open Issues,Plaintes Ouvertes
 Other,Autre
 Pending,En attente
+Pending Issues,Plaintes en Attente
 Phone,Téléphone
 Phone Hotline,Ligne Téléphonique
 Phone Number,Numéro de Téléphone
@@ -115,6 +137,8 @@ Please describe your complaint in detail,Veuillez décrire votre plainte en dét
 Preferred Contact Method,Méthode de Contact Préférée
 Preview,Aperçu
 Project,Projet
+Project Setup Wizard,Assistant de Configuration du Projet
+Projects,Projets
 Provide your contact details to receive status updates,Fournissez vos coordonnées pour recevoir les mises à jour
 Province,Province
 Public Dashboard,Tableau de Bord Public
@@ -133,6 +157,7 @@ Resend code,Renvoyer le code
 Resend verification code,Renvoyer le code de vérification
 Resolve,Résoudre
 Resolved,Résolu
+Resolved Issues,Plaintes Résolues
 Role,Rôle
 Rwanda,Rwanda
 Save your tracking code to check the status of your complaint,Conservez votre code de suivi pour vérifier l'état de votre plainte
@@ -154,6 +179,7 @@ Settings,Paramètres
 "Solution proposed, implemented, and verified","Solution proposée, mise en œuvre, et vérifiée"
 Start Date,Date de Début
 Status,Statut
+Status Distribution,Distribution des Statuts
 Stay anonymous,Rester anonyme
 Step {0},Étape {0}
 Submission failed. Please try again.,Échec de la soumission. Veuillez réessayer.
@@ -168,6 +194,7 @@ Submit through the GRM mobile application available on Android,Soumettez via l'a
 Submitted,Soumise
 Submitting...,Envoi en cours...
 Success,Succès
+System,Système
 System Manager,Responsable Système
 Tell us why you are not satisfied,Dites-nous pourquoi vous n'êtes pas satisfait
 Thanks for your feedback,Merci pour votre retour
@@ -183,6 +210,8 @@ Track Your Complaint,Suivre votre Plainte
 Tracking Code,Code de Suivi
 Tracking Result,Résultat du Suivi
 User,Utilisateur
+Users & Access,Utilisateurs et Accès
+Users by Project,Utilisateurs par Projet
 Validation Error,erreur de validation
 Verify & Submit,Vérifier et Soumettre
 View,Voir
@@ -203,5 +232,6 @@ Which project does your complaint relate to?,À quel projet votre plainte se rap
 Your Name,Votre Nom
 Your appeal has been recorded,Votre recours a été enregistré
 Your complaint will be processed without contact information,Votre plainte sera traitée sans coordonnées
+eGRM,eGRM
 eGRM Mobile App,Application Mobile eGRM
 optional,facultatif
