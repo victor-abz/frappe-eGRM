@@ -243,13 +243,15 @@ class GRMUserProjectAssignment(Document):
 
     def validate_unique_assignment(self):
         try:
-            # Check if the user is already assigned to the project with the same role
+            # A user may hold the same role in multiple regions, but not the
+            # same (project, role, region) twice — region is part of the key.
             existing = frappe.db.exists(
                 "GRM User Project Assignment",
                 {
                     "user": self.user,
                     "project": self.project,
                     "role": self.role,
+                    "administrative_region": self.administrative_region,
                     "name": ["!=", self.name],
                 },
             )
@@ -257,8 +259,13 @@ class GRMUserProjectAssignment(Document):
             if existing:
                 frappe.throw(
                     _(
-                        "User {0} is already assigned to project {1} with role {2}"
-                    ).format(self.user, self.project, self.role)
+                        "User {0} is already assigned to project {1} with role {2} in region {3}"
+                    ).format(
+                        self.user,
+                        self.project,
+                        self.role,
+                        self.administrative_region or _("(no region)"),
+                    )
                 )
         except Exception as e:
             frappe.log_error(f"Error validating unique assignment: {str(e)}")
