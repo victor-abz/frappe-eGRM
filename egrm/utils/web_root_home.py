@@ -46,22 +46,22 @@ _ROOT_PATHS: frozenset[str] = frozenset(("", "index"))
 
 
 def portal_home_at_web_root() -> None:
-    """``before_request`` hook: force ``/`` to render the portal.
+	"""``before_request`` hook: force ``/`` to render the portal.
 
-    Never raises — a failure here would take down every page request, and
-    the fallback (leave the flag alone) is the framework's own behaviour.
-    """
-    try:
-        request = getattr(frappe.local, "request", None)
-        if request is None:
-            return
+	Never raises — a failure here would take down every page request, and
+	the fallback (leave the flag alone) is the framework's own behaviour.
+	"""
+	try:
+		request = getattr(frappe.local, "request", None)
+		if request is None:
+			return
 
-        path = (getattr(request, "path", "") or "").strip("/ ")
-        if path not in _ROOT_PATHS:
-            return
+		path = (getattr(request, "path", "") or "").strip("/ ")
+		if path not in _ROOT_PATHS:
+			return
 
-        frappe.local.flags.home_page = PORTAL_ROUTE
-    except Exception:
-        # Deliberately swallowed: see docstring. Logging here would write
-        # an error row on every malformed request hitting the root.
-        pass
+		frappe.local.flags.home_page = PORTAL_ROUTE
+	except Exception:
+		# Deliberately swallowed: see docstring. Logging here would write
+		# an error row on every malformed request hitting the root.
+		pass
