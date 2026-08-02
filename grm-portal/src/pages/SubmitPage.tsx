@@ -8,7 +8,9 @@ import {
   AlertCircle,
   MapPin,
   ChevronDown,
+  FolderOpen,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { FrappeContext, FrappeConfig } from "frappe-react-sdk";
 import { useTranslate } from "@/hooks/useTranslate";
 
@@ -134,22 +136,36 @@ function TurnstileWidget({
 // Progress Dots
 // ---------------------------------------------------------------------------
 
-function ProgressDots({ current, total }: { current: number; total: number }) {
+function ProgressDots({
+  current,
+  total,
+  indeterminate = false,
+}: {
+  current: number;
+  total: number;
+  indeterminate?: boolean;
+}) {
   return (
     <div className="flex items-center justify-center gap-2 mb-6">
       {Array.from({ length: total }, (_, i) => {
         const step = i + 1;
         const isActive = step === current;
         const isDone = step < current;
+        // Whether a region step exists depends on the project, which hasn't
+        // been chosen yet. Draw that trailing step as provisional instead of
+        // silently adding or dropping a dot once the answer arrives.
+        const isProvisional = indeterminate && step === total;
         return (
           <div
             key={step}
             className={`w-2.5 h-2.5 rounded-full transition-all ${
-              isActive
-                ? "bg-primary-500 scale-125"
-                : isDone
-                  ? "bg-primary-400"
-                  : "bg-gray-300"
+              isProvisional
+                ? "border border-dashed border-gray-300"
+                : isActive
+                  ? "bg-primary-500 scale-125"
+                  : isDone
+                    ? "bg-primary-400"
+                    : "bg-gray-300"
             }`}
           />
         );
@@ -348,9 +364,15 @@ const TOTAL_STEPS = 6;
 export default function SubmitPage() {
   const { __ } = useTranslate();
   const apiCall = useApiCall();
+  const [searchParams] = useSearchParams();
+  const requestedProject = searchParams.get("project") || "";
 
   // --- State ---
   const [step, setStep] = useState(1);
+  // True once the project is settled without the user picking it — either the
+  // deployment only has one, or they arrived from a project card on the home
+  // page. Step 1 then disappears from the wizard entirely.
+  const [projectLocked, setProjectLocked] = useState(false);
   const [config, setConfig] = useState<SubmissionConfig | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<OptionItem[]>([]);
@@ -397,6 +419,22 @@ export default function SubmitPage() {
     });
   }, []);
 
+  // --- Resolve the project without asking, when there is nothing to ask ---
+  // A single-project deployment has no decision to make, and arriving from a
+  // project card on the home page has already made it. Either way, jump
+  // straight to the first question that actually needs an answer.
+  useEffect(() => {
+    if (!projects.length || form.project || step !== 1) return;
+    const preselected =
+      projects.length === 1
+        ? projects[0]
+        : projects.find((p) => p.name === requestedProject);
+    if (!preselected) return;
+    setField("project", preselected.name);
+    setProjectLocked(true);
+    setStep(2);
+  }, [projects, requestedProject, form.project, step, setField]);
+
   // --- Load options when project changes ---
   useEffect(() => {
     if (!form.project) {
@@ -419,15 +457,29 @@ export default function SubmitPage() {
   // --- Compute actual steps (skip verify if not needed, skip region if no levels) ---
   const needsVerifyStep = config?.otp_enabled || !!config?.turnstile_site_key;
   const hasRegions = adminLevels.length > 0;
-  const totalVisibleSteps = (needsVerifyStep ? TOTAL_STEPS : TOTAL_STEPS - 1) - (hasRegions ? 0 : 1);
+  const totalVisibleSteps =
+    (needsVerifyStep ? TOTAL_STEPS : TOTAL_STEPS - 1) -
+    (hasRegions ? 0 : 1) -
+    (projectLocked ? 1 : 0);
+
+  // The wizard's real starting point — 2 when step 1 has been skipped.
+  const firstStep = projectLocked ? 2 : 1;
+
+  // `hasRegions` comes from the chosen project's administrative levels, so
+  // until a project is picked and its options land, the wizard's length is
+  // one of two values. Don't print a total that is about to change.
+  const stepCountKnown = !!form.project && !optionsLoading;
 
   // Map logical step to display step accounting for skipped steps
   const displayStep = (s: number) => {
     let d = s;
+    if (projectLocked) d--;
     if (!hasRegions && s >= 3) d--;
     if (!needsVerifyStep && d >= 6) d--;
     return d;
   };
+
+  const selectedProject = projects.find((p) => p.name === form.project);
 
   // --- Step validation ---
   const isStepValid = (s: number): boolean => {
@@ -480,6 +532,8 @@ export default function SubmitPage() {
     let prev = step - 1;
     if (prev === 6 && !needsVerifyStep) prev = 5;
     if (prev === 3 && !hasRegions) prev = 2;
+    // Never reverse into the project step once it has been skipped.
+    if (prev < firstStep) return;
     setStep(prev);
   };
 
@@ -548,9 +602,11 @@ export default function SubmitPage() {
 
   // --- Reset form ---
   const resetForm = () => {
-    setStep(1);
+    setStep(firstStep);
     setForm({
-      project: "",
+      // A locked project survives "Submit Another Complaint" — clearing it
+      // would drop the user on a step that is no longer part of the wizard.
+      project: projectLocked ? form.project : "",
       category: "",
       issueType: "",
       region: "",
@@ -1045,14 +1101,49 @@ export default function SubmitPage() {
         </h1>
         {step <= TOTAL_STEPS && (
           <p className="text-xs text-grm-muted">
-            {__("Step {0}").replace("{0}", String(displayStep(step)))} /{" "}
-            {totalVisibleSteps}
+            {__("Step {0}").replace("{0}", String(displayStep(step)))}
+            {stepCountKnown && ` / ${totalVisibleSteps}`}
           </p>
         )}
       </div>
 
       {step <= TOTAL_STEPS && (
-        <ProgressDots current={displayStep(step)} total={totalVisibleSteps} />
+        <ProgressDots
+          current={displayStep(step)}
+          // Assume the region step exists while unknown — most projects define
+          // regions, so the dot count stays put in the common case instead of
+          // growing under the user.
+          total={stepCountKnown ? totalVisibleSteps : totalVisibleSteps + 1}
+          indeterminate={!stepCountKnown}
+        />
+      )}
+
+      {/* The project was decided for the user, so state it plainly rather than
+          leaving them to wonder what this complaint is being filed against.
+          Only offer "Change" when there is genuinely something else to pick. */}
+      {projectLocked && selectedProject && step < 7 && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+          <FolderOpen className="w-4 h-4 text-primary-600 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <span className="block text-[11px] uppercase tracking-wide text-grm-muted">
+              {__("Project")}
+            </span>
+            <span className="block text-sm font-medium text-gray-900 truncate">
+              {selectedProject.title}
+            </span>
+          </div>
+          {projects.length > 1 && (
+            <button
+              onClick={() => {
+                setProjectLocked(false);
+                setStep(1);
+              }}
+              className="text-xs font-semibold text-primary-600 hover:text-primary-700 hover:underline shrink-0"
+            >
+              {__("Change")}
+            </button>
+          )}
+        </div>
       )}
 
       {error && (
@@ -1068,7 +1159,7 @@ export default function SubmitPage() {
 
       {step < 7 && (
         <div className="flex gap-3 mt-4">
-          {step > 1 && (
+          {step > firstStep && (
             <button
               onClick={prevStep}
               className="flex items-center gap-1 px-4 py-2.5 border border-gray-200 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-all"
