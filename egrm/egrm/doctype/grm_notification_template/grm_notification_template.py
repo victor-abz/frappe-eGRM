@@ -13,11 +13,9 @@ class GRMNotificationTemplate(Document):
 
 		if self.enable_sms and self.sms_message:
 			try:
-				frappe.render_template(self.sms_message, {
-					"tracking_code": "TEST-001",
-					"subject": "Test",
-					"status": "Open"
-				})
+				frappe.render_template(
+					self.sms_message, {"tracking_code": "TEST-001", "subject": "Test", "status": "Open"}
+				)
 			except Exception as e:
 				frappe.throw(_("Invalid Jinja2 syntax in SMS message: {0}").format(str(e)))
 

@@ -23,37 +23,37 @@ PLATFORM_ROLES = {"System Manager", "GRM Platform Administrator"}
 
 
 def get_user_accessible_projects(user: str) -> list[str]:
-    """Return the list of GRM Project names a user can access.
+	"""Return the list of GRM Project names a user can access.
 
-    Admins and all-projects roles see every project; otherwise the user
-    sees the projects where they hold an active, activated assignment.
-    """
-    if user == "Administrator" or GRM_ALL_PROJECTS_ROLES & set(frappe.get_roles(user)):
-        projects = frappe.get_all("GRM Project", fields=["name"])
-        return [p.name for p in projects]
+	Admins and all-projects roles see every project; otherwise the user
+	sees the projects where they hold an active, activated assignment.
+	"""
+	if user == "Administrator" or GRM_ALL_PROJECTS_ROLES & set(frappe.get_roles(user)):
+		projects = frappe.get_all("GRM Project", fields=["name"])
+		return [p.name for p in projects]
 
-    assignments = frappe.get_all(
-        "GRM User Project Assignment",
-        filters={"user": user, "is_active": 1, "activation_status": "Activated"},
-        fields=["project"],
-    )
-    return [a.project for a in assignments]
+	assignments = frappe.get_all(
+		"GRM User Project Assignment",
+		filters={"user": user, "is_active": 1, "activation_status": "Activated"},
+		fields=["project"],
+	)
+	return [a.project for a in assignments]
 
 
 def is_platform_admin(user: str | None = None) -> bool:
-    user = user or frappe.session.user
-    return bool(set(frappe.get_roles(user)) & PLATFORM_ROLES)
+	user = user or frappe.session.user
+	return bool(set(frappe.get_roles(user)) & PLATFORM_ROLES)
 
 
 def has_project_admin(project: str, user: str | None = None) -> bool:
-    """Return True if user is platform-admin OR holds active Supervise duty on project."""
-    user = user or frappe.session.user
-    if not project:
-        return False
-    if is_platform_admin(user):
-        return True
-    rows = frappe.db.sql(
-        """
+	"""Return True if user is platform-admin OR holds active Supervise duty on project."""
+	user = user or frappe.session.user
+	if not project:
+		return False
+	if is_platform_admin(user):
+		return True
+	rows = frappe.db.sql(
+		"""
         SELECT a.name FROM `tabGRM User Project Assignment` a
         JOIN `tabGRM Project Role` r ON r.name = a.role
         JOIN `tabGRM Project Role Duty` d ON d.parent = r.name
@@ -61,32 +61,30 @@ def has_project_admin(project: str, user: str | None = None) -> bool:
           AND a.activation_status = 'Activated' AND d.duty = 'Supervise'
         LIMIT 1
         """,
-        (user, project),
-    )
-    return bool(rows)
+		(user, project),
+	)
+	return bool(rows)
 
 
 def assert_project_admin(project: str, user: str | None = None) -> None:
-    """Raise PermissionError if user lacks Supervise duty on the given project."""
-    if not has_project_admin(project, user):
-        frappe.throw(
-            f"Not authorized for project {project}",
-            frappe.PermissionError,
-        )
+	"""Raise PermissionError if user lacks Supervise duty on the given project."""
+	if not has_project_admin(project, user):
+		frappe.throw(
+			f"Not authorized for project {project}",
+			frappe.PermissionError,
+		)
 
 
 def assert_assignment_admin(assignment_name: str, user: str | None = None) -> None:
-    """Load assignment by name, then assert caller is project-admin for its project.
+	"""Load assignment by name, then assert caller is project-admin for its project.
 
-    Prevents a project admin on Project A from acting on an assignment in Project B
-    by passing only the assignment's `name`.
-    """
-    project = frappe.db.get_value(
-        "GRM User Project Assignment", assignment_name, "project"
-    )
-    if not project:
-        frappe.throw(
-            f"Assignment {assignment_name} not found",
-            frappe.DoesNotExistError,
-        )
-    assert_project_admin(project, user)
+	Prevents a project admin on Project A from acting on an assignment in Project B
+	by passing only the assignment's `name`.
+	"""
+	project = frappe.db.get_value("GRM User Project Assignment", assignment_name, "project")
+	if not project:
+		frappe.throw(
+			f"Assignment {assignment_name} not found",
+			frappe.DoesNotExistError,
+		)
+	assert_project_admin(project, user)

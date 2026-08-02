@@ -23,6 +23,7 @@ The wrapper:
   fires).
 * Avoids leaking the internal globals `frappe.local.boot_cache` etc.
 """
+
 from __future__ import annotations
 
 import frappe
@@ -32,40 +33,40 @@ from egrm.utils.boot import boot_session as _egrm_boot_session
 
 @frappe.whitelist(allow_guest=True)
 def get_bootinfo() -> dict:
-    """Return Frappe bootinfo as a plain dict, with `egrm` guaranteed.
+	"""Return Frappe bootinfo as a plain dict, with `egrm` guaranteed.
 
-    Calls Frappe's heavy `frappe.boot.get_bootinfo` to keep parity with
-    a desk render; if any sub-step raises (e.g. an addon's hook touches
-    a stale doctype) we fall back to a minimal payload, but in either
-    case we run the eGRM `boot_session` hook ourselves so the `egrm`
-    namespace is always populated.
-    """
-    from frappe.boot import get_bootinfo as _frappe_get_bootinfo
+	Calls Frappe's heavy `frappe.boot.get_bootinfo` to keep parity with
+	a desk render; if any sub-step raises (e.g. an addon's hook touches
+	a stale doctype) we fall back to a minimal payload, but in either
+	case we run the eGRM `boot_session` hook ourselves so the `egrm`
+	namespace is always populated.
+	"""
+	from frappe.boot import get_bootinfo as _frappe_get_bootinfo
 
-    try:
-        bootinfo = _frappe_get_bootinfo()
-    except Exception:
-        # Heavy path raised — we still owe AC-5 (and the SPA) the egrm
-        # payload, so synthesise a minimal bootinfo and let the hook fill
-        # in the rest below. The original exception is logged for ops.
-        frappe.log_error(title="get_bootinfo full path failed; serving minimal payload")
-        bootinfo = frappe._dict()
+	try:
+		bootinfo = _frappe_get_bootinfo()
+	except Exception:
+		# Heavy path raised — we still owe AC-5 (and the SPA) the egrm
+		# payload, so synthesise a minimal bootinfo and let the hook fill
+		# in the rest below. The original exception is logged for ops.
+		frappe.log_error(title="get_bootinfo full path failed; serving minimal payload")
+		bootinfo = frappe._dict()
 
-    if not isinstance(bootinfo.get("egrm"), dict):
-        # Boot-session hook didn't run (or got dropped). Re-invoke our
-        # eGRM hook directly so the `egrm` namespace is always present.
-        try:
-            _egrm_boot_session(bootinfo)
-        except Exception:
-            frappe.log_error(title="egrm.utils.boot.boot_session failed inside wrapper")
-            bootinfo.egrm = {
-                "active_project": None,
-                "duties": [],
-                "is_platform_admin": False,
-                "available_projects": [],
-            }
+	if not isinstance(bootinfo.get("egrm"), dict):
+		# Boot-session hook didn't run (or got dropped). Re-invoke our
+		# eGRM hook directly so the `egrm` namespace is always present.
+		try:
+			_egrm_boot_session(bootinfo)
+		except Exception:
+			frappe.log_error(title="egrm.utils.boot.boot_session failed inside wrapper")
+			bootinfo.egrm = {
+				"active_project": None,
+				"duties": [],
+				"is_platform_admin": False,
+				"available_projects": [],
+			}
 
-    # bootinfo is a `frappe._dict`; cast to plain dict so JSON
-    # serialization is predictable and downstream tests can call
-    # `.get("egrm")` safely.
-    return dict(bootinfo)
+	# bootinfo is a `frappe._dict`; cast to plain dict so JSON
+	# serialization is predictable and downstream tests can call
+	# `.get("egrm")` safely.
+	return dict(bootinfo)

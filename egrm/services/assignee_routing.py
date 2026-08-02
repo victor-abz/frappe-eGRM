@@ -60,73 +60,75 @@ ACTIVE_STATUSES = ACTIVE_ASSIGNMENT_STATUSES
 # Reason codes
 # --------------------------------------------------------------------------- #
 
+
 class Reason:
-    EXPLICIT_OVERRIDE = "EXPLICIT_OVERRIDE"
-    REPORTER_SELF_SUBMIT = "REPORTER_SELF_SUBMIT"
-    ROLE_CANDIDATE = "ROLE_CANDIDATE"
-    NO_REGION = "NO_REGION"
-    NO_CATEGORY = "NO_CATEGORY"
-    NO_ROUTING_TARGET = "CATEGORY_HAS_NO_ROUTING_TARGET"
-    NO_RESOLVER_ROLE = "NO_RESOLVER_FOR_ROLE"
+	EXPLICIT_OVERRIDE = "EXPLICIT_OVERRIDE"
+	REPORTER_SELF_SUBMIT = "REPORTER_SELF_SUBMIT"
+	ROLE_CANDIDATE = "ROLE_CANDIDATE"
+	NO_REGION = "NO_REGION"
+	NO_CATEGORY = "NO_CATEGORY"
+	NO_ROUTING_TARGET = "CATEGORY_HAS_NO_ROUTING_TARGET"
+	NO_RESOLVER_ROLE = "NO_RESOLVER_FOR_ROLE"
 
 
 # --------------------------------------------------------------------------- #
 # Public entry points
 # --------------------------------------------------------------------------- #
 
+
 def resolve_assignee(issue) -> tuple[str | None, str]:
-    """Pick an assignee for ``issue`` (a not-yet-inserted GRM Issue doc).
+	"""Pick an assignee for ``issue`` (a not-yet-inserted GRM Issue doc).
 
-    Returns ``(user, reason)``. The reason is a structured code suitable
-    for logging; the user is ``None`` when no eligible candidate exists.
-    Never raises.
-    """
-    if getattr(issue, "assignee", None):
-        return issue.assignee, Reason.EXPLICIT_OVERRIDE
+	Returns ``(user, reason)``. The reason is a structured code suitable
+	for logging; the user is ``None`` when no eligible candidate exists.
+	Never raises.
+	"""
+	if getattr(issue, "assignee", None):
+		return issue.assignee, Reason.EXPLICIT_OVERRIDE
 
-    project = getattr(issue, "project", None)
-    region = getattr(issue, "administrative_region", None)
-    if not project or not region:
-        return None, Reason.NO_REGION
+	project = getattr(issue, "project", None)
+	region = getattr(issue, "administrative_region", None)
+	if not project or not region:
+		return None, Reason.NO_REGION
 
-    # --- Case A: real raiser with duty + scope owns their own issue ------- #
-    reporter = getattr(issue, "reporter", None)
-    if frappe.session.user != "Guest" and reporter and reporter != "Guest":
-        if _is_user_eligible(reporter, project, region):
-            return reporter, Reason.REPORTER_SELF_SUBMIT
+	# --- Case A: real raiser with duty + scope owns their own issue ------- #
+	reporter = getattr(issue, "reporter", None)
+	if frappe.session.user != "Guest" and reporter and reporter != "Guest":
+		if _is_user_eligible(reporter, project, region):
+			return reporter, Reason.REPORTER_SELF_SUBMIT
 
-    # --- Case B: category routes to a Role -------------------------------- #
-    category = getattr(issue, "category", None)
-    if not category:
-        return None, Reason.NO_CATEGORY
+	# --- Case B: category routes to a Role -------------------------------- #
+	category = getattr(issue, "category", None)
+	if not category:
+		return None, Reason.NO_CATEGORY
 
-    routing = resolve_category_routing(category)
-    target_type = routing["target_type"]
-    target_name = routing["target_name"]
+	routing = resolve_category_routing(category)
+	target_type = routing["target_type"]
+	target_name = routing["target_name"]
 
-    if target_type != "Role" or not target_name:
-        return None, f"{Reason.NO_ROUTING_TARGET}:{category}"
+	if target_type != "Role" or not target_name:
+		return None, f"{Reason.NO_ROUTING_TARGET}:{category}"
 
-    region_chain = _region_with_ancestors(region)
-    user = _resolve_via_role(project, target_name, region_chain)
-    if user:
-        return user, f"{Reason.ROLE_CANDIDATE}:{target_name}"
-    return None, f"{Reason.NO_RESOLVER_ROLE}:{target_name}"
+	region_chain = _region_with_ancestors(region)
+	user = _resolve_via_role(project, target_name, region_chain)
+	if user:
+		return user, f"{Reason.ROLE_CANDIDATE}:{target_name}"
+	return None, f"{Reason.NO_RESOLVER_ROLE}:{target_name}"
 
 
 def is_user_in_scope(user: str, project: str, region: str) -> bool:
-    """Public guard used by the staff create API.
+	"""Public guard used by the staff create API.
 
-    True when ``user`` has an active project assignment whose region equals
-    ``region`` or is any ancestor of ``region`` in the same project.
-    """
-    if not user or user in ("Guest", "Administrator"):
-        return user == "Administrator"
-    region_chain = _region_with_ancestors(region)
-    if not region_chain:
-        return False
-    rows = frappe.db.sql(
-        """
+	True when ``user`` has an active project assignment whose region equals
+	``region`` or is any ancestor of ``region`` in the same project.
+	"""
+	if not user or user in ("Guest", "Administrator"):
+		return user == "Administrator"
+	region_chain = _region_with_ancestors(region)
+	if not region_chain:
+		return False
+	rows = frappe.db.sql(
+		"""
         SELECT 1 FROM `tabGRM User Project Assignment`
         WHERE user = %s
           AND project = %s
@@ -135,66 +137,70 @@ def is_user_in_scope(user: str, project: str, region: str) -> bool:
           AND administrative_region IN %s
         LIMIT 1
         """,
-        (user, project, ACTIVE_STATUSES, tuple(region_chain)),
-    )
-    return bool(rows)
+		(user, project, ACTIVE_STATUSES, tuple(region_chain)),
+	)
+	return bool(rows)
 
 
 # --------------------------------------------------------------------------- #
 # Case A helper
 # --------------------------------------------------------------------------- #
 
+
 def _is_user_eligible(user: str, project: str, region: str) -> bool:
-    """Eligible = in scope AND holds the resolve duty."""
-    if not is_user_in_scope(user, project, region):
-        return False
-    return _user_holds_resolve_duty(user, project)
+	"""Eligible = in scope AND holds the resolve duty."""
+	if not is_user_in_scope(user, project, region):
+		return False
+	return _user_holds_resolve_duty(user, project)
 
 
 def _user_holds_resolve_duty(user: str, project: str) -> bool:
-    """Inline form of ``_user_has_duty`` scoped to the resolve duty.
+	"""Inline form of ``_user_has_duty`` scoped to the resolve duty.
 
-    Mirrored from ``grm_issue.py`` rather than imported to avoid a circular
-    dependency (the doctype controller calls this module on insert).
-    """
-    if not user or user == "Guest":
-        return False
-    if user == "Administrator":
-        return True
-    role_names = frappe.get_all(
-        "GRM User Project Assignment",
-        filters={
-            "user": user,
-            "project": project,
-            "is_active": 1,
-            "activation_status": ["in", list(ACTIVE_STATUSES)],
-        },
-        pluck="role",
-        ignore_permissions=True,
-    )
-    if not role_names:
-        return False
-    return bool(frappe.get_all(
-        "GRM Project Role Duty",
-        filters={"parent": ["in", role_names], "duty": RESOLVE_DUTY},
-        limit=1,
-        ignore_permissions=True,
-    ))
+	Mirrored from ``grm_issue.py`` rather than imported to avoid a circular
+	dependency (the doctype controller calls this module on insert).
+	"""
+	if not user or user == "Guest":
+		return False
+	if user == "Administrator":
+		return True
+	role_names = frappe.get_all(
+		"GRM User Project Assignment",
+		filters={
+			"user": user,
+			"project": project,
+			"is_active": 1,
+			"activation_status": ["in", list(ACTIVE_STATUSES)],
+		},
+		pluck="role",
+		ignore_permissions=True,
+	)
+	if not role_names:
+		return False
+	return bool(
+		frappe.get_all(
+			"GRM Project Role Duty",
+			filters={"parent": ["in", role_names], "duty": RESOLVE_DUTY},
+			limit=1,
+			ignore_permissions=True,
+		)
+	)
 
 
 # --------------------------------------------------------------------------- #
 # Case B (Role)
 # --------------------------------------------------------------------------- #
 
+
 def _resolve_via_role(project: str, role: str, region_chain: list[str]) -> str | None:
-    """Walk the region chain closest-first, pick the least-loaded duty-holder
-    in (project, role, region) at the first level that has at least one
-    candidate."""
-    if not region_chain:
-        return None
-    for region in region_chain:
-        candidates = frappe.db.sql(
-            """
+	"""Walk the region chain closest-first, pick the least-loaded duty-holder
+	in (project, role, region) at the first level that has at least one
+	candidate."""
+	if not region_chain:
+		return None
+	for region in region_chain:
+		candidates = frappe.db.sql(
+			"""
             SELECT DISTINCT a.user
             FROM `tabGRM User Project Assignment` a
             JOIN `tabGRM Project Role Duty` prd ON prd.parent = a.role
@@ -205,25 +211,25 @@ def _resolve_via_role(project: str, role: str, region_chain: list[str]) -> str |
               AND a.role = %s
               AND prd.duty = %s
             """,
-            (project, ACTIVE_STATUSES, region, role, RESOLVE_DUTY),
-            as_dict=True,
-        )
-        users = [c["user"] for c in candidates]
-        if not users:
-            continue
-        return _pick_least_loaded(users, project)
-    return None
+			(project, ACTIVE_STATUSES, region, role, RESOLVE_DUTY),
+			as_dict=True,
+		)
+		users = [c["user"] for c in candidates]
+		if not users:
+			continue
+		return _pick_least_loaded(users, project)
+	return None
 
 
 def _pick_least_loaded(users: list[str], project: str) -> str | None:
-    """Stable tie-break: open-issue count ASC, assignment.creation ASC, user ASC."""
-    if not users:
-        return None
-    if len(users) == 1:
-        return users[0]
-    placeholders = ", ".join(["%s"] * len(users))
-    rows = frappe.db.sql(
-        f"""
+	"""Stable tie-break: open-issue count ASC, assignment.creation ASC, user ASC."""
+	if not users:
+		return None
+	if len(users) == 1:
+		return users[0]
+	placeholders = ", ".join(["%s"] * len(users))
+	rows = frappe.db.sql(
+		f"""
         SELECT a.user,
                (
                    SELECT COUNT(*) FROM `tabGRM Issue` i
@@ -240,44 +246,45 @@ def _pick_least_loaded(users: list[str], project: str) -> str | None:
         ORDER BY open_count ASC, first_assigned ASC, a.user ASC
         LIMIT 1
         """,
-        (project, *users, project),
-        as_dict=True,
-    )
-    return rows[0]["user"] if rows else users[0]
+		(project, *users, project),
+		as_dict=True,
+	)
+	return rows[0]["user"] if rows else users[0]
 
 
 # --------------------------------------------------------------------------- #
 # Region chain
 # --------------------------------------------------------------------------- #
 
-def _region_with_ancestors(region: str) -> list[str]:
-    """Return [region, parent, grandparent, …] within the same project.
 
-    Uses ``GRM Administrative Region.path`` (materialized colon-separated
-    path) to walk ancestors in O(1) queries. The list is ordered exact-first
-    so callers can prefer closer matches.
-    """
-    if not region:
-        return []
-    region_doc = frappe.db.get_value(
-        "GRM Administrative Region",
-        region,
-        ["name", "path", "project"],
-        as_dict=True,
-    )
-    if not region_doc:
-        return []
-    chain: list[str] = [region_doc["name"]]
-    if not region_doc.get("path") or ":" not in region_doc["path"]:
-        return chain
-    path_parts = region_doc["path"].split(":")
-    for i in range(len(path_parts) - 2, -1, -1):
-        ancestor_path = ":".join(path_parts[: i + 1])
-        ancestor_name = frappe.db.get_value(
-            "GRM Administrative Region",
-            {"path": ancestor_path, "project": region_doc["project"]},
-            "name",
-        )
-        if ancestor_name and ancestor_name not in chain:
-            chain.append(ancestor_name)
-    return chain
+def _region_with_ancestors(region: str) -> list[str]:
+	"""Return [region, parent, grandparent, …] within the same project.
+
+	Uses ``GRM Administrative Region.path`` (materialized colon-separated
+	path) to walk ancestors in O(1) queries. The list is ordered exact-first
+	so callers can prefer closer matches.
+	"""
+	if not region:
+		return []
+	region_doc = frappe.db.get_value(
+		"GRM Administrative Region",
+		region,
+		["name", "path", "project"],
+		as_dict=True,
+	)
+	if not region_doc:
+		return []
+	chain: list[str] = [region_doc["name"]]
+	if not region_doc.get("path") or ":" not in region_doc["path"]:
+		return chain
+	path_parts = region_doc["path"].split(":")
+	for i in range(len(path_parts) - 2, -1, -1):
+		ancestor_path = ":".join(path_parts[: i + 1])
+		ancestor_name = frappe.db.get_value(
+			"GRM Administrative Region",
+			{"path": ancestor_path, "project": region_doc["project"]},
+			"name",
+		)
+		if ancestor_name and ancestor_name not in chain:
+			chain.append(ancestor_name)
+	return chain

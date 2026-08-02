@@ -24,17 +24,17 @@
  * Idempotent: only patches once even if the bundle is included twice.
  */
 (function () {
-    if (typeof frappe === "undefined" || !frappe.router) return;
-    if (frappe.router.__egrm_app_route_patched) return;
+	if (typeof frappe === "undefined" || !frappe.router) return;
+	if (frappe.router.__egrm_app_route_patched) return;
 
-    const _orig = frappe.router.strip_prefix.bind(frappe.router);
-    frappe.router.strip_prefix = function (route) {
-        let r = _orig(route);
-        // Mirror the existing `if (r === "desk") r = r.substr(4)` /
-        // `if (r.startsWith("desk/")) r = r.substr(4)` clauses for `app`.
-        if (r === "app") r = "";
-        if (r.startsWith("app/")) r = r.substr(4);
-        return r;
-    };
-    frappe.router.__egrm_app_route_patched = true;
+	const _orig = frappe.router.strip_prefix.bind(frappe.router);
+	frappe.router.strip_prefix = function (route) {
+		let r = _orig(route);
+		// Mirror the existing `if (r === "desk") r = r.substr(4)` /
+		// `if (r.startsWith("desk/")) r = r.substr(4)` clauses for `app`.
+		if (r === "app") r = "";
+		if (r.startsWith("app/")) r = r.substr(4);
+		return r;
+	};
+	frappe.router.__egrm_app_route_patched = true;
 })();

@@ -18,7 +18,7 @@ import frappe
 
 
 def execute() -> None:
-    if frappe.db.exists("Workspace", "Platform"):
-        frappe.delete_doc("Workspace", "Platform", ignore_permissions=True, force=True)
-        print("Deleted standalone Workspace: Platform")
-    frappe.db.commit()
+	if frappe.db.exists("Workspace", "Platform"):
+		frappe.delete_doc("Workspace", "Platform", ignore_permissions=True, force=True)
+		print("Deleted standalone Workspace: Platform")
+	frappe.db.commit()

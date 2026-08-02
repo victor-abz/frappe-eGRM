@@ -4,799 +4,778 @@ from frappe.model.document import Document
 from frappe.utils import cint, getdate, now_datetime
 
 from egrm.egrm.doctype.grm_user_project_assignment.grm_user_project_assignment import (
-    get_user_assignments,
+	get_user_assignments,
 )
 from egrm.egrm.utils.sla_manager import SLAManager
 from egrm.utils.tracking_code_generator import generate_tracking_code
-
 
 # Per-field duty enforcement map. A non-bypass user changing one of these
 # fields must hold the corresponding duty for the issue's project. Bypass
 # roles: System Manager, GRM Platform Administrator, GRM Supervise (the
 # latter is intentionally permitted to override anything within scope).
 FIELD_DUTY_REQUIREMENTS: dict[str, str] = {
-    "status": "Review",
-    "category": "Review",
-    "issue_type": "Review",
-    "assignee": "Assignment",
-    "resolution_text": "Investigate & Resolve",
-    "resolved_by": "Investigate & Resolve",
-    "resolution_date": "Investigate & Resolve",
-    "resolution_days": "Investigate & Resolve",
-    "resolution_agreement": "Investigate & Resolve",
-    "rating": "Feedback",
-    "appeal_submitted": "Feedback",
-    "appeal_date": "Feedback",
+	"status": "Review",
+	"category": "Review",
+	"issue_type": "Review",
+	"assignee": "Assignment",
+	"resolution_text": "Investigate & Resolve",
+	"resolved_by": "Investigate & Resolve",
+	"resolution_date": "Investigate & Resolve",
+	"resolution_days": "Investigate & Resolve",
+	"resolution_agreement": "Investigate & Resolve",
+	"rating": "Feedback",
+	"appeal_submitted": "Feedback",
+	"appeal_date": "Feedback",
 }
 
 DUTY_ENFORCEMENT_BYPASS_ROLES: set[str] = {
-    "System Manager",
-    "GRM Platform Administrator",
-    "GRM Supervise",
+	"System Manager",
+	"GRM Platform Administrator",
+	"GRM Supervise",
 }
 
 
 def _user_has_duty(user: str, duty: str, project: str) -> bool:
-    """Return True if the user has the named duty for this project (or
-    holds a bypass role). Used by GRM Issue field-level checks."""
-    if not user or user == "Guest":
-        return False
-    if user == "Administrator":
-        return True
-    user_roles = set(frappe.get_roles(user))
-    if user_roles & DUTY_ENFORCEMENT_BYPASS_ROLES:
-        return True
-    role_names = frappe.get_all(
-        "GRM User Project Assignment",
-        filters={
-            "user": user, "project": project, "is_active": 1,
-            "activation_status": ["in", ("Activated", "")],
-        },
-        pluck="role",
-        ignore_permissions=True,
-    )
-    if not role_names:
-        return False
-    matches = frappe.get_all(
-        "GRM Project Role Duty",
-        filters={"parent": ["in", role_names], "duty": duty},
-        limit=1,
-        ignore_permissions=True,
-    )
-    return bool(matches)
+	"""Return True if the user has the named duty for this project (or
+	holds a bypass role). Used by GRM Issue field-level checks."""
+	if not user or user == "Guest":
+		return False
+	if user == "Administrator":
+		return True
+	user_roles = set(frappe.get_roles(user))
+	if user_roles & DUTY_ENFORCEMENT_BYPASS_ROLES:
+		return True
+	role_names = frappe.get_all(
+		"GRM User Project Assignment",
+		filters={
+			"user": user,
+			"project": project,
+			"is_active": 1,
+			"activation_status": ["in", ("Activated", "")],
+		},
+		pluck="role",
+		ignore_permissions=True,
+	)
+	if not role_names:
+		return False
+	matches = frappe.get_all(
+		"GRM Project Role Duty",
+		filters={"parent": ["in", role_names], "duty": duty},
+		limit=1,
+		ignore_permissions=True,
+	)
+	return bool(matches)
 
 
 class GRMIssue(Document):
-    def autoname(self):
-        """Use WatermelonDB ID if provided, otherwise use Frappe naming series"""
-        # Check if coming from sync with custom ID
-        print("AutoName - checking for sync name")
-
-        # If this document is being created from sync, use the provided sync name
-        if hasattr(self, "_sync_name") and self._sync_name:
-            self.name = self._sync_name
-            print(f"AutoName - using sync name: {self.name}")
-            return
-
-        # If no sync name, let Frappe handle naming series/auto-generation
-        # This will happen for documents created through the UI
-        print("AutoName - no sync name, using default naming")
-
-    def before_validate(self):
-        try:
-            print("Name during validate", self.name)
-            user = frappe.session.user
-            frappe.log(f"Getting regions for user: {user}")
-
-            # Check if user is guest (not allowed)
-            if user == "Guest":
-                return {"status": "error", "message": _("Authentication required")}
-
-            # Get user's project assignments and assigned regions automatically
-            projects, regions = get_user_assignments(user)
-
-            print(projects)
-
-            # Auto-set project if not already set and user has assignments
-            if not self.project and projects and len(projects) > 0:
-                project_found = False
-
-                # If user has only one project, use it
-                if len(projects) == 1:
-                    self.project = projects[0]
-                    frappe.log(f"Auto-set project to {self.project} for user {user}")
-                    project_found = True
-
-                # Try to find project using available fields in a prioritized order
-                if not project_found and self.administrative_region:
-                    region_project = frappe.db.get_value(
-                        "GRM Administrative Region",
-                        self.administrative_region,
-                        "project",
-                    )
-                    if region_project and region_project in projects:
-                        self.project = region_project
-                        frappe.log(
-                            f"Auto-set project to {self.project} based on region {self.administrative_region}"
-                        )
-                        project_found = True
-
-                if not project_found and self.category:
-                    for project in projects:
-                        category_belongs_to_project = frappe.db.exists(
-                            "GRM Project Link",
-                            {"parent": self.category, "project": project},
-                        )
-                        if category_belongs_to_project:
-                            self.project = project
-                            frappe.log(
-                                f"Auto-set project to {self.project} based on category {self.category}"
-                            )
-                            project_found = True
-                            break
-
-                if not project_found and self.issue_type:
-                    for project in projects:
-                        issue_type_belongs_to_project = frappe.db.exists(
-                            "GRM Project Link",
-                            {"parent": self.issue_type, "project": project},
-                        )
-                        if issue_type_belongs_to_project:
-                            self.project = project
-                            frappe.log(
-                                f"Auto-set project to {self.project} based on issue_type {self.issue_type}"
-                            )
-                            break
-
-            if not self.intake_date:
-                self.intake_date = getdate()
-
-            # Set issue_date to today if not already set
-            if not self.issue_date:
-                self.issue_date = getdate()
-
-            # Set default status if not already set
-            if not self.status and self.project:
-                # Try to find an initial status for this project
-                initial_statuses = frappe.get_all(
-                    "GRM Issue Status", filters={"initial_status": 1}, fields=["name"]
-                )
-
-                for status in initial_statuses:
-                    status_belongs_to_project = frappe.db.exists(
-                        "GRM Project Link",
-                        {"parent": status.name, "project": self.project},
-                    )
-                    if status_belongs_to_project:
-                        self.status = status.name
-                        frappe.log(
-                            f"Auto-set status to {self.status} for project {self.project}"
-                        )
-                        break
-
-            frappe.log(f"Completed Before validate for GRM Issue {self.name}")
-        except Exception as e:
-            frappe.log_error(f"Error in before_validate: {str(e)}")
-            raise
-
-    def _enforce_duty_field_constraints(self) -> None:
-        """For each restricted field, if it changed since fetched_doc, verify
-        the user holds the required duty for this issue's project. Insert is
-        gated separately via L1 'create' permission (GRM Intake).
-
-        Honors flags.ignore_permissions so trusted server flows (e.g. sync
-        push auto-submit, controllers calling save() with elevation) can run
-        without re-asserting field-level duty checks the L1 layer already
-        verified.
-        """
-        if self.is_new() or self.flags.ignore_permissions:
-            return
-        user = frappe.session.user
-        for field, duty in FIELD_DUTY_REQUIREMENTS.items():
-            if not self.has_value_changed(field):
-                continue
-            if _user_has_duty(user, duty, self.project):
-                continue
-            frappe.throw(
-                frappe._("You need the {0} duty to change {1}.").format(duty, field),
-                frappe.PermissionError,
-            )
-
-    def validate(self):
-        try:
-            # Generate tracking code if not provided (for cases where it wasn't generated in before_insert)
-            if not self.tracking_code and self.project:
-                frappe.log(
-                    f"No tracking code found, generating during validation for project: {self.project}"
-                )
-                self.tracking_code = generate_tracking_code(
-                    project_id=self.project, issue_date=self.issue_date
-                )
-                frappe.log(
-                    f"Generated tracking code during validation: {self.tracking_code}"
-                )
-
-            # Validate project related fields
-            self.validate_project_entities()
-
-            self._enforce_duty_field_constraints()
-
-            # Validate dates
-            self.validate_dates()
-
-            frappe.log(f"Validating GRM Issue {self.name}")
-        except Exception as e:
-            frappe.log(f"Error validating GRM Issue: {str(e)}")
-            raise
-
-    def before_insert(self):
-        try:
-            # Generate auto increment ID, internal code, and tracking code
-            self.generate_codes()
-            self._apply_default_routing_from_category()
-            self._apply_default_assignee()
-            frappe.log(
-                f"Generated codes + applied default routing for GRM Issue {self.name}"
-            )
-        except Exception as e:
-            frappe.log(f"Error in before_insert for GRM Issue: {str(e)}")
-            raise
-
-    def _apply_default_routing_from_category(self) -> None:
-        """Populate ``assigned_role`` from the category when not explicitly set.
-
-        Caller-provided values take precedence so manual overrides
-        (mobile API, admin desk) are respected. Departments are not consulted
-        — routing is role-based.
-        """
-        if self.assigned_role:
-            return
-        if not self.category:
-            return
-        from egrm.services.category_routing import resolve_routing_for_issue_creation
-        routing = resolve_routing_for_issue_creation(self.category)
-        if routing["assigned_role"]:
-            self.assigned_role = routing["assigned_role"]
-
-    def _apply_default_assignee(self) -> None:
-        """Resolve ``assignee`` from the reporter or the category routing.
-
-        Runs AFTER ``_apply_default_routing_from_category`` so the resolver
-        sees the populated ``assigned_department`` / ``assigned_role``. The
-        resolver respects an explicitly supplied assignee — sync push,
-        mobile, and admin-desk overrides pass through untouched.
-        """
-        from egrm.services.assignee_routing import resolve_assignee
-        user, reason = resolve_assignee(self)
-        if user:
-            self.assignee = user
-        # Always stamp a log row so orphans (user is None) are observable
-        # in the issue history. Bypass-permission paths still log.
-        if reason and reason != "EXPLICIT_OVERRIDE":
-            timestamp = now_datetime()
-            text = (
-                f"Auto-assigned to {user} ({reason})" if user
-                else f"No eligible assignee at insert: {reason}"
-            )
-            self.append("grm_issue_log", {
-                "text": text,
-                "user": frappe.session.user,
-                "timestamp": timestamp,
-            })
-
-    def after_insert(self):
-        try:
-            self._init_sla_after_insert()
-            self.send_notification('receipt')
-            frappe.log(f"After insert completed for GRM Issue {self.name}")
-        except Exception as e:
-            frappe.log(f"Error in after_insert for GRM Issue: {str(e)}")
-
-    def before_update_after_submit(self):
-        # Frappe's update_after_submit path does NOT run validate(), so the
-        # field-duty checks in _enforce_duty_field_constraints would otherwise
-        # be silently bypassed for post-submit set_value / db_update calls.
-        # Re-run them here so the duty matrix applies to every save path.
-        self._enforce_duty_field_constraints()
-
-    def on_update(self):
-        try:
-            # Check for escalation needs
-            self.check_escalation()
-
-            # Update SLA status
-            self._update_sla_on_save()
-
-            # Handle status change notifications
-            if self.has_value_changed('status'):
-                self.handle_status_change_notification()
-
-            frappe.log(f"Updated GRM Issue {self.name}")
-        except Exception as e:
-            frappe.log(f"Error updating GRM Issue: {str(e)}")
-            raise
-
-    def on_submit(self):
-        try:
-            # Add log entry for submission
-            self.add_log(_("Issue submitted"), frappe.session.user)
-
-            frappe.log(f"Submitted GRM Issue {self.name}")
-        except Exception as e:
-            frappe.log(f"Error submitting GRM Issue: {str(e)}")
-            raise
-
-    def on_cancel(self):
-        try:
-            # Add log entry for cancellation
-            self.add_log(_("Issue cancelled"), frappe.session.user)
-
-            frappe.log(f"Cancelled GRM Issue {self.name}")
-        except Exception as e:
-            frappe.log(f"Error cancelling GRM Issue: {str(e)}")
-            raise
-
-    def generate_codes(self):
-        try:
-            # Generate tracking code using consistent format: {PROJECT_CODE}-{YYMMDD}-{NNNN}
-            if not self.tracking_code:
-                frappe.log(f"Generating tracking code for project: {self.project}")
-                self.tracking_code = generate_tracking_code(
-                    project_id=self.project, issue_date=self.issue_date
-                )
-                frappe.log(f"Generated tracking code: {self.tracking_code}")
-        except Exception as e:
-            frappe.log_error(f"Error generating codes: {str(e)}")
-            frappe.log_error(f"Error generating codes: {str(e)}")
-            raise
-
-    def validate_project_entities(self):
-        try:
-            # Check that status belongs to the project
-            status_belongs_to_project = frappe.db.exists(
-                "GRM Project Link", {"parent": self.status, "project": self.project}
-            )
-
-            if not status_belongs_to_project:
-                frappe.throw(
-                    _("Status {0} does not belong to project {1}").format(
-                        self.status, self.project
-                    )
-                )
-
-            # Check that category belongs to the project
-            category_belongs_to_project = frappe.db.exists(
-                "GRM Project Link", {"parent": self.category, "project": self.project}
-            )
-
-            if not category_belongs_to_project:
-                frappe.throw(
-                    _("Category {0} does not belong to project {1}").format(
-                        self.category, self.project
-                    )
-                )
-
-            # Check that issue type belongs to the project
-            issue_type_belongs_to_project = frappe.db.exists(
-                "GRM Project Link", {"parent": self.issue_type, "project": self.project}
-            )
-
-            if not issue_type_belongs_to_project:
-                frappe.throw(
-                    _("Issue Type {0} does not belong to project {1}").format(
-                        self.issue_type, self.project
-                    )
-                )
-
-            # Check that administrative region belongs to the project
-            print("Validating regions", self.administrative_region, self.project)
-            region_belongs_to_project = (
-                frappe.db.get_value(
-                    "GRM Administrative Region", self.administrative_region, "project"
-                )
-                == self.project
-            )
-
-            if not region_belongs_to_project:
-                frappe.throw(
-                    _(
-                        "Administrative Region {0} does not belong to project {1}"
-                    ).format(self.administrative_region, self.project)
-                )
-
-            # Check optional fields
-            if self.citizen_age_group:
-                age_group_belongs_to_project = frappe.db.exists(
-                    "GRM Project Link",
-                    {"parent": self.citizen_age_group, "project": self.project},
-                )
-
-                if not age_group_belongs_to_project:
-                    frappe.throw(
-                        _("Age Group {0} does not belong to project {1}").format(
-                            self.citizen_age_group, self.project
-                        )
-                    )
-
-            if self.citizen_group_1:
-                group1_belongs_to_project = frappe.db.exists(
-                    "GRM Project Link",
-                    {"parent": self.citizen_group_1, "project": self.project},
-                )
-
-                if not group1_belongs_to_project:
-                    frappe.throw(
-                        _("Citizen Group {0} does not belong to project {1}").format(
-                            self.citizen_group_1, self.project
-                        )
-                    )
-
-            if self.citizen_group_2:
-                group2_belongs_to_project = frappe.db.exists(
-                    "GRM Project Link",
-                    {"parent": self.citizen_group_2, "project": self.project},
-                )
-
-                if not group2_belongs_to_project:
-                    frappe.throw(
-                        _("Citizen Group {0} does not belong to project {1}").format(
-                            self.citizen_group_2, self.project
-                        )
-                    )
-
-            # Check assignee
-            if self.assignee:
-                assignee_has_access = frappe.db.exists(
-                    "GRM User Project Assignment",
-                    {"user": self.assignee, "project": self.project, "is_active": 1},
-                )
-
-                if not assignee_has_access:
-                    frappe.throw(
-                        _("Assignee {0} does not have access to project {1}").format(
-                            self.assignee, self.project
-                        )
-                    )
-
-        except Exception as e:
-            frappe.log(f"Error validating project entities: {str(e)}")
-            raise
-
-    def validate_dates(self):
-        try:
-            # Check that issue_date is not after intake_date
-            if (
-                self.issue_date
-                and self.intake_date
-                and getdate(self.issue_date) > getdate(self.intake_date)
-            ):
-                frappe.throw(_("Issue Date cannot be after Intake Date"))
-
-            # Check that resolution_date is not before created_date
-            print(
-                ">>>>> DATES >>>>>>",
-                self.resolution_date,
-                self.issue_date,
-                getdate(self.resolution_date) < getdate(self.issue_date),
-            )
-            if (
-                self.resolution_date
-                and self.issue_date
-                and getdate(self.resolution_date) < getdate(self.issue_date)
-            ):
-                frappe.throw(_("Resolution Date cannot be before Issue Date"))
-        except Exception as e:
-            frappe.log(f"Error validating dates: {str(e)}")
-            raise
-
-    def add_log(self, text, user=None):
-        try:
-            if not user:
-                user = frappe.session.user
-
-            log_row = {}
-            log_row["text"] = text
-            log_row["user"] = user
-            log_row["timestamp"] = now_datetime()
-
-            self.append("grm_issue_log", log_row)
-
-            # Save the document if it's not new
-            if not self.is_new():
-                self.save()
-        except Exception as e:
-            frappe.log(f"Error adding log: {str(e)}")
-            raise
-
-    def check_escalation(self):
-        try:
-            # Check auto escalation conditions
-            if not self.escalate_flag:
-                # Get the project's auto escalation days
-                auto_escalation_days = frappe.db.get_value(
-                    "GRM Project", self.project, "auto_escalation_days"
-                )
-
-                if auto_escalation_days:
-                    # Check if the issue has been open too long
-                    status_is_open = frappe.db.get_value(
-                        "GRM Issue Status", self.status, "open_status"
-                    )
-
-                    if status_is_open:
-                        from datetime import datetime, timedelta
-
-                        creation = datetime.strptime(
-                            str(self.creation), "%Y-%m-%d %H:%M:%S.%f"
-                        )
-                        now = now_datetime()
-                        days_open = (now - creation).days
-
-                        if days_open > auto_escalation_days:
-                            # Set escalate flag
-                            self.db_set("escalate_flag", 1)
-
-                            # Add log entry
-                            self.add_log(
-                                _(
-                                    "Issue automatically escalated after {0} days"
-                                ).format(days_open)
-                            )
-
-                            # Get category's escalation department
-                            dept = frappe.db.get_value(
-                                "GRM Issue Category",
-                                self.category,
-                                "assigned_escalation_department",
-                            )
-
-                            if dept:
-                                # Get department head
-                                head = frappe.db.get_value(
-                                    "GRM Issue Department", dept, "head"
-                                )
-
-                                if head:
-                                    # Assign to department head
-                                    self.db_set("assignee", head)
-
-                                    # Add log entry
-                                    self.add_log(
-                                        _(
-                                            "Issue assigned to escalation department head {0}"
-                                        ).format(head)
-                                    )
-
-                                    # Notify department head
-                                    self.notify_user(
-                                        head,
-                                        _("Issue Escalated"),
-                                        _("Issue {0} has been escalated to you").format(
-                                            self.name
-                                        ),
-                                    )
-        except Exception as e:
-            frappe.log(f"Error checking escalation: {str(e)}")
-            raise
-
-    def notify_user(self, user, subject, message):
-        try:
-            # Send a notification to the user
-            from frappe.utils.user import get_user_fullname
-
-            frappe.sendmail(
-                recipients=[user],
-                sender=frappe.session.user,
-                subject=subject,
-                message=message,
-                reference_doctype="GRM Issue",
-                reference_name=self.name,
-            )
-
-            frappe.log(f"Notification sent to {user} for GRM Issue {self.name}")
-        except Exception as e:
-            frappe.log(f"Error sending notification: {str(e)}")
-            # Don't raise exception for notification errors, just log them
-
-    def get_citizen_name(self):
-        """Get citizen name based on type"""
-        return self.citizen
-
-    def get_contact_info(self):
-        """Get contact information based on type"""
-        return self.contact_information
-
-    def has_permission_to_view_sensitive_data(self):
-        """Duty-driven sensitive-data visibility.
-
-        Bypass roles (System Manager, GRM Platform Administrator) and
-        anyone holding a Supervise duty on this project can see sensitive
-        fields. The current assignee always sees their own issue.
-        """
-        try:
-            from egrm.server_scripts.grm_issue_permissions import (
-                BYPASS_ROLES,
-                _user_duties_for_project,
-            )
-
-            user = frappe.session.user
-            if user == "Administrator":
-                return True
-
-            if set(frappe.get_roles(user)) & set(BYPASS_ROLES):
-                return True
-
-            if self.assignee == user:
-                return True
-
-            duties = _user_duties_for_project(user, self.project)
-            return "Supervise" in duties
-        except Exception as e:
-            frappe.log(f"Error checking sensitive data permissions: {str(e)}")
-            return False
-
-    def _init_sla_after_insert(self):
-        """Initialize SLA tracking after issue creation."""
-        try:
-            sla_manager = SLAManager(self)
-            sla_manager.initialize_sla()
-            # Save SLA fields without triggering hooks again
-            frappe.db.set_value(self.doctype, self.name, {
-                "sla_acknowledgment_days": self.sla_acknowledgment_days,
-                "sla_resolution_days": self.sla_resolution_days,
-                "sla_acknowledgment_due": self.sla_acknowledgment_due,
-                "sla_resolution_due": self.sla_resolution_due,
-                "sla_acknowledgment_status": self.sla_acknowledgment_status,
-                "sla_resolution_status": self.sla_resolution_status,
-                "sla_days_remaining": self.sla_days_remaining,
-            }, update_modified=False)
-        except Exception as e:
-            frappe.log_error(f"SLA initialization error for {self.name}: {e}", "SLA Error")
-
-    def _update_sla_on_save(self):
-        """Update SLA status on each save."""
-        try:
-            sla_manager = SLAManager(self)
-            if self.has_value_changed("administrative_region"):
-                sla_manager.initialize_sla()
-                self.add_comment("Info", f"SLA recalculated due to region change to {self.administrative_region}")
-            else:
-                sla_manager.update_sla_status()
-        except Exception as e:
-            frappe.log_error(f"SLA update error for {self.name}: {e}", "SLA Error")
-
-    def send_notification(self, notification_type):
-        """Send notification via configured channels."""
-        try:
-            project = frappe.get_doc("GRM Project", self.project)
-        except Exception:
-            return
-
-        if not project.get("enable_notifications"):
-            return
-
-        template_field = f"{notification_type}_template"
-        template_name = project.get(template_field)
-        if not template_name:
-            return
-
-        try:
-            template = frappe.get_doc("GRM Notification Template", template_name)
-
-            if template.email_template:
-                self._send_email_notification(template.email_template)
-
-            if template.enable_sms and template.sms_message:
-                self._send_sms_notification(template)
-
-            self.add_comment(
-                "Info",
-                f"{notification_type.replace('_', ' ').title()} notification sent"
-            )
-        except Exception as e:
-            frappe.log_error(
-                f"Failed to send {notification_type} notification for {self.name}: {e}",
-                "GRM Notification Error"
-            )
-
-    def _send_email_notification(self, email_template_name):
-        """Send email using Frappe Email Template."""
-        contact_info = self.get_contact_info()
-        if not contact_info or "@" not in str(contact_info):
-            return
-
-        try:
-            email_template = frappe.get_doc("Email Template", email_template_name)
-            subject = frappe.render_template(email_template.subject, {"doc": self})
-            message = frappe.render_template(
-                email_template.get("response_html") or email_template.get("response") or "",
-                {"doc": self}
-            )
-
-            frappe.sendmail(
-                recipients=[contact_info],
-                subject=subject,
-                message=message,
-                reference_doctype=self.doctype,
-                reference_name=self.name,
-            )
-        except Exception as e:
-            frappe.log_error(f"Email send failed for {self.name}: {e}", "GRM Email Error")
-
-    def _send_sms_notification(self, template):
-        """Send SMS using configured SMS provider."""
-        contact_info = self.get_contact_info()
-        if not contact_info or "@" in str(contact_info):
-            return  # Not a phone number
-
-        try:
-            context = self._get_notification_context()
-            sms_message = template.render_sms(context)
-            if not sms_message:
-                return
-
-            from frappe.core.doctype.sms_settings.sms_settings import send_sms
-            send_sms(
-                receiver_list=[contact_info],
-                msg=sms_message,
-                success_msg=False,
-            )
-        except Exception as e:
-            frappe.log_error(f"SMS send failed for {self.name}: {e}", "GRM SMS Error")
-
-    def _get_notification_context(self):
-        """Get context dict for template rendering."""
-        return {
-            "tracking_code": self.tracking_code,
-            "subject": getattr(self, "description", ""),
-            "status": self.status,
-            "administrative_region": self.administrative_region,
-            "created_date": frappe.utils.formatdate(self.creation, "dd MMM yyyy") if self.creation else "",
-            "complainant_name": self.get_citizen_name(),
-            "sla_acknowledgment_due": frappe.utils.formatdate(self.sla_acknowledgment_due, "dd MMM yyyy") if self.get("sla_acknowledgment_due") else None,
-            "sla_resolution_due": frappe.utils.formatdate(self.sla_resolution_due, "dd MMM yyyy") if self.get("sla_resolution_due") else None,
-            "sla_days_remaining": self.get("sla_days_remaining"),
-            "project": self.project,
-        }
-
-    def handle_status_change_notification(self):
-        """Send appropriate notification based on status change."""
-        # Map GRM Issue Status names to notification types
-        status_name = frappe.db.get_value("GRM Issue Status", self.status, "status_name") or ""
-        status_template_map = {
-            "In Progress": "in_progress",
-            "Resolved": "resolved",
-            "Closed": "closed",
-        }
-
-        # Check for acknowledgment-type statuses (open_status=1 but not initial)
-        status_doc = frappe.get_cached_doc("GRM Issue Status", self.status)
-        if status_doc.open_status and not status_doc.initial_status:
-            self.send_notification("acknowledgment")
-            return
-
-        template_type = status_template_map.get(status_name)
-        if template_type:
-            self.send_notification(template_type)
-
-    @frappe.whitelist()
-    def manual_escalate(self, reason=None):
-        """Allow manual escalation from UI."""
-        sla_manager = SLAManager(self)
-        if sla_manager.escalate_to_parent_level():
-            if reason:
-                self.sla_escalation_reason = reason
-            else:
-                self.sla_escalation_reason = "Manual escalation by user"
-            self.save(ignore_permissions=True)
-            frappe.msgprint(_("Issue escalated successfully"))
-            return True
-        else:
-            frappe.msgprint(_("Cannot escalate - already at highest level"))
-            return False
-
-    @frappe.whitelist()
-    def resend_notification(self, notification_type):
-        """Allow manual resend of notification."""
-        self.send_notification(notification_type)
-        frappe.msgprint(_("Notification sent successfully"))
+	def autoname(self):
+		"""Use WatermelonDB ID if provided, otherwise use Frappe naming series"""
+		# Check if coming from sync with custom ID
+		print("AutoName - checking for sync name")
+
+		# If this document is being created from sync, use the provided sync name
+		if hasattr(self, "_sync_name") and self._sync_name:
+			self.name = self._sync_name
+			print(f"AutoName - using sync name: {self.name}")
+			return
+
+		# If no sync name, let Frappe handle naming series/auto-generation
+		# This will happen for documents created through the UI
+		print("AutoName - no sync name, using default naming")
+
+	def before_validate(self):
+		try:
+			print("Name during validate", self.name)
+			user = frappe.session.user
+			frappe.log(f"Getting regions for user: {user}")
+
+			# Check if user is guest (not allowed)
+			if user == "Guest":
+				return {"status": "error", "message": _("Authentication required")}
+
+			# Get user's project assignments and assigned regions automatically
+			projects, regions = get_user_assignments(user)
+
+			print(projects)
+
+			# Auto-set project if not already set and user has assignments
+			if not self.project and projects and len(projects) > 0:
+				project_found = False
+
+				# If user has only one project, use it
+				if len(projects) == 1:
+					self.project = projects[0]
+					frappe.log(f"Auto-set project to {self.project} for user {user}")
+					project_found = True
+
+				# Try to find project using available fields in a prioritized order
+				if not project_found and self.administrative_region:
+					region_project = frappe.db.get_value(
+						"GRM Administrative Region",
+						self.administrative_region,
+						"project",
+					)
+					if region_project and region_project in projects:
+						self.project = region_project
+						frappe.log(
+							f"Auto-set project to {self.project} based on region {self.administrative_region}"
+						)
+						project_found = True
+
+				if not project_found and self.category:
+					for project in projects:
+						category_belongs_to_project = frappe.db.exists(
+							"GRM Project Link",
+							{"parent": self.category, "project": project},
+						)
+						if category_belongs_to_project:
+							self.project = project
+							frappe.log(
+								f"Auto-set project to {self.project} based on category {self.category}"
+							)
+							project_found = True
+							break
+
+				if not project_found and self.issue_type:
+					for project in projects:
+						issue_type_belongs_to_project = frappe.db.exists(
+							"GRM Project Link",
+							{"parent": self.issue_type, "project": project},
+						)
+						if issue_type_belongs_to_project:
+							self.project = project
+							frappe.log(
+								f"Auto-set project to {self.project} based on issue_type {self.issue_type}"
+							)
+							break
+
+			if not self.intake_date:
+				self.intake_date = getdate()
+
+			# Set issue_date to today if not already set
+			if not self.issue_date:
+				self.issue_date = getdate()
+
+			# Set default status if not already set
+			if not self.status and self.project:
+				# Try to find an initial status for this project
+				initial_statuses = frappe.get_all(
+					"GRM Issue Status", filters={"initial_status": 1}, fields=["name"]
+				)
+
+				for status in initial_statuses:
+					status_belongs_to_project = frappe.db.exists(
+						"GRM Project Link",
+						{"parent": status.name, "project": self.project},
+					)
+					if status_belongs_to_project:
+						self.status = status.name
+						frappe.log(f"Auto-set status to {self.status} for project {self.project}")
+						break
+
+			frappe.log(f"Completed Before validate for GRM Issue {self.name}")
+		except Exception as e:
+			frappe.log_error(f"Error in before_validate: {e!s}")
+			raise
+
+	def _enforce_duty_field_constraints(self) -> None:
+		"""For each restricted field, if it changed since fetched_doc, verify
+		the user holds the required duty for this issue's project. Insert is
+		gated separately via L1 'create' permission (GRM Intake).
+
+		Honors flags.ignore_permissions so trusted server flows (e.g. sync
+		push auto-submit, controllers calling save() with elevation) can run
+		without re-asserting field-level duty checks the L1 layer already
+		verified.
+		"""
+		if self.is_new() or self.flags.ignore_permissions:
+			return
+		user = frappe.session.user
+		for field, duty in FIELD_DUTY_REQUIREMENTS.items():
+			if not self.has_value_changed(field):
+				continue
+			if _user_has_duty(user, duty, self.project):
+				continue
+			frappe.throw(
+				frappe._("You need the {0} duty to change {1}.").format(duty, field),
+				frappe.PermissionError,
+			)
+
+	def validate(self):
+		try:
+			# Generate tracking code if not provided (for cases where it wasn't generated in before_insert)
+			if not self.tracking_code and self.project:
+				frappe.log(
+					f"No tracking code found, generating during validation for project: {self.project}"
+				)
+				self.tracking_code = generate_tracking_code(
+					project_id=self.project, issue_date=self.issue_date
+				)
+				frappe.log(f"Generated tracking code during validation: {self.tracking_code}")
+
+			# Validate project related fields
+			self.validate_project_entities()
+
+			self._enforce_duty_field_constraints()
+
+			# Validate dates
+			self.validate_dates()
+
+			frappe.log(f"Validating GRM Issue {self.name}")
+		except Exception as e:
+			frappe.log(f"Error validating GRM Issue: {e!s}")
+			raise
+
+	def before_insert(self):
+		try:
+			# Generate auto increment ID, internal code, and tracking code
+			self.generate_codes()
+			self._apply_default_routing_from_category()
+			self._apply_default_assignee()
+			frappe.log(f"Generated codes + applied default routing for GRM Issue {self.name}")
+		except Exception as e:
+			frappe.log(f"Error in before_insert for GRM Issue: {e!s}")
+			raise
+
+	def _apply_default_routing_from_category(self) -> None:
+		"""Populate ``assigned_role`` from the category when not explicitly set.
+
+		Caller-provided values take precedence so manual overrides
+		(mobile API, admin desk) are respected. Departments are not consulted
+		— routing is role-based.
+		"""
+		if self.assigned_role:
+			return
+		if not self.category:
+			return
+		from egrm.services.category_routing import resolve_routing_for_issue_creation
+
+		routing = resolve_routing_for_issue_creation(self.category)
+		if routing["assigned_role"]:
+			self.assigned_role = routing["assigned_role"]
+
+	def _apply_default_assignee(self) -> None:
+		"""Resolve ``assignee`` from the reporter or the category routing.
+
+		Runs AFTER ``_apply_default_routing_from_category`` so the resolver
+		sees the populated ``assigned_department`` / ``assigned_role``. The
+		resolver respects an explicitly supplied assignee — sync push,
+		mobile, and admin-desk overrides pass through untouched.
+		"""
+		from egrm.services.assignee_routing import resolve_assignee
+
+		user, reason = resolve_assignee(self)
+		if user:
+			self.assignee = user
+		# Always stamp a log row so orphans (user is None) are observable
+		# in the issue history. Bypass-permission paths still log.
+		if reason and reason != "EXPLICIT_OVERRIDE":
+			timestamp = now_datetime()
+			text = (
+				f"Auto-assigned to {user} ({reason})" if user else f"No eligible assignee at insert: {reason}"
+			)
+			self.append(
+				"grm_issue_log",
+				{
+					"text": text,
+					"user": frappe.session.user,
+					"timestamp": timestamp,
+				},
+			)
+
+	def after_insert(self):
+		try:
+			self._init_sla_after_insert()
+			self.send_notification("receipt")
+			frappe.log(f"After insert completed for GRM Issue {self.name}")
+		except Exception as e:
+			frappe.log(f"Error in after_insert for GRM Issue: {e!s}")
+
+	def before_update_after_submit(self):
+		# Frappe's update_after_submit path does NOT run validate(), so the
+		# field-duty checks in _enforce_duty_field_constraints would otherwise
+		# be silently bypassed for post-submit set_value / db_update calls.
+		# Re-run them here so the duty matrix applies to every save path.
+		self._enforce_duty_field_constraints()
+
+	def on_update(self):
+		try:
+			# Check for escalation needs
+			self.check_escalation()
+
+			# Update SLA status
+			self._update_sla_on_save()
+
+			# Handle status change notifications
+			if self.has_value_changed("status"):
+				self.handle_status_change_notification()
+
+			frappe.log(f"Updated GRM Issue {self.name}")
+		except Exception as e:
+			frappe.log(f"Error updating GRM Issue: {e!s}")
+			raise
+
+	def on_submit(self):
+		try:
+			# Add log entry for submission
+			self.add_log(_("Issue submitted"), frappe.session.user)
+
+			frappe.log(f"Submitted GRM Issue {self.name}")
+		except Exception as e:
+			frappe.log(f"Error submitting GRM Issue: {e!s}")
+			raise
+
+	def on_cancel(self):
+		try:
+			# Add log entry for cancellation
+			self.add_log(_("Issue cancelled"), frappe.session.user)
+
+			frappe.log(f"Cancelled GRM Issue {self.name}")
+		except Exception as e:
+			frappe.log(f"Error cancelling GRM Issue: {e!s}")
+			raise
+
+	def generate_codes(self):
+		try:
+			# Generate tracking code using consistent format: {PROJECT_CODE}-{YYMMDD}-{NNNN}
+			if not self.tracking_code:
+				frappe.log(f"Generating tracking code for project: {self.project}")
+				self.tracking_code = generate_tracking_code(
+					project_id=self.project, issue_date=self.issue_date
+				)
+				frappe.log(f"Generated tracking code: {self.tracking_code}")
+		except Exception as e:
+			frappe.log_error(f"Error generating codes: {e!s}")
+			frappe.log_error(f"Error generating codes: {e!s}")
+			raise
+
+	def validate_project_entities(self):
+		try:
+			# Check that status belongs to the project
+			status_belongs_to_project = frappe.db.exists(
+				"GRM Project Link", {"parent": self.status, "project": self.project}
+			)
+
+			if not status_belongs_to_project:
+				frappe.throw(_("Status {0} does not belong to project {1}").format(self.status, self.project))
+
+			# Check that category belongs to the project
+			category_belongs_to_project = frappe.db.exists(
+				"GRM Project Link", {"parent": self.category, "project": self.project}
+			)
+
+			if not category_belongs_to_project:
+				frappe.throw(
+					_("Category {0} does not belong to project {1}").format(self.category, self.project)
+				)
+
+			# Check that issue type belongs to the project
+			issue_type_belongs_to_project = frappe.db.exists(
+				"GRM Project Link", {"parent": self.issue_type, "project": self.project}
+			)
+
+			if not issue_type_belongs_to_project:
+				frappe.throw(
+					_("Issue Type {0} does not belong to project {1}").format(self.issue_type, self.project)
+				)
+
+			# Check that administrative region belongs to the project
+			print("Validating regions", self.administrative_region, self.project)
+			region_belongs_to_project = (
+				frappe.db.get_value("GRM Administrative Region", self.administrative_region, "project")
+				== self.project
+			)
+
+			if not region_belongs_to_project:
+				frappe.throw(
+					_("Administrative Region {0} does not belong to project {1}").format(
+						self.administrative_region, self.project
+					)
+				)
+
+			# Check optional fields
+			if self.citizen_age_group:
+				age_group_belongs_to_project = frappe.db.exists(
+					"GRM Project Link",
+					{"parent": self.citizen_age_group, "project": self.project},
+				)
+
+				if not age_group_belongs_to_project:
+					frappe.throw(
+						_("Age Group {0} does not belong to project {1}").format(
+							self.citizen_age_group, self.project
+						)
+					)
+
+			if self.citizen_group_1:
+				group1_belongs_to_project = frappe.db.exists(
+					"GRM Project Link",
+					{"parent": self.citizen_group_1, "project": self.project},
+				)
+
+				if not group1_belongs_to_project:
+					frappe.throw(
+						_("Citizen Group {0} does not belong to project {1}").format(
+							self.citizen_group_1, self.project
+						)
+					)
+
+			if self.citizen_group_2:
+				group2_belongs_to_project = frappe.db.exists(
+					"GRM Project Link",
+					{"parent": self.citizen_group_2, "project": self.project},
+				)
+
+				if not group2_belongs_to_project:
+					frappe.throw(
+						_("Citizen Group {0} does not belong to project {1}").format(
+							self.citizen_group_2, self.project
+						)
+					)
+
+			# Check assignee
+			if self.assignee:
+				assignee_has_access = frappe.db.exists(
+					"GRM User Project Assignment",
+					{"user": self.assignee, "project": self.project, "is_active": 1},
+				)
+
+				if not assignee_has_access:
+					frappe.throw(
+						_("Assignee {0} does not have access to project {1}").format(
+							self.assignee, self.project
+						)
+					)
+
+		except Exception as e:
+			frappe.log(f"Error validating project entities: {e!s}")
+			raise
+
+	def validate_dates(self):
+		try:
+			# Check that issue_date is not after intake_date
+			if self.issue_date and self.intake_date and getdate(self.issue_date) > getdate(self.intake_date):
+				frappe.throw(_("Issue Date cannot be after Intake Date"))
+
+			# Check that resolution_date is not before created_date
+			print(
+				">>>>> DATES >>>>>>",
+				self.resolution_date,
+				self.issue_date,
+				getdate(self.resolution_date) < getdate(self.issue_date),
+			)
+			if (
+				self.resolution_date
+				and self.issue_date
+				and getdate(self.resolution_date) < getdate(self.issue_date)
+			):
+				frappe.throw(_("Resolution Date cannot be before Issue Date"))
+		except Exception as e:
+			frappe.log(f"Error validating dates: {e!s}")
+			raise
+
+	def add_log(self, text, user=None):
+		try:
+			if not user:
+				user = frappe.session.user
+
+			log_row = {}
+			log_row["text"] = text
+			log_row["user"] = user
+			log_row["timestamp"] = now_datetime()
+
+			self.append("grm_issue_log", log_row)
+
+			# Save the document if it's not new
+			if not self.is_new():
+				self.save()
+		except Exception as e:
+			frappe.log(f"Error adding log: {e!s}")
+			raise
+
+	def check_escalation(self):
+		try:
+			# Check auto escalation conditions
+			if not self.escalate_flag:
+				# Get the project's auto escalation days
+				auto_escalation_days = frappe.db.get_value(
+					"GRM Project", self.project, "auto_escalation_days"
+				)
+
+				if auto_escalation_days:
+					# Check if the issue has been open too long
+					status_is_open = frappe.db.get_value("GRM Issue Status", self.status, "open_status")
+
+					if status_is_open:
+						from datetime import datetime, timedelta
+
+						creation = datetime.strptime(str(self.creation), "%Y-%m-%d %H:%M:%S.%f")
+						now = now_datetime()
+						days_open = (now - creation).days
+
+						if days_open > auto_escalation_days:
+							# Set escalate flag
+							self.db_set("escalate_flag", 1)
+
+							# Add log entry
+							self.add_log(_("Issue automatically escalated after {0} days").format(days_open))
+
+							# Get category's escalation department
+							dept = frappe.db.get_value(
+								"GRM Issue Category",
+								self.category,
+								"assigned_escalation_department",
+							)
+
+							if dept:
+								# Get department head
+								head = frappe.db.get_value("GRM Issue Department", dept, "head")
+
+								if head:
+									# Assign to department head
+									self.db_set("assignee", head)
+
+									# Add log entry
+									self.add_log(
+										_("Issue assigned to escalation department head {0}").format(head)
+									)
+
+									# Notify department head
+									self.notify_user(
+										head,
+										_("Issue Escalated"),
+										_("Issue {0} has been escalated to you").format(self.name),
+									)
+		except Exception as e:
+			frappe.log(f"Error checking escalation: {e!s}")
+			raise
+
+	def notify_user(self, user, subject, message):
+		try:
+			# Send a notification to the user
+			from frappe.utils.user import get_user_fullname
+
+			frappe.sendmail(
+				recipients=[user],
+				sender=frappe.session.user,
+				subject=subject,
+				message=message,
+				reference_doctype="GRM Issue",
+				reference_name=self.name,
+			)
+
+			frappe.log(f"Notification sent to {user} for GRM Issue {self.name}")
+		except Exception as e:
+			frappe.log(f"Error sending notification: {e!s}")
+			# Don't raise exception for notification errors, just log them
+
+	def get_citizen_name(self):
+		"""Get citizen name based on type"""
+		return self.citizen
+
+	def get_contact_info(self):
+		"""Get contact information based on type"""
+		return self.contact_information
+
+	def has_permission_to_view_sensitive_data(self):
+		"""Duty-driven sensitive-data visibility.
+
+		Bypass roles (System Manager, GRM Platform Administrator) and
+		anyone holding a Supervise duty on this project can see sensitive
+		fields. The current assignee always sees their own issue.
+		"""
+		try:
+			from egrm.server_scripts.grm_issue_permissions import (
+				BYPASS_ROLES,
+				_user_duties_for_project,
+			)
+
+			user = frappe.session.user
+			if user == "Administrator":
+				return True
+
+			if set(frappe.get_roles(user)) & set(BYPASS_ROLES):
+				return True
+
+			if self.assignee == user:
+				return True
+
+			duties = _user_duties_for_project(user, self.project)
+			return "Supervise" in duties
+		except Exception as e:
+			frappe.log(f"Error checking sensitive data permissions: {e!s}")
+			return False
+
+	def _init_sla_after_insert(self):
+		"""Initialize SLA tracking after issue creation."""
+		try:
+			sla_manager = SLAManager(self)
+			sla_manager.initialize_sla()
+			# Save SLA fields without triggering hooks again
+			frappe.db.set_value(
+				self.doctype,
+				self.name,
+				{
+					"sla_acknowledgment_days": self.sla_acknowledgment_days,
+					"sla_resolution_days": self.sla_resolution_days,
+					"sla_acknowledgment_due": self.sla_acknowledgment_due,
+					"sla_resolution_due": self.sla_resolution_due,
+					"sla_acknowledgment_status": self.sla_acknowledgment_status,
+					"sla_resolution_status": self.sla_resolution_status,
+					"sla_days_remaining": self.sla_days_remaining,
+				},
+				update_modified=False,
+			)
+		except Exception as e:
+			frappe.log_error(f"SLA initialization error for {self.name}: {e}", "SLA Error")
+
+	def _update_sla_on_save(self):
+		"""Update SLA status on each save."""
+		try:
+			sla_manager = SLAManager(self)
+			if self.has_value_changed("administrative_region"):
+				sla_manager.initialize_sla()
+				self.add_comment(
+					"Info", f"SLA recalculated due to region change to {self.administrative_region}"
+				)
+			else:
+				sla_manager.update_sla_status()
+		except Exception as e:
+			frappe.log_error(f"SLA update error for {self.name}: {e}", "SLA Error")
+
+	def send_notification(self, notification_type):
+		"""Send notification via configured channels."""
+		try:
+			project = frappe.get_doc("GRM Project", self.project)
+		except Exception:
+			return
+
+		if not project.get("enable_notifications"):
+			return
+
+		template_field = f"{notification_type}_template"
+		template_name = project.get(template_field)
+		if not template_name:
+			return
+
+		try:
+			template = frappe.get_doc("GRM Notification Template", template_name)
+
+			if template.email_template:
+				self._send_email_notification(template.email_template)
+
+			if template.enable_sms and template.sms_message:
+				self._send_sms_notification(template)
+
+			self.add_comment("Info", f"{notification_type.replace('_', ' ').title()} notification sent")
+		except Exception as e:
+			frappe.log_error(
+				f"Failed to send {notification_type} notification for {self.name}: {e}",
+				"GRM Notification Error",
+			)
+
+	def _send_email_notification(self, email_template_name):
+		"""Send email using Frappe Email Template."""
+		contact_info = self.get_contact_info()
+		if not contact_info or "@" not in str(contact_info):
+			return
+
+		try:
+			email_template = frappe.get_doc("Email Template", email_template_name)
+			subject = frappe.render_template(email_template.subject, {"doc": self})
+			message = frappe.render_template(
+				email_template.get("response_html") or email_template.get("response") or "", {"doc": self}
+			)
+
+			frappe.sendmail(
+				recipients=[contact_info],
+				subject=subject,
+				message=message,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
+		except Exception as e:
+			frappe.log_error(f"Email send failed for {self.name}: {e}", "GRM Email Error")
+
+	def _send_sms_notification(self, template):
+		"""Send SMS using configured SMS provider."""
+		contact_info = self.get_contact_info()
+		if not contact_info or "@" in str(contact_info):
+			return  # Not a phone number
+
+		try:
+			context = self._get_notification_context()
+			sms_message = template.render_sms(context)
+			if not sms_message:
+				return
+
+			from frappe.core.doctype.sms_settings.sms_settings import send_sms
+
+			send_sms(
+				receiver_list=[contact_info],
+				msg=sms_message,
+				success_msg=False,
+			)
+		except Exception as e:
+			frappe.log_error(f"SMS send failed for {self.name}: {e}", "GRM SMS Error")
+
+	def _get_notification_context(self):
+		"""Get context dict for template rendering."""
+		return {
+			"tracking_code": self.tracking_code,
+			"subject": getattr(self, "description", ""),
+			"status": self.status,
+			"administrative_region": self.administrative_region,
+			"created_date": frappe.utils.formatdate(self.creation, "dd MMM yyyy") if self.creation else "",
+			"complainant_name": self.get_citizen_name(),
+			"sla_acknowledgment_due": frappe.utils.formatdate(self.sla_acknowledgment_due, "dd MMM yyyy")
+			if self.get("sla_acknowledgment_due")
+			else None,
+			"sla_resolution_due": frappe.utils.formatdate(self.sla_resolution_due, "dd MMM yyyy")
+			if self.get("sla_resolution_due")
+			else None,
+			"sla_days_remaining": self.get("sla_days_remaining"),
+			"project": self.project,
+		}
+
+	def handle_status_change_notification(self):
+		"""Send appropriate notification based on status change."""
+		# Map GRM Issue Status names to notification types
+		status_name = frappe.db.get_value("GRM Issue Status", self.status, "status_name") or ""
+		status_template_map = {
+			"In Progress": "in_progress",
+			"Resolved": "resolved",
+			"Closed": "closed",
+		}
+
+		# Check for acknowledgment-type statuses (open_status=1 but not initial)
+		status_doc = frappe.get_cached_doc("GRM Issue Status", self.status)
+		if status_doc.open_status and not status_doc.initial_status:
+			self.send_notification("acknowledgment")
+			return
+
+		template_type = status_template_map.get(status_name)
+		if template_type:
+			self.send_notification(template_type)
+
+	@frappe.whitelist()
+	def manual_escalate(self, reason=None):
+		"""Allow manual escalation from UI."""
+		sla_manager = SLAManager(self)
+		if sla_manager.escalate_to_parent_level():
+			if reason:
+				self.sla_escalation_reason = reason
+			else:
+				self.sla_escalation_reason = "Manual escalation by user"
+			self.save(ignore_permissions=True)
+			frappe.msgprint(_("Issue escalated successfully"))
+			return True
+		else:
+			frappe.msgprint(_("Cannot escalate - already at highest level"))
+			return False
+
+	@frappe.whitelist()
+	def resend_notification(self, notification_type):
+		"""Allow manual resend of notification."""
+		self.send_notification(notification_type)
+		frappe.msgprint(_("Notification sent successfully"))

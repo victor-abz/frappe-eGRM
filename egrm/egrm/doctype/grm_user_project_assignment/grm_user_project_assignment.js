@@ -143,7 +143,10 @@ function add_activation_buttons(frm) {
 	}
 
 	// Manual Activate Worker button (for admins)
-	if (status !== "Activated" && frappe.user.has_role(["System Manager", "GRM Platform Administrator"])) {
+	if (
+		status !== "Activated" &&
+		frappe.user.has_role(["System Manager", "GRM Platform Administrator"])
+	) {
 		frm.add_custom_button(
 			__("Manual Activate"),
 			function () {
@@ -266,7 +269,9 @@ function style_activation_status(frm) {
 frappe.listview_settings["GRM User Project Assignment"] = {
 	onload: function (listview) {
 		// Add Export Activation Codes button for admins
-		if (frappe.user.has_role(["System Manager", "GRM Platform Administrator", "GRM Supervise"])) {
+		if (
+			frappe.user.has_role(["System Manager", "GRM Platform Administrator", "GRM Supervise"])
+		) {
 			listview.page.add_inner_button(__("Export Activation Codes"), function () {
 				let d = new frappe.ui.Dialog({
 					title: __("Export Activation Codes"),

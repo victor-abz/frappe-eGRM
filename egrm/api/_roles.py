@@ -10,7 +10,7 @@ prevents drift across API entry points when roles are added or removed.
 # GRM Supervise is the project-scoped supervisor role and historically
 # saw all projects in the bench.
 GRM_ALL_PROJECTS_ROLES: set[str] = {
-    "System Manager",
-    "GRM Platform Administrator",
-    "GRM Supervise",
+	"System Manager",
+	"GRM Platform Administrator",
+	"GRM Supervise",
 }

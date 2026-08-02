@@ -17,31 +17,28 @@ This patch:
 
 import frappe
 
-
 LEGACY_CHILD_ICONS = (
-    "GRM Administrator",
-    "GRM Project Manager",
-    "GRM Department Head",
-    "GRM Field Officer",
+	"GRM Administrator",
+	"GRM Project Manager",
+	"GRM Department Head",
+	"GRM Field Officer",
 )
 
 
 def execute() -> None:
-    for child in LEGACY_CHILD_ICONS:
-        if frappe.db.exists("Desktop Icon", child):
-            frappe.delete_doc(
-                "Desktop Icon", child, ignore_permissions=True, force=True
-            )
-            print(f"Deleted legacy Desktop Icon: {child}")
+	for child in LEGACY_CHILD_ICONS:
+		if frappe.db.exists("Desktop Icon", child):
+			frappe.delete_doc("Desktop Icon", child, ignore_permissions=True, force=True)
+			print(f"Deleted legacy Desktop Icon: {child}")
 
-    if frappe.db.exists("Desktop Icon", "EGRM"):
-        frappe.db.set_value(
-            "Desktop Icon",
-            "EGRM",
-            {"link": "/desk/egrm", "parent_icon": None, "hidden": 0},
-        )
-        print("Repointed EGRM Desktop Icon -> /desk/egrm")
+	if frappe.db.exists("Desktop Icon", "EGRM"):
+		frappe.db.set_value(
+			"Desktop Icon",
+			"EGRM",
+			{"link": "/desk/egrm", "parent_icon": None, "hidden": 0},
+		)
+		print("Repointed EGRM Desktop Icon -> /desk/egrm")
 
-    frappe.cache.delete_key("desktop_icons")
-    frappe.cache.delete_key("bootinfo")
-    frappe.db.commit()
+	frappe.cache.delete_key("desktop_icons")
+	frappe.cache.delete_key("bootinfo")
+	frappe.db.commit()

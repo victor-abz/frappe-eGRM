@@ -30,29 +30,29 @@ log = logging.getLogger(__name__)
 
 
 TARGET_DOCTYPES: list[str] = [
-    "GRM Issue Status",
-    "GRM Issue Type",
-    "GRM Issue Category",
-    "GRM Issue Age Group",
-    "GRM Issue Citizen Group",
-    "GRM Issue Department",
+	"GRM Issue Status",
+	"GRM Issue Type",
+	"GRM Issue Category",
+	"GRM Issue Age Group",
+	"GRM Issue Citizen Group",
+	"GRM Issue Department",
 ]
 
 
 def execute() -> None:
-    """Backfill `project` from the first `grm_project_link` row for each
-    affected document. Idempotent: skips rows that already have `project`
-    set."""
-    for doctype in TARGET_DOCTYPES:
-        if not frappe.db.has_column(doctype, "project"):
-            log.warning(
-                "[backfill_doctype_project_field] %s.project column missing, skipping",
-                doctype,
-            )
-            continue
+	"""Backfill `project` from the first `grm_project_link` row for each
+	affected document. Idempotent: skips rows that already have `project`
+	set."""
+	for doctype in TARGET_DOCTYPES:
+		if not frappe.db.has_column(doctype, "project"):
+			log.warning(
+				"[backfill_doctype_project_field] %s.project column missing, skipping",
+				doctype,
+			)
+			continue
 
-        rows = frappe.db.sql(
-            """
+		rows = frappe.db.sql(
+			"""
             SELECT parent.name AS parent_name, link.project AS project_code
             FROM `tab{doctype}` parent
             INNER JOIN `tabGRM Project Link` link
@@ -63,23 +63,23 @@ def execute() -> None:
               AND link.project != ''
             GROUP BY parent.name
             """.format(doctype=doctype),
-            (doctype,),
-            as_dict=True,
-        )
+			(doctype,),
+			as_dict=True,
+		)
 
-        for row in rows:
-            frappe.db.set_value(
-                doctype,
-                row["parent_name"],
-                "project",
-                row["project_code"],
-                update_modified=False,
-            )
+		for row in rows:
+			frappe.db.set_value(
+				doctype,
+				row["parent_name"],
+				"project",
+				row["project_code"],
+				update_modified=False,
+			)
 
-        log.info(
-            "[backfill_doctype_project_field] %s: backfilled project field on %d rows",
-            doctype,
-            len(rows),
-        )
+		log.info(
+			"[backfill_doctype_project_field] %s: backfilled project field on %d rows",
+			doctype,
+			len(rows),
+		)
 
-    frappe.db.commit()
+	frappe.db.commit()

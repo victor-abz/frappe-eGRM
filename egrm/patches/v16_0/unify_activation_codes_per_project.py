@@ -28,110 +28,107 @@ import frappe
 from frappe.utils import add_to_date, get_datetime, now, now_datetime
 
 from egrm.egrm.doctype.grm_user_project_assignment.grm_user_project_assignment import (
-    _is_gov_worker_assignment,
+	_is_gov_worker_assignment,
 )
 
 
 def execute():  # type: ignore[no-untyped-def]
-    rows = frappe.get_all(
-        "GRM User Project Assignment",
-        filters={"is_active": 1},
-        fields=[
-            "name",
-            "user",
-            "project",
-            "role",
-            "administrative_region",
-            "department",
-            "activation_status",
-            "activation_code",
-            "activation_expires_on",
-        ],
-    )
+	rows = frappe.get_all(
+		"GRM User Project Assignment",
+		filters={"is_active": 1},
+		fields=[
+			"name",
+			"user",
+			"project",
+			"role",
+			"administrative_region",
+			"department",
+			"activation_status",
+			"activation_code",
+			"activation_expires_on",
+		],
+	)
 
-    groups: dict[tuple[str, str], list] = {}
-    for row in rows:
-        if not _is_gov_worker_assignment(row):
-            continue
-        groups.setdefault((row.user, row.project), []).append(row)
+	groups: dict[tuple[str, str], list] = {}
+	for row in rows:
+		if not _is_gov_worker_assignment(row):
+			continue
+		groups.setdefault((row.user, row.project), []).append(row)
 
-    activated_count = 0
-    recoded_count = 0
-    refreshed_count = 0
+	activated_count = 0
+	recoded_count = 0
+	refreshed_count = 0
 
-    for (user, project), group in groups.items():
-        if len(group) < 2:
-            continue
+	for (_user, _project), group in groups.items():
+		if len(group) < 2:
+			continue
 
-        pending = [
-            r for r in group if r.activation_status not in ("Activated", "Suspended")
-        ]
-        if not pending:
-            continue
+		pending = [r for r in group if r.activation_status not in ("Activated", "Suspended")]
+		if not pending:
+			continue
 
-        if any(r.activation_status == "Activated" for r in group):
-            for row in pending:
-                frappe.db.set_value(
-                    "GRM User Project Assignment",
-                    row.name,
-                    {
-                        "activation_status": "Activated",
-                        "activated_on": frappe.utils.now(),
-                        "activation_attempts": 0,
-                    },
-                    update_modified=False,
-                )
-                activated_count += 1
-            continue
+		if any(r.activation_status == "Activated" for r in group):
+			for row in pending:
+				frappe.db.set_value(
+					"GRM User Project Assignment",
+					row.name,
+					{
+						"activation_status": "Activated",
+						"activated_on": frappe.utils.now(),
+						"activation_attempts": 0,
+					},
+					update_modified=False,
+				)
+				activated_count += 1
+			continue
 
-        # No activated row: the group converges on a single LIVE code so the
-        # worker has exactly one redeemable OTP.
-        coded = [r for r in pending if r.activation_code and r.activation_expires_on]
-        winner_code = None
-        winner_expiry = None
-        if coded:
-            winner = max(coded, key=lambda r: get_datetime(r.activation_expires_on))
-            if get_datetime(winner.activation_expires_on) > now_datetime():
-                winner_code = winner.activation_code
-                winner_expiry = winner.activation_expires_on
+		# No activated row: the group converges on a single LIVE code so the
+		# worker has exactly one redeemable OTP.
+		coded = [r for r in pending if r.activation_code and r.activation_expires_on]
+		winner_code = None
+		winner_expiry = None
+		if coded:
+			winner = max(coded, key=lambda r: get_datetime(r.activation_expires_on))
+			if get_datetime(winner.activation_expires_on) > now_datetime():
+				winner_code = winner.activation_code
+				winner_expiry = winner.activation_expires_on
 
-        if winner_code is None:
-            # Every code in the group has lapsed — the common case for users
-            # stranded by the per-row bug, since nobody could redeem them
-            # before the 48h TTL ran out. Unifying onto a dead code would
-            # leave them just as stuck, so issue one fresh code and let an
-            # admin resend/export it. CSPRNG + TTL mirror
-            # ``GRMUserProjectAssignment.generate_activation_code``.
-            winner_code = f"{secrets.randbelow(10**6):06d}"
-            winner_expiry = add_to_date(now(), hours=48)
-            refreshed_count += 1
+		if winner_code is None:
+			# Every code in the group has lapsed — the common case for users
+			# stranded by the per-row bug, since nobody could redeem them
+			# before the 48h TTL ran out. Unifying onto a dead code would
+			# leave them just as stuck, so issue one fresh code and let an
+			# admin resend/export it. CSPRNG + TTL mirror
+			# ``GRMUserProjectAssignment.generate_activation_code``.
+			winner_code = f"{secrets.randbelow(10**6):06d}"
+			winner_expiry = add_to_date(now(), hours=48)
+			refreshed_count += 1
 
-        for row in pending:
-            already_converged = (
-                row.activation_code == winner_code
-                and row.activation_status == "Pending Activation"
-            )
-            if already_converged:
-                continue
-            frappe.db.set_value(
-                "GRM User Project Assignment",
-                row.name,
-                {
-                    "activation_code": winner_code,
-                    "activation_expires_on": winner_expiry,
-                    # Clears any row validate() had already flipped to Expired.
-                    "activation_status": "Pending Activation",
-                    "activation_attempts": 0,
-                },
-                update_modified=False,
-            )
-            recoded_count += 1
+		for row in pending:
+			already_converged = (
+				row.activation_code == winner_code and row.activation_status == "Pending Activation"
+			)
+			if already_converged:
+				continue
+			frappe.db.set_value(
+				"GRM User Project Assignment",
+				row.name,
+				{
+					"activation_code": winner_code,
+					"activation_expires_on": winner_expiry,
+					# Clears any row validate() had already flipped to Expired.
+					"activation_status": "Pending Activation",
+					"activation_attempts": 0,
+				},
+				update_modified=False,
+			)
+			recoded_count += 1
 
-    if activated_count or recoded_count:
-        frappe.db.commit()
+	if activated_count or recoded_count:
+		frappe.db.commit()
 
-    print(
-        f"unify_activation_codes_per_project: activated {activated_count} "
-        f"assignment(s), unified codes on {recoded_count} assignment(s), "
-        f"issued {refreshed_count} fresh code(s) for groups whose codes had lapsed"
-    )
+	print(
+		f"unify_activation_codes_per_project: activated {activated_count} "
+		f"assignment(s), unified codes on {recoded_count} assignment(s), "
+		f"issued {refreshed_count} fresh code(s) for groups whose codes had lapsed"
+	)

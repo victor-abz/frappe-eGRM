@@ -5,9 +5,9 @@ import frappe
 from frappe.utils import getdate
 
 from egrm.egrm.report.grm_public_monthly_report.grm_public_monthly_report import (
+	get_chart_data,
 	get_columns,
 	get_data,
-	get_chart_data,
 	get_report_summary,
 )
 
