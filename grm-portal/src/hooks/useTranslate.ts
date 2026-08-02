@@ -20,6 +20,17 @@ interface TranslateContextValue {
 let translationCache: Record<string, Translations> = {};
 let languagesCache: LanguageOption[] | null = null;
 
+// Last-resort list, used only when the Language lookup itself fails. The
+// enabled rows of the `Language` doctype are the source of truth — this
+// mirrors the set that egrm/patches/v16_0/restrict_enabled_languages.py
+// enables, so a failed request degrades to the same options rather than
+// offering a locale the backend has switched off and has no translations for.
+const FALLBACK_LANGUAGES: LanguageOption[] = [
+  { code: "en", name: "English" },
+  { code: "fr", name: "Français" },
+  { code: "rw", name: "Kinyarwanda" },
+];
+
 export const TranslateContext = createContext<TranslateContextValue>({
   __: (key) => key,
   lang: "en",
@@ -92,17 +103,27 @@ export function useTranslateProvider() {
         setLanguages(langs);
       })
       .catch(() => {
-        // Fallback if API fails
-        const fallback = [
-          { code: "en", name: "English" },
-          { code: "fr", name: "Français" },
-          { code: "rw", name: "Kinyarwanda" },
-          { code: "sw", name: "Kiswahili" },
-        ];
-        languagesCache = fallback;
-        setLanguages(fallback);
+        // Deliberately NOT written to languagesCache: a transient failure
+        // would otherwise pin the fallback for the whole session and the
+        // backend list would never be picked up again.
+        setLanguages(FALLBACK_LANGUAGES);
       });
   }, []);
+
+  // Keep the selected language inside the set the backend actually offers.
+  // `lang` is seeded from the browser locale, which is routinely something
+  // eGRM has no translations for (de, sw, …). Left unchecked it would request
+  // translations for a disabled language and leave the Navbar's <select> with
+  // no matching <option>. No cookie is written — this is an inferred
+  // correction, not an explicit user choice.
+  useEffect(() => {
+    if (!languages.length) return;
+    if (languages.some((l) => l.code === lang)) return;
+    const supported = languages.some((l) => l.code === "en")
+      ? "en"
+      : languages[0].code;
+    setLang(supported);
+  }, [languages, lang]);
 
   // Fetch translations when language changes
   useEffect(() => {

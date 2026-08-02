@@ -52,6 +52,52 @@ def _project_role_duties(project_role: str) -> list[str]:
     )
 
 
+def _is_gov_worker_assignment(row) -> bool:
+    """Does this assignment row require OTP activation?
+
+    True when the Project Role carries an activation-gated duty AND the
+    assignment is scoped to a region or department. Shared by the document
+    method and the sibling lookup so both judge a row identically.
+    """
+    duties = set(_project_role_duties(row.get("role")))
+    return bool(duties & GOVERNMENT_WORKER_DUTIES) and bool(
+        row.get("administrative_region") or row.get("department")
+    )
+
+
+def _sibling_gov_worker_assignments(
+    user: str, project: str, exclude_assignment: str | None = None
+) -> list:
+    """Active government-worker assignments for the same user and project.
+
+    Activation is scoped to the (user, project) pair rather than to each
+    assignment row. Since a user may hold one assignment per region, per-row
+    activation would demand one OTP per region — and the activation API only
+    ever resolves a single assignment per call, so the remaining rows could
+    never be redeemed.
+    """
+    if not user or not project:
+        return []
+    filters = {"user": user, "project": project, "is_active": 1}
+    if exclude_assignment:
+        filters["name"] = ["!=", exclude_assignment]
+    rows = frappe.get_all(
+        "GRM User Project Assignment",
+        filters=filters,
+        fields=[
+            "name",
+            "role",
+            "administrative_region",
+            "department",
+            "activation_status",
+            "activation_code",
+            "activation_expires_on",
+        ],
+        ignore_permissions=True,
+    )
+    return [row for row in rows if _is_gov_worker_assignment(row)]
+
+
 def _frappe_role_for_duty(duty_name: str) -> str:
     """Convention: the Frappe Role corresponding to duty X is named 'GRM X'."""
     return f"GRM {duty_name}"
@@ -478,38 +524,104 @@ class GRMUserProjectAssignment(Document):
             frappe.throw(_("Error removing assignment. Please check the logs."))
 
     def before_insert(self):
-        """Auto-generate activation code for government workers"""
+        """Set the activation state for a newly created assignment.
+
+        Government-worker assignments activate once per (user, project), not
+        once per row: a user assigned to five regions inherits whatever
+        activation state the project already established for them rather than
+        minting a fifth independent code.
+        """
         try:
-            # Check if this is a government worker role
-            if self.is_government_worker_role():
-                # Generate activation code for new government workers
-                if not self.activation_code:
-                    self.generate_activation_code()
-                    # Set status to Pending Activation immediately when code is generated
-                    self.activation_status = "Pending Activation"
-                    frappe.log(
-                        f"Generated activation code for government worker {self.user}"
-                    )
-                elif not self.activation_status:
-                    # If code exists but no status, set to Pending Activation
-                    self.activation_status = "Pending Activation"
-            else:
+            if not self.is_government_worker_role():
                 # For non-government workers, set as activated
                 self.activation_status = "Activated"
                 self.activated_on = now()
                 frappe.log(f"Non-government worker {self.user} automatically activated")
+                return
+
+            if self.inherit_project_activation():
+                return
+
+            # First government-worker assignment on this project for the user.
+            if not self.activation_code:
+                self.generate_activation_code()
+                # Set status to Pending Activation immediately when code is generated
+                self.activation_status = "Pending Activation"
+                frappe.log(
+                    f"Generated activation code for government worker {self.user}"
+                )
+            elif not self.activation_status:
+                # If code exists but no status, set to Pending Activation
+                self.activation_status = "Pending Activation"
 
         except Exception as e:
             frappe.log_error(f"Error in before_insert: {str(e)}")
             raise
 
+    def inherit_project_activation(self) -> bool:
+        """Adopt the activation state already held for this user and project.
+
+        Returns True when state was inherited, meaning this row must not
+        generate an activation code of its own.
+        """
+        siblings = _sibling_gov_worker_assignments(self.user, self.project)
+        if not siblings:
+            return False
+
+        if any(s.activation_status == "Activated" for s in siblings):
+            # The user already proved ownership of this account on this
+            # project; adding a region does not warrant a second OTP.
+            self.activation_status = "Activated"
+            self.activated_on = now()
+            self.activation_code = None
+            self.activation_expires_on = None
+            frappe.log(
+                f"Inherited activated state for {self.user} on {self.project}"
+            )
+            return True
+
+        if any(s.activation_status == "Suspended" for s in siblings):
+            # Suspension is an account-level state for the project. Issuing a
+            # fresh code on a new region would sidestep it.
+            self.activation_status = "Suspended"
+            frappe.log(
+                f"Inherited suspended state for {self.user} on {self.project}"
+            )
+            return True
+
+        live = next(
+            (
+                s
+                for s in siblings
+                if s.activation_status == "Pending Activation"
+                and s.activation_code
+                and s.activation_expires_on
+                and get_datetime(s.activation_expires_on) > now_datetime()
+            ),
+            None,
+        )
+        if live:
+            # Share the one outstanding code so the user redeems a single OTP.
+            self.activation_code = live.activation_code
+            self.activation_expires_on = live.activation_expires_on
+            self.activation_status = "Pending Activation"
+            frappe.log(
+                f"Reused pending activation code for {self.user} on {self.project}"
+            )
+            return True
+
+        return False
+
     def is_government_worker_role(self) -> bool:
         """An assignment is "government worker" (needs activation) if any of
         its Project Role duties is in the activation-required set AND the
         assignment has a region or department to scope to."""
-        duties = set(_project_role_duties(self.role))
-        return bool(duties & GOVERNMENT_WORKER_DUTIES) and bool(
-            getattr(self, "administrative_region", None) or getattr(self, "department", None)
+        return _is_gov_worker_assignment(
+            {
+                "role": self.role,
+                "administrative_region": getattr(self, "administrative_region", None),
+                "department": getattr(self, "department", None),
+            }
         )
 
     def generate_activation_code(self):
@@ -681,12 +793,50 @@ class GRMUserProjectAssignment(Document):
 
             self.save()
 
-            frappe.log(f"Government worker {self.user} activated successfully")
+            cascaded = self.cascade_activation()
+
+            frappe.log(
+                f"Government worker {self.user} activated successfully "
+                f"({len(cascaded) + 1} assignment(s) on {self.project})"
+            )
             return True
 
         except Exception as e:
             frappe.log_error(f"Error activating worker: {str(e)}")
             raise
+
+    def cascade_activation(self) -> list[str]:
+        """Activate the user's other assignments on this same project.
+
+        One OTP exchange covers the whole (user, project) pair. Without this
+        a multi-region user would be left with rows the activation API can
+        never reach, since it resolves exactly one assignment per call — and
+        every project-scoped query (mobile sync, region lookup, issue
+        filtering) requires ``activation_status = 'Activated'``.
+
+        Returns the names of the assignments that were activated.
+        """
+        activated: list[str] = []
+        for sibling in _sibling_gov_worker_assignments(
+            self.user, self.project, exclude_assignment=self.name
+        ):
+            if sibling.activation_status in ("Activated", "Suspended"):
+                continue
+            try:
+                doc = frappe.get_doc("GRM User Project Assignment", sibling.name)
+                doc.activation_status = "Activated"
+                doc.activated_on = now()
+                doc.activation_attempts = 0
+                doc.flags.ignore_permissions = True
+                doc.save(ignore_permissions=True)
+                activated.append(sibling.name)
+            except Exception as e:
+                # A failed sibling must not roll back the activation the user
+                # just completed; log and continue.
+                frappe.log_error(
+                    f"Error cascading activation to {sibling.name}: {str(e)}"
+                )
+        return activated
 
     def resend_activation_code(self):
         """Generate new code and resend email"""
@@ -708,12 +858,46 @@ class GRMUserProjectAssignment(Document):
 
             self.save()
 
+            self.propagate_activation_code()
+
             frappe.log(f"Activation code resent for {self.user}")
             return True
 
         except Exception as e:
             frappe.log_error(f"Error resending activation code: {str(e)}")
             raise
+
+    def propagate_activation_code(self) -> list[str]:
+        """Copy this row's code and expiry onto the user's other pending
+        assignments for the same project.
+
+        The activation API resolves whichever pending assignment it finds
+        first, so leaving siblings on a stale code would make the freshly
+        emailed code fail validation. Keeping one live code per
+        (user, project) keeps any resolved row redeemable.
+
+        Returns the names of the assignments that were updated.
+        """
+        updated: list[str] = []
+        for sibling in _sibling_gov_worker_assignments(
+            self.user, self.project, exclude_assignment=self.name
+        ):
+            if sibling.activation_status in ("Activated", "Suspended"):
+                continue
+            try:
+                doc = frappe.get_doc("GRM User Project Assignment", sibling.name)
+                doc.activation_code = self.activation_code
+                doc.activation_expires_on = self.activation_expires_on
+                doc.activation_status = "Pending Activation"
+                doc.activation_attempts = 0
+                doc.flags.ignore_permissions = True
+                doc.save(ignore_permissions=True)
+                updated.append(sibling.name)
+            except Exception as e:
+                frappe.log_error(
+                    f"Error propagating activation code to {sibling.name}: {str(e)}"
+                )
+        return updated
 
     def expire_activation_code(self):
         """Mark code as expired"""

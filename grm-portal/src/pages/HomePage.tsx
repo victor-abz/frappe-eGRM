@@ -162,7 +162,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Projects — no heading, just search + grid */}
+      {/* Projects — no heading, just search + grid.
+          Hidden entirely when there is nothing to choose between: with a
+          single project the search box, category filter and one-card grid are
+          all noise, and "Raise Issue" already lands on that project. */}
+      {projects.length > 1 && (
       <section className="py-8 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row gap-3 mb-5">
@@ -194,18 +198,24 @@ export default function HomePage() {
             {filteredProjects.map((project, idx) => {
               const color = projectColors[idx % projectColors.length];
               return (
-                <div
+                <Link
                   key={project.name}
-                  className={`bg-white rounded-lg p-3 shadow-sm border-l-4 ${color.border} hover:shadow-md transition-all duration-200 flex items-center gap-3`}
+                  to={`/grm-portal/submit?project=${encodeURIComponent(project.name)}`}
+                  aria-label={__("Raise an issue about {0}", [project.title])}
+                  className={`group bg-white rounded-lg p-3 shadow-sm border-l-4 ${color.border} hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-3 no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500`}
                 >
                   <div className={`p-2 rounded-lg ${color.iconBg} shrink-0`}>
                     <FolderOpen className={`w-5 h-5 ${color.iconColor}`} />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-semibold text-gray-900 truncate">{project.title}</h3>
                     <p className="text-gray-500 text-xs line-clamp-2">{stripHtml(project.description)}</p>
+                    <span className="text-[11px] font-semibold text-primary-600 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
+                      {__("Raise Issue")}
+                    </span>
                   </div>
-                </div>
+                  <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-primary-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+                </Link>
               );
             })}
           </div>
@@ -218,6 +228,7 @@ export default function HomePage() {
           )}
         </div>
       </section>
+      )}
 
       {/* How It Works — horizontal on lg */}
       <section className="py-10 px-4 bg-white">
