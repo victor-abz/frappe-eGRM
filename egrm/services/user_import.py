@@ -779,6 +779,12 @@ def materialize_staged_csv(
 			fname = target.split(".", 1)[1]
 			if fname not in asgn_targets:
 				asgn_targets.append(fname)
+	# ``user`` is never taken from the sheet. ``auto_detect_mapping`` happily
+	# points a "Username" column at ``Assignment.user``, but the link must hold
+	# the User *name* (== email) minted by ``_ensure_user`` below, not whatever
+	# the operator typed. Leaving it in would emit ``user`` twice in the header
+	# and let the raw cell win on import, producing a dangling link.
+	asgn_targets = [f for f in asgn_targets if f != "user"]
 
 	# The staged CSV imports into ``GRM User Project Assignment`` ONLY —
 	# User records are created up-front per row, before the row is written,

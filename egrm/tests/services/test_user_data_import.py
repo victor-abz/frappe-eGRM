@@ -40,6 +40,11 @@ LEVELS = [
 	("Sector", 3),
 ]
 
+# Every CSV below carries a `Role` column with this label. `materialize_staged_csv`
+# resolves that label against the project's GRM Project Role records and skips any
+# row whose role is unknown, so the fixture has to create it.
+ROLE_NAME = "GRM Officer"
+
 
 def _delete_if_exists(doctype: str, name: str) -> None:
 	if frappe.db.exists(doctype, name):
@@ -81,6 +86,17 @@ class _ProjectFixture:
 						"level_order": level_order,
 					}
 				).insert(ignore_permissions=True)
+		if not frappe.db.exists("GRM Project Role", {"project": PROJECT_CODE, "role_name": ROLE_NAME}):
+			frappe.get_doc(
+				{
+					"doctype": "GRM Project Role",
+					"project": PROJECT_CODE,
+					"role_name": ROLE_NAME,
+					# `duties` is reqd — GRMProjectRole.validate() rejects an
+					# empty table. "Intake" ships in egrm/fixtures/grm_duty.json.
+					"duties": [{"duty": "Intake"}],
+				}
+			).insert(ignore_permissions=True)
 		frappe.db.commit()
 
 	@classmethod
@@ -112,6 +128,8 @@ class _ProjectFixture:
 			)
 			if level_id:
 				_delete_if_exists("GRM Administrative Level Type", level_id)
+		for role_id in frappe.get_all("GRM Project Role", filters={"project": PROJECT_CODE}, pluck="name"):
+			_delete_if_exists("GRM Project Role", role_id)
 		_delete_if_exists("GRM Project", PROJECT_CODE)
 		frappe.db.commit()
 
@@ -219,6 +237,7 @@ class PrepareUserImportTests(FrappeTestCase):
 			header_mapping=_STANDARD_HEADER_MAPPING,
 			level_mapping=_STANDARD_LEVEL_MAPPING,
 			auto_create_regions=True,
+			phone_as_username=False,  # these fixtures exercise the email flow, not the phone default
 		)
 
 		# Track for teardown.
@@ -256,6 +275,7 @@ class PrepareUserImportTests(FrappeTestCase):
 			header_mapping=_STANDARD_HEADER_MAPPING,
 			level_mapping=_STANDARD_LEVEL_MAPPING,
 			auto_create_regions=False,
+			phone_as_username=False,  # these fixtures exercise the email flow, not the phone default
 		)
 		if result["data_import"]:
 			self._data_imports.append(result["data_import"])
@@ -290,6 +310,7 @@ class PrepareUserImportTests(FrappeTestCase):
 				header_mapping=bad_mapping,
 				level_mapping={},
 				auto_create_regions=True,
+				phone_as_username=False,  # these fixtures exercise the email flow, not the phone default
 			)
 		# The error message must mention what's missing so the UI can
 		# show it to the operator.
@@ -319,6 +340,7 @@ class PrepareUserImportTests(FrappeTestCase):
 			header_mapping=json.dumps(_STANDARD_HEADER_MAPPING),
 			level_mapping=json.dumps(_STANDARD_LEVEL_MAPPING),
 			auto_create_regions="true",  # also exercise truthy-string coercion
+			phone_as_username=False,  # these fixtures exercise the email flow, not the phone default
 		)
 		self._data_imports.append(result["data_import"])
 		self.assertEqual(result["rows_ready"], 1)
@@ -357,6 +379,7 @@ class PollUserImportTests(FrappeTestCase):
 			header_mapping=_STANDARD_HEADER_MAPPING,
 			level_mapping=_STANDARD_LEVEL_MAPPING,
 			auto_create_regions=True,
+			phone_as_username=False,  # these fixtures exercise the email flow, not the phone default
 		)
 		di_name = prepared["data_import"]
 		try:

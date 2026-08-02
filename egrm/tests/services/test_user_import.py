@@ -34,6 +34,11 @@ LEVELS = [
 	("Sector", 3),
 ]
 
+# The materialize rows below carry a `Role` column with this label.
+# `materialize_staged_csv` resolves it against the project's GRM Project Role
+# records and skips any row whose role is unknown, so the fixture must create it.
+ROLE_NAME = "GRM Officer"
+
 
 def _delete_if_exists(doctype: str, name: str) -> None:
 	if frappe.db.exists(doctype, name):
@@ -80,6 +85,17 @@ class UserImportRegionTests(FrappeTestCase):
 						"level_order": level_order,
 					}
 				).insert(ignore_permissions=True)
+		if not frappe.db.exists("GRM Project Role", {"project": PROJECT_CODE, "role_name": ROLE_NAME}):
+			frappe.get_doc(
+				{
+					"doctype": "GRM Project Role",
+					"project": PROJECT_CODE,
+					"role_name": ROLE_NAME,
+					# `duties` is reqd — GRMProjectRole.validate() rejects an
+					# empty table. "Intake" ships in egrm/fixtures/grm_duty.json.
+					"duties": [{"duty": "Intake"}],
+				}
+			).insert(ignore_permissions=True)
 		frappe.db.commit()
 
 	@classmethod
@@ -112,6 +128,8 @@ class UserImportRegionTests(FrappeTestCase):
 			)
 			if level_id:
 				_delete_if_exists("GRM Administrative Level Type", level_id)
+		for role_id in frappe.get_all("GRM Project Role", filters={"project": PROJECT_CODE}, pluck="name"):
+			_delete_if_exists("GRM Project Role", role_id)
 		_delete_if_exists("GRM Project", PROJECT_CODE)
 		frappe.db.commit()
 
@@ -466,17 +484,16 @@ class UserImportMaterializeTests(FrappeTestCase):
 			reader = csv.reader(fh)
 			header_row = next(reader)
 			staged_rows = list(reader)
-		# Header must include the mapped target fieldnames + administrative_region + project.
-		for expected in (
-			"email",
-			"first_name",
-			"last_name",
-			"user",
-			"role",
-			"administrative_region",
-			"project",
-		):
-			self.assertIn(expected, header_row, f"staged header missing {expected!r}: {header_row}")
+		# The staged CSV feeds Frappe Data Import for GRM User Project Assignment
+		# ONLY — User records are created up-front by materialize_staged_csv, so
+		# the User.* targets (email/first_name/last_name) are deliberately absent
+		# and `user` carries the minted User name instead.
+		self.assertEqual(header_row, ["user", "role", "administrative_region", "project"])
+		self.assertEqual(
+			len(header_row),
+			len(set(header_row)),
+			f"staged header must not repeat a column: {header_row}",
+		)
 		self.assertEqual(len(staged_rows), 2)
 		# Every staged row must carry the project value so Frappe Data Import
 		# can satisfy GRM User Project Assignment's required `project` link.
