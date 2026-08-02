@@ -21,3 +21,4 @@ egrm.patches.v16_0.add_admin_region_composite_index
 egrm.patches.v16_0.delete_platform_workspace
 egrm.patches.v16_0.clean_legacy_desktop_icons
 # egrm.patches.v16_0.rename_admin_level_types_to_project_scoped
+egrm.patches.v16_0.unify_activation_codes_per_project
