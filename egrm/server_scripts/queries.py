@@ -26,6 +26,27 @@ def _coerce_pagination(start, page_len):
 	return max(0, s), max(1, min(p, 500))
 
 
+def _search_clause(alias, label_column, txt, params):
+	"""Build a typeahead search clause that matches the record name too.
+
+	Frappe validates a Link value by re-running the very same query with
+	``txt`` set to the *docname* (frappe.client.validate_link_and_fetch ->
+	search_widget with for_link_validation=True). GRM doctypes use hash
+	names, and User is named by email, so a clause that only matches the
+	human label can never match during that validation pass: the desk gets
+	an empty result, decides the link is invalid, and silently wipes the
+	value the user just picked out of the dropdown. Matching `name` as well
+	keeps both the search pass and the validation pass working.
+
+	Appends the bind parameters to ``params`` in placeholder order.
+	"""
+	if not txt:
+		return ""
+	params.append(f"%{txt}%")
+	params.append(f"%{txt}%")
+	return f"AND ({alias}.name LIKE %s OR {alias}.{label_column} LIKE %s)"
+
+
 def _normalize_filters(filters):
 	"""Coerce filters into a dict.
 
@@ -109,10 +130,7 @@ def get_departments_by_projects(doctype, txt, searchfield, start, page_len, filt
 		start, page_len = _coerce_pagination(start, page_len)
 		placeholders = ", ".join(["%s"] * len(projects))
 		params: list = list(projects)
-		search_condition = ""
-		if txt:
-			search_condition = "AND d.department_name LIKE %s"
-			params.append(f"%{txt}%")
+		search_condition = _search_clause("d", "department_name", txt, params)
 
 		return frappe.db.sql(
 			f"""
@@ -145,10 +163,7 @@ def get_status_by_project(doctype, txt, searchfield, start, page_len, filters):
 		_ensure_project_typeahead_access(project)
 		start, page_len = _coerce_pagination(start, page_len)
 		params: list = [project]
-		search_condition = ""
-		if txt:
-			search_condition = "AND s.status_name LIKE %s"
-			params.append(f"%{txt}%")
+		search_condition = _search_clause("s", "status_name", txt, params)
 
 		return frappe.db.sql(
 			f"""
@@ -180,10 +195,7 @@ def get_category_by_project(doctype, txt, searchfield, start, page_len, filters)
 		_ensure_project_typeahead_access(project)
 		start, page_len = _coerce_pagination(start, page_len)
 		params: list = [project]
-		search_condition = ""
-		if txt:
-			search_condition = "AND c.category_name LIKE %s"
-			params.append(f"%{txt}%")
+		search_condition = _search_clause("c", "category_name", txt, params)
 
 		return frappe.db.sql(
 			f"""
@@ -215,10 +227,7 @@ def get_issue_type_by_project(doctype, txt, searchfield, start, page_len, filter
 		_ensure_project_typeahead_access(project)
 		start, page_len = _coerce_pagination(start, page_len)
 		params: list = [project]
-		search_condition = ""
-		if txt:
-			search_condition = "AND t.type_name LIKE %s"
-			params.append(f"%{txt}%")
+		search_condition = _search_clause("t", "type_name", txt, params)
 
 		return frappe.db.sql(
 			f"""
@@ -250,10 +259,7 @@ def get_age_group_by_project(doctype, txt, searchfield, start, page_len, filters
 		_ensure_project_typeahead_access(project)
 		start, page_len = _coerce_pagination(start, page_len)
 		params: list = [project]
-		search_condition = ""
-		if txt:
-			search_condition = "AND a.age_group LIKE %s"
-			params.append(f"%{txt}%")
+		search_condition = _search_clause("a", "age_group", txt, params)
 
 		return frappe.db.sql(
 			f"""
@@ -290,10 +296,7 @@ def get_citizen_group_by_project(doctype, txt, searchfield, start, page_len, fil
 		if group_type:
 			group_type_condition = "AND c.group_type = %s"
 			params.append(group_type)
-		search_condition = ""
-		if txt:
-			search_condition = "AND c.group_name LIKE %s"
-			params.append(f"%{txt}%")
+		search_condition = _search_clause("c", "group_name", txt, params)
 
 		return frappe.db.sql(
 			f"""
@@ -325,10 +328,7 @@ def get_project_users(doctype, txt, searchfield, start, page_len, filters):
 
 		start, page_len = _coerce_pagination(start, page_len)
 		params: list = [project]
-		search_condition = ""
-		if txt:
-			search_condition = "AND u.full_name LIKE %s"
-			params.append(f"%{txt}%")
+		search_condition = _search_clause("u", "full_name", txt, params)
 
 		return frappe.db.sql(
 			f"""
