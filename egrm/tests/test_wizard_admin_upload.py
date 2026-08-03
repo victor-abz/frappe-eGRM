@@ -7,46 +7,75 @@ per unique cell value.
 """
 
 import frappe
-import pytest
+from frappe.tests.utils import FrappeTestCase
 
 from egrm.egrm.page.grm_project_wizard.grm_project_wizard import (
 	bulk_insert_admin_regions,
 	parse_admin_regions_csv,
 )
 
-
-@pytest.fixture
-def sample_project():
-	code = "TEST-ADMIN-UPLOAD"
-	if not frappe.db.exists("GRM Project", code):
-		frappe.get_doc(
-			{
-				"doctype": "GRM Project",
-				"project_code": code,
-				"title": "Test Admin Upload",
-			}
-		).insert(ignore_permissions=True)
-	yield code
-	# Best-effort cleanup. Region/Level docs are linked, so swallow integrity
-	# errors — the next test run will reuse the project.
-	try:
-		frappe.delete_doc("GRM Project", code, force=True, delete_permanently=True)
-	except Exception:
-		frappe.db.rollback()
+PROJECT_CODE = "TEST-ADMIN-UPLOAD"
 
 
-def test_parse_admin_regions_csv_returns_preview(sample_project):
-	csv_text = "Province,District,Sector\n" "Kigali,Gasabo,Kacyiru\n" "Kigali,Gasabo,Remera\n"
-	result = parse_admin_regions_csv(project=sample_project, highest_level="Country", csv_text=csv_text)
-	assert result["total_rows"] == 2
-	assert "Kigali" in str(result["preview"])
-	assert result["errors"] == []
-	assert result["level_columns"] == ["Province", "District", "Sector"]
+class WizardAdminUploadTests(FrappeTestCase):
+	"""Was a set of bare pytest functions with a ``@pytest.fixture``. The
+	Frappe runner is unittest-based: it never collected those functions, and
+	the ``import pytest`` aborted discovery for the whole app on any bench
+	without pytest installed (i.e. CI). Rewritten as a TestCase so the
+	assertions actually execute."""
 
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		if not frappe.db.exists("GRM Project", PROJECT_CODE):
+			frappe.get_doc(
+				{
+					"doctype": "GRM Project",
+					"project_code": PROJECT_CODE,
+					"title": "Test Admin Upload",
+				}
+			).insert(ignore_permissions=True)
+		frappe.db.commit()
 
-def test_bulk_insert_admin_regions_creates_levels_and_regions(sample_project):
-	csv_text = "Province,District\nKigali,Gasabo\n"
-	result = bulk_insert_admin_regions(project=sample_project, highest_level="Country", csv_text=csv_text)
-	assert result["created"] >= 3  # Country (auto), Kigali, Gasabo
-	levels = frappe.get_all("GRM Administrative Level Type", filters={"project": sample_project})
-	assert len(levels) >= 3
+	@classmethod
+	def tearDownClass(cls):
+		# Delete the children before the project: deleting the project alone
+		# leaves the regions and level types behind, and on the next run
+		# `bulk_insert_admin_regions` reports them as `updated` rather than
+		# `created`.
+		try:
+			for doctype in ("GRM Administrative Region", "GRM Administrative Level Type"):
+				for name in frappe.get_all(doctype, filters={"project": PROJECT_CODE}, pluck="name"):
+					frappe.delete_doc(doctype, name, force=True, delete_permanently=True)
+			frappe.delete_doc("GRM Project", PROJECT_CODE, force=True, delete_permanently=True)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+		super().tearDownClass()
+
+	def test_parse_admin_regions_csv_returns_preview(self):
+		csv_text = "Province,District,Sector\nKigali,Gasabo,Kacyiru\nKigali,Gasabo,Remera\n"
+		result = parse_admin_regions_csv(project=PROJECT_CODE, highest_level="Country", csv_text=csv_text)
+		self.assertEqual(result["total_rows"], 2)
+		self.assertIn("Kigali", str(result["preview"]))
+		self.assertEqual(result["errors"], [])
+		self.assertEqual(result["level_columns"], ["Province", "District", "Sector"])
+
+	def test_bulk_insert_admin_regions_creates_levels_and_regions(self):
+		csv_text = "Province,District\nKigali,Gasabo\n"
+		result = bulk_insert_admin_regions(project=PROJECT_CODE, highest_level="Country", csv_text=csv_text)
+		self.assertEqual(result["errors"], [])
+		self.assertEqual(result["level_columns"], ["Province", "District"])
+		# Assert on the resulting state, never on the created/updated counters:
+		# rows left over from an earlier run are reported as `updated`, and a
+		# pre-existing highest-level region is reported as neither. Counter-based
+		# assertions therefore only hold against a virgin database.
+		levels = frappe.get_all(
+			"GRM Administrative Level Type", filters={"project": PROJECT_CODE}, pluck="level_name"
+		)
+		self.assertEqual(sorted(levels), ["Country", "District", "Province"])
+		regions = frappe.get_all(
+			"GRM Administrative Region", filters={"project": PROJECT_CODE}, pluck="region_name"
+		)
+		# "Country" is the auto-created highest-level region.
+		self.assertEqual(sorted(regions), ["Country", "Gasabo", "Kigali"])
