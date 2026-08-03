@@ -22,6 +22,11 @@ from frappe.utils import get_datetime, get_timestamp, now_datetime
 # Import user filtering functions from lookup.py
 from egrm.api.lookup import get_user_accessible_regions, get_user_region_assignments
 
+# Project scoping is shared with the desk/web surface on purpose. Mobile sync
+# used to keep a private copy that disagreed about which roles bypass scoping,
+# which left supervisors seeing issues on the desk and a blank mobile app.
+from egrm.utils.project_access import get_user_accessible_projects
+
 # Configure logging
 log = logging.getLogger(__name__)
 
@@ -1493,51 +1498,6 @@ def watermelon_to_frappe_data(raw_record):
 	frappe.log(f"  - Timestamp conversions: {timestamp_conversions} conversions")
 
 	return frappe_data
-
-
-def get_user_accessible_projects(user):
-	"""Mobile-sync-scoped variant of project access.
-
-	This function is intentionally stricter than the shared
-	``egrm.utils.project_access.get_user_accessible_projects`` helper used
-	by the web UI and stats: it additionally requires
-	``activation_status = 'Activated'`` on the assignment row, because the
-	mobile app must not pull data for assignments that haven't completed
-	OTP-based device activation. It also filters out inactive
-	``GRM Project`` records (mobile sync should never see archived
-	projects, but web admin/stats may still need them for historical
-	reporting).
-	"""
-	# Check if user is Administrator or has a platform-level role (full access).
-	# `GRM Platform Administrator` is the duty-driven equivalent of System
-	# Manager — they bootstrap projects via the wizard, so the sync layer
-	# must surface every project to them even when no GRM User Project
-	# Assignment row exists. Without this branch the AQE MD-2 / API-4
-	# contract failed because pull_changes returned an empty `changes`
-	# envelope for the platform admin actor (project-admin@egrm.test).
-	user_roles = set(frappe.get_roles(user))
-	platform_roles = {"System Manager", "GRM Platform Administrator"}
-	if user == "Administrator" or (user_roles & platform_roles):
-		projects = frappe.get_all("GRM Project", fields=["name"], filters={"is_active": 1})
-		return [p.name for p in projects]
-
-	# Get projects assigned to the user (using same logic as lookup.py)
-	assignments = frappe.get_all(
-		"GRM User Project Assignment",
-		filters={"user": user, "is_active": 1, "activation_status": "Activated"},
-		fields=["project"],
-	)
-
-	# Get unique projects
-	user_projects = list(set([a.project for a in assignments]))
-
-	# Filter projects that are still active
-	active_projects = []
-	for project_id in user_projects:
-		if frappe.db.get_value("GRM Project", project_id, "is_active"):
-			active_projects.append(project_id)
-
-	return active_projects
 
 
 # Legacy endpoint compatibility (optional - can be removed later)

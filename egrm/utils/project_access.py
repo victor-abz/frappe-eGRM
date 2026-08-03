@@ -25,19 +25,26 @@ PLATFORM_ROLES = {"System Manager", "GRM Platform Administrator"}
 def get_user_accessible_projects(user: str) -> list[str]:
 	"""Return the list of GRM Project names a user can access.
 
-	Admins and all-projects roles see every project; otherwise the user
-	sees the projects where they hold an active, activated assignment.
+	Single source of truth for every surface — desk, stats, issue API and
+	mobile sync all call this. They must answer identically: mobile sync
+	previously kept its own stricter copy, so a supervisor could see
+	issues on the desk and a blank screen in the app.
+
+	Admins and all-projects roles see every active project; otherwise the
+	user sees the projects where they hold an active, activated
+	assignment. Archived (``is_active = 0``) projects are never returned:
+	mobile must not pull them, and no surface has a use for them here.
 	"""
 	if user == "Administrator" or GRM_ALL_PROJECTS_ROLES & set(frappe.get_roles(user)):
-		projects = frappe.get_all("GRM Project", fields=["name"])
-		return [p.name for p in projects]
+		return sorted(frappe.get_all("GRM Project", filters={"is_active": 1}, pluck="name"))
 
 	assignments = frappe.get_all(
 		"GRM User Project Assignment",
 		filters={"user": user, "is_active": 1, "activation_status": "Activated"},
 		fields=["project"],
 	)
-	return [a.project for a in assignments]
+	projects = {a.project for a in assignments}
+	return sorted(p for p in projects if frappe.db.get_value("GRM Project", p, "is_active"))
 
 
 def is_platform_admin(user: str | None = None) -> bool:
