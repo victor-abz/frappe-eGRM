@@ -2,6 +2,14 @@ import logging
 
 import frappe
 
+from egrm.server_scripts.issue_scope import (
+	handled_by_user_condition,
+	is_in_user_scope,
+	region_condition,
+	sql_literal,
+	user_region_scope,
+)
+
 log = logging.getLogger(__name__)
 
 # Duty-driven scope. Each ptype is satisfied if the user holds at least
@@ -63,6 +71,11 @@ def has_permission(doc, ptype, user):
 	Draft rule: a GRM Issue at docstatus=0 is private to its owner.
 	Non-owners (including duty-holders on the same project) cannot see
 	or fetch it via desk or API. Bypass roles still see everything.
+
+	Region rule: holding a duty on the project is not enough — the issue
+	must also sit in the user's assigned region (or below it), unless the
+	user personally handled it at some point — see issue_scope, which
+	expresses the same two rules in SQL for list/report queries.
 	"""
 	try:
 		if not doc:
@@ -97,7 +110,10 @@ def has_permission(doc, ptype, user):
 			return False
 
 		held = _user_duties_for_project(user, project)
-		return bool(held.intersection(required))
+		if not held.intersection(required):
+			return False
+
+		return is_in_user_scope(doc, user, project)
 	except Exception as e:
 		frappe.log_error(f"Error checking GRM Issue permissions: {e!s}")
 		return False
@@ -154,9 +170,23 @@ def is_child_region(region, potential_parent):
 
 
 def permission_query_conditions(user):
-	"""Restrict GRM Issue list/report queries to the projects the user
-	has any duty on. Per-issue field-level access is still enforced by
-	has_permission + GRMIssue._enforce_duty_field_constraints."""
+	"""Restrict GRM Issue list/report queries to what the user may see.
+
+	Three rules, ANDed together:
+
+	1. Project — the user must hold a duty-bearing assignment on it.
+	2. Region — the issue must sit in an assigned region or below it,
+	   OR the user must have personally handled it (owner, reporter,
+	   assignee, escalated/resolved/rejected by, or named in the
+	   escalation history). The second half is what stops an issue from
+	   disappearing off its handler's desk the moment they escalate it
+	   into the region above them.
+	3. Drafts — a docstatus=0 issue stays private to its creator, even
+	   from duty-holders on the same project.
+
+	Per-issue field-level access is still enforced by has_permission +
+	GRMIssue._enforce_duty_field_constraints.
+	"""
 	try:
 		user = user or frappe.session.user
 		if user == "Administrator":
@@ -165,48 +195,19 @@ def permission_query_conditions(user):
 		if roles & set(BYPASS_ROLES):
 			return ""
 
-		rows = frappe.get_all(
-			"GRM User Project Assignment",
-			filters={
-				"user": user,
-				"is_active": 1,
-				"activation_status": ["in", ("Activated", "")],
-			},
-			fields=["project", "role"],
-			ignore_permissions=True,
+		scope = user_region_scope(user)
+		if not scope:
+			return "1=0"
+
+		projects = ", ".join(sql_literal(p) for p in sorted(scope))
+		region_clauses = " OR ".join(
+			f"(`tabGRM Issue`.project = {sql_literal(project)} AND {region_condition(entry)})"
+			for project, entry in sorted(scope.items())
 		)
-		if not rows:
-			return "1=0"
-
-		in_scope: set[str] = set()
-		for row in rows:
-			duties = frappe.get_all(
-				"GRM Project Role Duty",
-				filters={"parent": row.role},
-				pluck="duty",
-				ignore_permissions=True,
-			)
-			if duties:
-				in_scope.add(row.project)
-		if not in_scope:
-			return "1=0"
-
-		# Review fix B4: escape BOTH backslashes (MySQL string-literal
-		# escape character) AND single quotes. The previous version only
-		# escaped quotes, which left a backslash-injection vector if a
-		# project_code ever contained one (regex validator at wizard
-		# input now rejects such names too — defense in depth).
-		def _sql_quote(s: str) -> str:
-			return "'" + s.replace("\\", "\\\\").replace("'", "''") + "'"
-
-		escaped = ", ".join(_sql_quote(p) for p in in_scope)
-		# Drafts (docstatus=0) are private to the creator — duty-holders
-		# on the same project still don't see another user's draft. The
-		# creator can always see/edit their own draft until they submit.
-		user_safe = _sql_quote(user)
 		return (
-			f"(`tabGRM Issue`.project IN ({escaped})"
-			f" AND (`tabGRM Issue`.docstatus > 0 OR `tabGRM Issue`.owner = {user_safe}))"
+			f"(`tabGRM Issue`.project IN ({projects})"
+			f" AND (({region_clauses}) OR {handled_by_user_condition(user)})"
+			f" AND (`tabGRM Issue`.docstatus > 0 OR `tabGRM Issue`.owner = {sql_literal(user)}))"
 		)
 	except Exception as e:
 		frappe.log_error(f"Error generating permission query conditions: {e!s}")
