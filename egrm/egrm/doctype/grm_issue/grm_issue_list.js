@@ -48,7 +48,17 @@ frappe.listview_settings["GRM Issue"] = {
 					// list view may be torn down; ignore
 				}
 			})
-			.always(() => {
+			// `.finally`, not jQuery's `.always`: frappe.db.get_list returns a
+			// native Promise (frappe/public/js/frappe/db.js), which has no
+			// `.always`. Building that chain threw a TypeError synchronously
+			// inside `onload`, which aborted ListView setup before it ever
+			// called reportview.get — so the GRM Issue list rendered its
+			// header and zero rows no matter what the user searched for.
+			.catch(() => {
+				// A failed status lookup must not take the list down with it;
+				// get_indicator already falls back to a grey "Pending" pill.
+			})
+			.finally(() => {
 				settings._status_loading = false;
 			});
 	},

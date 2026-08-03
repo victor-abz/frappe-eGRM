@@ -5,6 +5,7 @@ from frappe import _
 from frappe.utils import date_diff, now_datetime
 
 from egrm.egrm.doctype.grm_issue.grm_issue import _user_has_duty
+from egrm.services.assignee_routing import is_user_in_scope
 
 
 def _is_self_submission(doc) -> bool:
@@ -199,9 +200,23 @@ def reassign_issue(issue, assignee, comment):
 		if not doc:
 			frappe.throw(_("Issue not found"))
 
+		# Gate on the issue as it stands, before touching the assignee.
+		# doc.save() checks write permission on the *mutated* doc, and
+		# "I am the assignee" is one of the things that grants access —
+		# so without this line a worker outside the issue's region could
+		# reassign it to themselves and thereby gain the very permission
+		# the reassignment required.
+		doc.check_permission("write")
+
 		# Check if assignee has access to this project
 		if not has_project_access(assignee, doc.project):
 			frappe.throw(_("Selected user does not have access to this project"))
+
+		# ...and to this issue's region. Routing may only hand an issue to
+		# someone whose assignment covers the region it sits in (or a
+		# region above it), the same scope rule the create side applies.
+		if not is_user_in_scope(assignee, doc.project, doc.administrative_region):
+			frappe.throw(_("Selected user is not assigned to this issue's region"))
 
 		# Get old assignee for logging
 		old_assignee = doc.assignee or _("Unassigned")
@@ -224,6 +239,12 @@ def reassign_issue(issue, assignee, comment):
 		doc.save()
 
 		return True
+	except frappe.PermissionError:
+		# Let this through untouched: Frappe renders it as a 403 with its
+		# own "not permitted" message. Wrapping it would turn a permission
+		# denial into a generic 417 whose text is empty, because
+		# PermissionError carries no message of its own.
+		raise
 	except Exception as e:
 		frappe.log_error(f"Error reassigning issue: {e!s}")
 		frappe.throw(_("Error reassigning issue: {0}").format(str(e)))

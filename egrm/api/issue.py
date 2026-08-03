@@ -65,14 +65,6 @@ def _validate_creator_scope(issue_data: dict, user: str) -> dict | None:
 	return None
 
 
-def _draft_or_filters(user):
-	"""Return an or_filters list that hides other users' drafts, or None
-	when the user is allowed to see everything."""
-	if _user_can_see_others_drafts(user):
-		return None
-	return [["docstatus", ">", 0], ["owner", "=", user]]
-
-
 def _draft_blocks_access(issue_id, user):
 	"""True when this issue is a draft owned by someone else and the user
 	is not a bypass role. Callers should return a 'not found' response so
@@ -125,14 +117,14 @@ def list(project_id=None, status=None, assignee=None, reporter=None, limit=50, o
 				# User has no project access
 				return {"status": "success", "data": []}
 
-		# Get issues. or_filters keeps drafts private to their owner —
-		# frappe.get_all bypasses permission_query_conditions, so without
-		# this another user's draft would leak through the API even though
-		# the desk list correctly hides it.
-		issues = frappe.get_all(
+		# get_list, not get_all: it runs permission_query_conditions, so the
+		# API and the desk enforce one shared visibility rule — project
+		# scope, region scope (assigned region + descendants, or issues the
+		# user personally handled), and draft privacy. get_all bypasses all
+		# three and would leak other regions' grievances to the mobile app.
+		issues = frappe.get_list(
 			"GRM Issue",
 			filters=filters,
-			or_filters=_draft_or_filters(user),
 			fields=[
 				"name",
 				"tracking_code",
@@ -854,33 +846,25 @@ def get_latest_issues(last_sync_timestamp=None, limit=50, offset=0):
 				"data": {"issues": [], "total_count": 0, "has_more": False},
 			}
 
-		# Build filters. List form lets us add the draft-visibility AND
-		# clause alongside the OR of (docstatus>0, owner=user) via or_filters
-		# below, which matches frappe.get_all's compound-where semantics.
 		filters = [["project", "in", accessible_projects]]
 		if last_sync:
 			filters.append(["creation", ">", last_sync])
 
-		draft_or = _draft_or_filters(user)
-
-		# Get total count first (mirror the same filter shape so the
-		# "has_more" computation doesn't lie when drafts are hidden).
-		if draft_or:
-			total_count = frappe.db.count(
-				"GRM Issue",
-				filters=[*filters, ["docstatus", ">", 0]],
-			) + frappe.db.count(
-				"GRM Issue",
-				filters=[*filters, ["docstatus", "=", 0], ["owner", "=", user]],
-			)
-		else:
-			total_count = frappe.db.count("GRM Issue", filters=filters)
-
-		# Get paginated issues with minimal fields for efficiency
-		issues = frappe.get_all(
+		# Count through get_list too, not frappe.db.count: the count has to
+		# see exactly what the page below sees (project + region + draft
+		# scope from permission_query_conditions), or "has_more" lies and
+		# the mobile client pages forever chasing rows it may not read.
+		count_row = frappe.get_list(
 			"GRM Issue",
 			filters=filters,
-			or_filters=draft_or,
+			fields=["count(name) as total"],
+		)
+		total_count = (count_row[0].get("total") if count_row else 0) or 0
+
+		# Get paginated issues with minimal fields for efficiency
+		issues = frappe.get_list(
+			"GRM Issue",
+			filters=filters,
 			fields=[
 				"name",
 				"description",
