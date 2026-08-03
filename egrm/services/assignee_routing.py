@@ -195,7 +195,15 @@ def _user_holds_resolve_duty(user: str, project: str) -> bool:
 def _resolve_via_role(project: str, role: str, region_chain: list[str]) -> str | None:
 	"""Walk the region chain closest-first, pick the least-loaded duty-holder
 	in (project, role, region) at the first level that has at least one
-	candidate."""
+	candidate.
+
+	The `tabUser` join is load-bearing, not cosmetic: an assignment row
+	outlives the User it points at, and the name this function returns goes
+	straight into `GRM Issue.assignee` (a Link field). Without the join a
+	deleted user is still "eligible" and the issue fails to save with
+	LinkValidationError at submit() time. Requiring `enabled` also keeps
+	deactivated staff out of the rotation.
+	"""
 	if not region_chain:
 		return None
 	for region in region_chain:
@@ -204,6 +212,7 @@ def _resolve_via_role(project: str, role: str, region_chain: list[str]) -> str |
             SELECT DISTINCT a.user
             FROM `tabGRM User Project Assignment` a
             JOIN `tabGRM Project Role Duty` prd ON prd.parent = a.role
+            JOIN `tabUser` u ON u.name = a.user AND u.enabled = 1
             WHERE a.project = %s
               AND a.is_active = 1
               AND a.activation_status IN %s

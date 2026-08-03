@@ -490,13 +490,23 @@ def add_citizen_comment(*args, **kwargs):
 def _get_public_reporter(project):
 	"""Find a suitable reporter user for public submissions.
 
-	Returns the first active GRM user assigned to the project,
-	or Administrator as fallback.
+	Returns the oldest active GRM user assigned to the project whose User
+	record still exists and is enabled, or Administrator as fallback.
+
+	The existence check is not paranoia: `GRM User Project Assignment` keeps
+	its row when the linked User is deleted, and this function used to hand
+	that dangling name straight to `GRM Issue.reporter` (a Link field). One
+	stale assignment — specifically the *oldest*, which is the one this query
+	returns — therefore made `doc.insert()` raise LinkValidationError and
+	500'd every public submission for the whole project.
 	"""
-	assignment = frappe.db.get_value(
+	assignments = frappe.get_all(
 		"GRM User Project Assignment",
-		{"project": project, "is_active": 1},
-		"user",
+		filters={"project": project, "is_active": 1},
+		pluck="user",
 		order_by="creation ASC",
 	)
-	return assignment or "Administrator"
+	for user in assignments:
+		if frappe.db.get_value("User", user, "enabled"):
+			return user
+	return "Administrator"
