@@ -85,6 +85,11 @@ before_request = [
     # URL stays at `/app/<workspace>` after login (the AQE UI-0
     # Playwright assertion waits for `**/app**`).
     "egrm.utils.app_route_passthrough.app_route_passthrough",
+    # `role_home_page` below sends staff to `app/egrm`, which PathResolver
+    # cannot render for the bare domain (redirects are evaluated before the
+    # home-page substitution), so `/` 404'd for anyone logged in. Pin the
+    # web root to the portal for every user; login is unaffected.
+    "egrm.utils.web_root_home.portal_home_at_web_root",
 ]
 
 # Expose `frappe.boot.get_bootinfo` as a whitelisted endpoint so the
