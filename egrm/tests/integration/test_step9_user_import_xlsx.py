@@ -1,8 +1,7 @@
 """Phase F.2 integration test: end-to-end XLSX user import.
 
-Imports the actual ``eGRM users.xlsx`` (24 rows of Province/District/Sector
-data from the RISA pilot) through the wizard's bulk-import endpoints and
-asserts:
+Imports ``eGRM users.xlsx`` (24 rows of Province/District/Sector data from
+the RISA pilot) through the wizard's bulk-import endpoints and asserts:
 
 - All ready rows materialize as ``GRM User Project Assignment`` rows.
 - Admin regions auto-create as needed; the delta against the pre-import
@@ -18,6 +17,12 @@ discovers them. The xlsx contains spreadsheet formulas in the Phone
 Numbers / Emails columns (``=_xludf.CONCAT(...)``); we synthesize clean
 emails locally from the First Name to keep the import deterministic and
 to avoid Frappe's xlsx reader returning the raw formula string.
+
+The pilot workbook holds real names, phone numbers and email addresses, so
+it is not committed. When it isn't on disk — CI, or a fresh checkout —
+``_resolve_xlsx_path`` generates a workbook of the same shape instead (see
+``_build_synthetic_rows``). Every assertion below holds for both, and a
+developer who has the real file keeps testing against the real file.
 """
 
 from __future__ import annotations
@@ -25,6 +30,7 @@ from __future__ import annotations
 import csv
 import io
 import os
+import tempfile
 import time
 from pathlib import Path
 
@@ -57,6 +63,98 @@ XLSX_PATH = Path("/tmp/egrm_users_sample.xlsx")
 # Fallback to the user's Downloads folder if /tmp copy is missing — keeps
 # the test self-bootstrapping for the developer who first runs it.
 XLSX_FALLBACK = Path.home() / "Downloads" / "eGRM users.xlsx"
+# Last resort, used by CI: a generated workbook with the same shape as the
+# RISA file. Checked LAST so a developer who has the real workbook keeps
+# testing against the real workbook.
+SYNTHETIC_XLSX_PATH = Path(tempfile.gettempdir()) / "egrm_users_synthetic_fixture.xlsx"
+
+# The real ``eGRM users.xlsx`` is pilot data — real names, phone numbers and
+# email addresses — so it is deliberately NOT committed. Rwanda's five
+# provinces are public administrative geography and are asserted on by
+# ``test_materialize_xlsx_dry_run_lists_all_regions``, so the synthetic
+# workbook has to reproduce them exactly; everything person-shaped below is
+# invented.
+PROVINCES = ["Kigali city", "Northern", "Southern", "Eastern", "Western"]
+# Districts per province: 16 in total, matching the real file's distinct count.
+DISTRICTS_PER_PROVINCE = {
+	"Kigali city": ["District A1", "District A2", "District A3"],
+	"Northern": ["District B1", "District B2", "District B3"],
+	"Southern": ["District C1", "District C2", "District C3"],
+	"Eastern": ["District D1", "District D2", "District D3"],
+	"Western": ["District E1", "District E2", "District E3", "District E4"],
+}
+# Row counts per province, summing to the 24 rows the assertions pin.
+ROWS_PER_PROVINCE = {
+	"Kigali city": 5,
+	"Northern": 5,
+	"Southern": 5,
+	"Eastern": 5,
+	"Western": 4,
+}
+XLSX_HEADERS = [
+	"Province",
+	"District",
+	"Sector",
+	"First Name",
+	"Last Name",
+	"Gender",
+	"Position",
+	"Phone",
+	"Phone Numbers",
+	"Emails",
+]
+POSITIONS = ["Field Officer", "Supervisor", "Analyst", "Coordinator"]
+
+
+def _build_synthetic_rows() -> list[list[str]]:
+	"""Return 24 rows shaped like the RISA workbook.
+
+	Invariants the assertions depend on:
+	- exactly 24 data rows;
+	- all five province names present, and no others;
+	- one row with an empty Sector (it resolves to its District instead, so
+	  23 sectors get created rather than 24);
+	- a Sector unique to each remaining row.
+	"""
+	rows: list[list[str]] = []
+	for province in PROVINCES:
+		districts = DISTRICTS_PER_PROVINCE[province]
+		for i in range(ROWS_PER_PROVINCE[province]):
+			idx = len(rows)
+			rows.append(
+				[
+					province,
+					districts[i % len(districts)],
+					f"Sector {idx + 1:02d}",
+					f"Testuser{idx + 1:02d}",
+					f"Sample{idx + 1:02d}",
+					"Male" if idx % 2 == 0 else "Female",
+					POSITIONS[idx % len(POSITIONS)],
+					f"+25078800{idx + 1:04d}",
+					# The real file carries Google-Sheets-only formulas here,
+					# which openpyxl surfaces as "#NAME?". These two columns are
+					# dropped before import; mirror the shape anyway.
+					"#NAME?",
+					"#NAME?",
+				]
+			)
+	# The sector-less row: exercises the "resolve to parent level" path.
+	rows[-1][2] = ""
+	return rows
+
+
+def _write_synthetic_xlsx(path: Path) -> Path:
+	"""Generate the stand-in workbook so this test can run without the real
+	pilot file (i.e. in CI). Rewritten on every call so edits to the row
+	builder above take effect immediately."""
+	wb = openpyxl.Workbook()
+	ws = wb.active
+	ws.append(XLSX_HEADERS)
+	for row in _build_synthetic_rows():
+		ws.append(row)
+	path.parent.mkdir(parents=True, exist_ok=True)
+	wb.save(path)
+	return path
 
 
 def _delete_if_exists(doctype: str, name: str) -> None:
@@ -74,14 +172,18 @@ def _delete_if_exists(doctype: str, name: str) -> None:
 
 
 def _resolve_xlsx_path() -> Path:
+	# Escape hatch so the generated-workbook path stays exercisable on a
+	# machine that does have the pilot file.
+	if os.environ.get("EGRM_FORCE_SYNTHETIC_XLSX"):
+		return _write_synthetic_xlsx(SYNTHETIC_XLSX_PATH)
 	if XLSX_PATH.exists():
 		return XLSX_PATH
 	if XLSX_FALLBACK.exists():
 		return XLSX_FALLBACK
-	raise FileNotFoundError(
-		f"Sample xlsx not found at {XLSX_PATH} or {XLSX_FALLBACK}. "
-		"Copy eGRM users.xlsx to /tmp/egrm_users_sample.xlsx before running."
-	)
+	# No real workbook on this machine (CI, or a fresh checkout). Fall back to
+	# a generated one of the same shape rather than erroring out — this test
+	# used to abort here, which is why it never ran in CI.
+	return _write_synthetic_xlsx(SYNTHETIC_XLSX_PATH)
 
 
 def _read_xlsx_rows() -> tuple[list[str], list[list[str]]]:
@@ -386,14 +488,16 @@ class Step9XlsxImportTests(FrappeTestCase):
 		super().tearDown()
 
 	def test_xlsx_import_creates_24_users_and_resolves_regions(self) -> None:
-		"""Import the real xlsx and assert the full happy path.
+		"""Import the xlsx and assert the full happy path.
 
-		Observed region delta on a clean fixture run: 47 regions created
-		(5 provinces + 19 unique province-district pairs + 23 unique
-		province-district-sector triples; one row has no Sector so its
-		sector is NOT created — hence 23 sectors, not 24). The exact
-		delta is computed dynamically below; this comment pins the
-		ballpark so future drift is easy to spot.
+		Observed region delta on a clean fixture run with the pilot
+		workbook: 47 regions created (5 provinces + 19 unique
+		province-district pairs + 23 unique province-district-sector
+		triples; one row has no Sector so its sector is NOT created —
+		hence 23 sectors, not 24). The generated workbook gives 44
+		(5 + 16 + 23) because its districts don't repeat across
+		provinces. The exact delta is computed dynamically below; these
+		numbers just pin the ballpark so future drift is easy to spot.
 		"""
 		headers, rows = _read_xlsx_rows()
 		self.assertEqual(len(rows), 24, f"sample xlsx must have 24 data rows; got {len(rows)}")
