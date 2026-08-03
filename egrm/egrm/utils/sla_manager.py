@@ -13,10 +13,7 @@ Handles:
 
 import frappe
 from frappe import _
-from frappe.utils import (
-	getdate, nowdate, add_days, date_diff,
-	now_datetime
-)
+from frappe.utils import add_days, date_diff, getdate, now_datetime, nowdate
 
 
 class SLAManager:
@@ -42,9 +39,7 @@ class SLAManager:
 		self.issue.sla_acknowledgment_due = add_business_days(
 			creation_date, self.level_config["acknowledgment_days"]
 		)
-		self.issue.sla_resolution_due = add_business_days(
-			creation_date, self.level_config["resolution_days"]
-		)
+		self.issue.sla_resolution_due = add_business_days(creation_date, self.level_config["resolution_days"])
 
 		self.issue.sla_acknowledgment_status = "On Time"
 		self.issue.sla_resolution_status = "On Time"
@@ -53,12 +48,8 @@ class SLAManager:
 	def get_level_sla_config(self):
 		"""Get SLA configuration from administrative level type."""
 		try:
-			region = frappe.get_doc(
-				"GRM Administrative Region", self.issue.administrative_region
-			)
-			level_type = frappe.get_doc(
-				"GRM Administrative Level Type", region.administrative_level
-			)
+			region = frappe.get_doc("GRM Administrative Region", self.issue.administrative_region)
+			level_type = frappe.get_doc("GRM Administrative Level Type", region.administrative_level)
 			return level_type.get_sla_config()
 		except Exception:
 			return None
@@ -80,8 +71,7 @@ class SLAManager:
 		current_status_name = _get_status_display_name(self.issue.status)
 		if current_status_name not in acknowledged_statuses:
 			new_ack_status = self._calculate_sla_status(
-				self.issue.sla_acknowledgment_due, reminder_days,
-				self.issue.sla_acknowledgment_breached_date
+				self.issue.sla_acknowledgment_due, reminder_days, self.issue.sla_acknowledgment_breached_date
 			)
 			self.issue.sla_acknowledgment_status = new_ack_status
 
@@ -94,8 +84,7 @@ class SLAManager:
 		# Update resolution SLA status (only if not resolved/closed)
 		if current_status_name not in final_statuses:
 			new_res_status = self._calculate_sla_status(
-				self.issue.sla_resolution_due, reminder_days,
-				self.issue.sla_resolution_breached_date
+				self.issue.sla_resolution_due, reminder_days, self.issue.sla_resolution_breached_date
 			)
 			self.issue.sla_resolution_status = new_res_status
 
@@ -151,9 +140,7 @@ class SLAManager:
 	def escalate_to_parent_level(self):
 		"""Escalate issue to parent administrative region."""
 		try:
-			current_region = frappe.get_doc(
-				"GRM Administrative Region", self.issue.administrative_region
-			)
+			current_region = frappe.get_doc("GRM Administrative Region", self.issue.administrative_region)
 		except Exception:
 			return False
 
@@ -171,6 +158,7 @@ class SLAManager:
 		# to the lower region and has no authority at the parent; clearing
 		# `assignee` first lets the resolver pick a fresh duty-holder.
 		from egrm.services.assignee_routing import resolve_assignee
+
 		self.issue.assignee = None
 		new_user, reason = resolve_assignee(self.issue)
 		if new_user:
@@ -183,12 +171,10 @@ class SLAManager:
 		)
 
 		self.issue.add_comment(
-			"Info",
-			f"Issue auto-escalated to {current_region.parent_region} due to SLA breach"
+			"Info", f"Issue auto-escalated to {current_region.parent_region} due to SLA breach"
 		)
 		self.issue.add_comment(
-			"Info",
-			f"Reassigned from {old_assignee or '∅'} to {new_user or '∅'} ({reason})"
+			"Info", f"Reassigned from {old_assignee or '∅'} to {new_user or '∅'} ({reason})"
 		)
 
 		self.issue.save(ignore_permissions=True)
@@ -233,6 +219,7 @@ class SLAManager:
 
 # Helper functions
 
+
 def add_business_days(start_date, days):
 	"""Add business days to a date (excluding weekends)."""
 	current = getdate(start_date)
@@ -246,18 +233,20 @@ def add_business_days(start_date, days):
 
 def _get_final_status_names():
 	"""Get display names of statuses marked as final."""
-	return [s.status_name for s in frappe.get_all(
-		"GRM Issue Status", filters={"final_status": 1}, fields=["status_name"]
-	)]
+	return [
+		s.status_name
+		for s in frappe.get_all("GRM Issue Status", filters={"final_status": 1}, fields=["status_name"])
+	]
 
 
 def _get_status_names_beyond_initial():
 	"""Get display names of statuses beyond initial (open) status."""
-	return [s.status_name for s in frappe.get_all(
-		"GRM Issue Status",
-		filters={"initial_status": 0, "open_status": 0},
-		fields=["status_name"]
-	)]
+	return [
+		s.status_name
+		for s in frappe.get_all(
+			"GRM Issue Status", filters={"initial_status": 0, "open_status": 0}, fields=["status_name"]
+		)
+	]
 
 
 def _get_status_display_name(status_id):
@@ -280,9 +269,7 @@ def get_sla_dashboard_data(project=None):
 		conditions.append("gi.project = %(project)s")
 		values["project"] = project
 
-	final_statuses = frappe.get_all(
-		"GRM Issue Status", filters={"final_status": 1}, pluck="name"
-	)
+	final_statuses = frappe.get_all("GRM Issue Status", filters={"final_status": 1}, pluck="name")
 	if final_statuses:
 		conditions.append("gi.status NOT IN %(final_statuses)s")
 		values["final_statuses"] = final_statuses

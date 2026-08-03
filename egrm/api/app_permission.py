@@ -13,20 +13,20 @@ sufficient and necessary; we do not consult the database to extend it.
 import frappe
 
 GRM_STAFF_ROLES: frozenset[str] = frozenset(
-    {
-        "System Manager",
-        "GRM Platform Administrator",
-        "GRM Intake",
-        "GRM Review",
-        "GRM Assignment",
-        "GRM Investigate & Resolve",
-        "GRM Feedback",
-        "GRM Supervise",
-    }
+	{
+		"System Manager",
+		"GRM Platform Administrator",
+		"GRM Intake",
+		"GRM Review",
+		"GRM Assignment",
+		"GRM Investigate & Resolve",
+		"GRM Feedback",
+		"GRM Supervise",
+	}
 )
 
 
 def check_app_permission() -> bool:
-    if frappe.session.user in ("Guest", "", None):
-        return False
-    return bool(set(frappe.get_roles()) & GRM_STAFF_ROLES)
+	if frappe.session.user in ("Guest", "", None):
+		return False
+	return bool(set(frappe.get_roles()) & GRM_STAFF_ROLES)

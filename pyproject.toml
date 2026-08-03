@@ -46,6 +46,14 @@ ignore = [
     "F403", # can't detect undefined names from * import
     "F405", # can't detect undefined names from * import
     "F722", # syntax error in forward type annotation
+    # Ambiguous-unicode checks. This app is multilingual (en/fr/rw) and its
+    # prose uses real typography — en dashes, `×` for multiplication. More
+    # to the point, `services/user_import.py` maps the curly-quote block
+    # deliberately: those characters ARE the data being normalized, so the
+    # "did you mean ASCII?" advice is exactly backwards there.
+    "RUF001", # ambiguous unicode character in string
+    "RUF002", # ambiguous unicode character in docstring
+    "RUF003", # ambiguous unicode character in comment
     "W191", # indentation contains tabs
     "UP030", # Use implicit references for positional format fields (translations)
     "UP031", # Use format specifiers instead of percent format

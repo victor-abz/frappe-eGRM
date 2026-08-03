@@ -20,7 +20,7 @@ activation handshake holds the duty and is meant to receive issues.
 #   - egrm.services.assignee_routing.ACTIVE_STATUSES (re-export)
 #   - egrm.services.duty_coverage.compute_coverage (SQL IN clause)
 ACTIVE_ASSIGNMENT_STATUSES: tuple[str, ...] = (
-    "Activated",
-    "Pending Activation",
-    "",
+	"Activated",
+	"Pending Activation",
+	"",
 )

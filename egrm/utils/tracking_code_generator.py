@@ -42,75 +42,65 @@ _COUNTER: dict[tuple[str, str], int] = {}
 
 
 def _next_local_suffix(key: tuple[str, str]) -> int:
-    """Return the next unused 4-digit suffix from this process for ``key``."""
-    with _COUNTER_LOCK:
-        n = _COUNTER.get(key, random.randint(_MIN, _MAX) - 1)
-        n += 1
-        if n > _MAX:
-            n = _MIN
-        _COUNTER[key] = n
-        return n
+	"""Return the next unused 4-digit suffix from this process for ``key``."""
+	with _COUNTER_LOCK:
+		n = _COUNTER.get(key, random.randint(_MIN, _MAX) - 1)
+		n += 1
+		if n > _MAX:
+			n = _MIN
+		_COUNTER[key] = n
+		return n
 
 
 def generate_tracking_code(project_id, project_code=None, issue_date=None):
-    """Return a unique ``{CODE}-{YYMMDD}-{NNNN}`` tracking code."""
-    try:
-        # ---- project code ------------------------------------------------
-        if not project_code:
-            project_code = (
-                frappe.db.get_value("GRM Project", project_id, "project_code")
-                or project_id
-                or "PROJ"
-            )
-        clean_code = (
-            "".join(c.upper() for c in str(project_code) if c.isalnum())[:10]
-            or "PROJ"
-        )
+	"""Return a unique ``{CODE}-{YYMMDD}-{NNNN}`` tracking code."""
+	try:
+		# ---- project code ------------------------------------------------
+		if not project_code:
+			project_code = (
+				frappe.db.get_value("GRM Project", project_id, "project_code") or project_id or "PROJ"
+			)
+		clean_code = "".join(c.upper() for c in str(project_code) if c.isalnum())[:10] or "PROJ"
 
-        # ---- date stamp --------------------------------------------------
-        if not issue_date:
-            issue_date = datetime.now()
-        elif isinstance(issue_date, str):
-            issue_date = datetime.strptime(issue_date, "%Y-%m-%d")
-        date_str = issue_date.strftime("%y%m%d")
+		# ---- date stamp --------------------------------------------------
+		if not issue_date:
+			issue_date = datetime.now()
+		elif isinstance(issue_date, str):
+			issue_date = datetime.strptime(issue_date, "%Y-%m-%d")
+		date_str = issue_date.strftime("%y%m%d")
 
-        # ---- collision-free suffix --------------------------------------
-        prefix = f"{clean_code}-{date_str}-"
-        key = (clean_code, date_str)
+		# ---- collision-free suffix --------------------------------------
+		prefix = f"{clean_code}-{date_str}-"
+		key = (clean_code, date_str)
 
-        # 1) Try a process-local counter first (cheap, fast, no DB).
-        for _ in range(_MAX_PROBES):
-            suffix = _next_local_suffix(key)
-            candidate = f"{prefix}{suffix:04d}"
-            if not frappe.db.exists("GRM Issue", {"tracking_code": candidate}):
-                frappe.log(
-                    f"Generated tracking code: {candidate} for project: {project_id}"
-                )
-                return candidate
+		# 1) Try a process-local counter first (cheap, fast, no DB).
+		for _ in range(_MAX_PROBES):
+			suffix = _next_local_suffix(key)
+			candidate = f"{prefix}{suffix:04d}"
+			if not frappe.db.exists("GRM Issue", {"tracking_code": candidate}):
+				frappe.log(f"Generated tracking code: {candidate} for project: {project_id}")
+				return candidate
 
-        # 2) Local counter exhausted — try fully random probes.
-        for _ in range(_MAX_PROBES):
-            suffix = random.randint(_MIN, _MAX)
-            candidate = f"{prefix}{suffix:04d}"
-            if not frappe.db.exists("GRM Issue", {"tracking_code": candidate}):
-                frappe.log(
-                    f"Generated tracking code: {candidate} for project: {project_id}"
-                )
-                return candidate
+		# 2) Local counter exhausted — try fully random probes.
+		for _ in range(_MAX_PROBES):
+			suffix = random.randint(_MIN, _MAX)
+			candidate = f"{prefix}{suffix:04d}"
+			if not frappe.db.exists("GRM Issue", {"tracking_code": candidate}):
+				frappe.log(f"Generated tracking code: {candidate} for project: {project_id}")
+				return candidate
 
-        # 3) Last resort — fall back to a wider suffix that is guaranteed
-        #    unique. The format degrades gracefully (still parseable by
-        #    the existing prefix-split code) because the suffix is still
-        #    a non-negative integer, just longer.
-        big = (os.getpid() % 1000) * 10_000 + random.randint(0, 9_999)
-        candidate = f"{prefix}{big:08d}"
-        frappe.log(
-            f"Tracking-code suffix space exhausted for {prefix}; "
-            f"using extended suffix: {candidate}"
-        )
-        return candidate
+		# 3) Last resort — fall back to a wider suffix that is guaranteed
+		#    unique. The format degrades gracefully (still parseable by
+		#    the existing prefix-split code) because the suffix is still
+		#    a non-negative integer, just longer.
+		big = (os.getpid() % 1000) * 10_000 + random.randint(0, 9_999)
+		candidate = f"{prefix}{big:08d}"
+		frappe.log(
+			f"Tracking-code suffix space exhausted for {prefix}; " f"using extended suffix: {candidate}"
+		)
+		return candidate
 
-    except Exception as e:
-        frappe.log_error(f"Error generating tracking code: {str(e)}")
-        frappe.log(f"Using fallback tracking code: {frappe.get_traceback()}")
-        raise
+	except Exception as e:
+		frappe.log_error(f"Error generating tracking code: {e!s}")
+		frappe.log(f"Using fallback tracking code: {frappe.get_traceback()}")
+		raise

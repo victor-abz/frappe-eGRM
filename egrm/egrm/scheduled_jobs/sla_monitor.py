@@ -24,9 +24,7 @@ def monitor_sla():
 	from egrm.egrm.utils.sla_manager import SLAManager
 
 	# Get final statuses to exclude
-	final_statuses = frappe.get_all(
-		"GRM Issue Status", filters={"final_status": 1}, pluck="name"
-	)
+	final_statuses = frappe.get_all("GRM Issue Status", filters={"final_status": 1}, pluck="name")
 
 	filters = {
 		"docstatus": 1,
@@ -100,8 +98,6 @@ def _notify_admins_sla_summary(stats):
 	<p>Review issues with breached SLAs in the GRM Issue list.</p>
 	"""
 
-	admins = frappe.get_all(
-		"Has Role", filters={"role": "GRM Platform Administrator"}, pluck="parent"
-	)
+	admins = frappe.get_all("Has Role", filters={"role": "GRM Platform Administrator"}, pluck="parent")
 	if admins:
 		frappe.sendmail(recipients=list(set(admins)), subject=subject, message=message)

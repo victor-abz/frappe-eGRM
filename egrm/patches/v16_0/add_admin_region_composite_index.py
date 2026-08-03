@@ -18,20 +18,16 @@ import frappe
 
 
 def execute():  # type: ignore[no-untyped-def]
-    table = "tabGRM Administrative Region"
+	# Frappe's helper picks the next available index_<N> name when the columns
+	# do not already match an existing index.
+	try:
+		frappe.db.add_index(
+			"GRM Administrative Region",
+			["project", "parent_region"],
+			index_name="idx_grm_admin_region_project_parent",
+		)
+	except Exception as exc:  # pragma: no cover - defensive
+		frappe.logger().warning(f"add_admin_region_composite_index: skipped ({exc})")
+		return
 
-    # Frappe's helper picks the next available index_<N> name when the columns
-    # do not already match an existing index.
-    try:
-        frappe.db.add_index(
-            "GRM Administrative Region",
-            ["project", "parent_region"],
-            index_name="idx_grm_admin_region_project_parent",
-        )
-    except Exception as exc:  # pragma: no cover - defensive
-        frappe.logger().warning(
-            f"add_admin_region_composite_index: skipped ({exc})"
-        )
-        return
-
-    frappe.db.commit()
+	frappe.db.commit()

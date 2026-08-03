@@ -18,88 +18,88 @@ log = logging.getLogger(__name__)
 
 @frappe.whitelist()
 def get_user_projects():
-    """
-    Get projects a user can access based on GRM User Project Assignment.
+	"""
+	Get projects a user can access based on GRM User Project Assignment.
 
-    Returns:
-        list: List of projects the current user can access
-    """
-    try:
-        user = frappe.session.user
-        frappe.log(f"Getting projects for user: {user}")
+	Returns:
+	    list: List of projects the current user can access
+	"""
+	try:
+		user = frappe.session.user
+		frappe.log(f"Getting projects for user: {user}")
 
-        # Check if user is Administrator or has an all-projects GRM role (full access)
-        if user == "Administrator" or set(frappe.get_roles(user)) & GRM_ALL_PROJECTS_ROLES:
-            projects = frappe.get_all(
-                "GRM Project",
-                fields=[
-                    "name",
-                    "title as project_name",
-                    "project_code",
-                    "description",
-                    "is_active as active",
-                ],
-                ignore_permissions=True,
-            )
-            frappe.log(f"Admin user, returning all {len(projects)} projects")
-            return {"status": "success", "data": projects}
+		# Check if user is Administrator or has an all-projects GRM role (full access)
+		if user == "Administrator" or set(frappe.get_roles(user)) & GRM_ALL_PROJECTS_ROLES:
+			projects = frappe.get_all(
+				"GRM Project",
+				fields=[
+					"name",
+					"title as project_name",
+					"project_code",
+					"description",
+					"is_active as active",
+				],
+				ignore_permissions=True,
+			)
+			frappe.log(f"Admin user, returning all {len(projects)} projects")
+			return {"status": "success", "data": projects}
 
-        # Get projects assigned to the user (active + activated)
-        assignments = frappe.get_all(
-            "GRM User Project Assignment",
-            filters={
-                "user": user,
-                "is_active": 1,
-                "activation_status": ["in", ("Activated", "")],
-            },
-            fields=["project"],
-            ignore_permissions=True,
-        )
+		# Get projects assigned to the user (active + activated)
+		assignments = frappe.get_all(
+			"GRM User Project Assignment",
+			filters={
+				"user": user,
+				"is_active": 1,
+				"activation_status": ["in", ("Activated", "")],
+			},
+			fields=["project"],
+			ignore_permissions=True,
+		)
 
-        if not assignments:
-            log.warning(f"No project assignments found for user {user}")
-            return {"status": "success", "data": []}
+		if not assignments:
+			log.warning(f"No project assignments found for user {user}")
+			return {"status": "success", "data": []}
 
-        # Get project details for assigned projects
-        project_names = [a.project for a in assignments]
-        projects = frappe.get_all(
-            "GRM Project",
-            filters={"name": ["in", project_names], "is_active": 1},
-            fields=[
-                "name",
-                "title as project_name",
-                "project_code",
-                "description",
-                "is_active as active",
-            ],
-            ignore_permissions=True,
-        )
+		# Get project details for assigned projects
+		project_names = [a.project for a in assignments]
+		projects = frappe.get_all(
+			"GRM Project",
+			filters={"name": ["in", project_names], "is_active": 1},
+			fields=[
+				"name",
+				"title as project_name",
+				"project_code",
+				"description",
+				"is_active as active",
+			],
+			ignore_permissions=True,
+		)
 
-        frappe.log(f"Returning {len(projects)} projects for user {user}")
-        return {"status": "success", "data": projects}
+		frappe.log(f"Returning {len(projects)} projects for user {user}")
+		return {"status": "success", "data": projects}
 
-    except Exception as e:
-        frappe.log_error(f"Error in get_user_projects: {str(e)}")
-        return {"status": "error", "message": str(e)}
+	except Exception as e:
+		frappe.log_error(f"Error in get_user_projects: {e!s}")
+		return {"status": "error", "message": str(e)}
 
 
 @frappe.whitelist()
 def get_system_info():
-    """
-    Get system information including current version and configuration.
+	"""
+	Get system information including current version and configuration.
 
-    Returns:
-        dict: System information
-    """
-    try:
-        return {
-            "status": "success",
-            "data": {
-                "version": "1.0.0",
-                "api_version": "v1",
-                "system_date": get_datetime().strftime("%Y-%m-%d %H:%M:%S"),
-            },
-        }
-    except Exception as e:
-        frappe.log_error(f"Error in get_system_info: {str(e)}")
-        return {"status": "error", "message": str(e)}
+	Returns:
+	    dict: System information
+	"""
+	try:
+		return {
+			"status": "success",
+			"data": {
+				"version": "1.0.0",
+				"api_version": "v1",
+				"system_date": get_datetime().strftime("%Y-%m-%d %H:%M:%S"),
+			},
+		}
+	except Exception as e:
+		frappe.log_error(f"Error in get_system_info: {e!s}")
+		return {"status": "error", "message": str(e)}

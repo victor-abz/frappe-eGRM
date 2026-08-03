@@ -119,6 +119,48 @@
 		"after": true,
 		"qz": true,
 		"localforage": true,
-		"extend_cscript": true
-	}
+		"extend_cscript": true,
+		// Frappe's legacy form API: a `validate` handler cancels the save by
+		// assigning `validated = false`. It is injected into the handler's
+		// scope by the framework, so it has no declaration to find.
+		"validated": true
+	},
+	"overrides": [
+		{
+			// The Project Setup Wizard is split across per-step modules that
+			// Frappe's `page_js` hook CONCATENATES onto one script (see the
+			// `page_js` block in hooks.py). They therefore share a single
+			// script scope and reference each other by bare name — correct at
+			// runtime, but invisible to a per-file linter.
+			"files": [
+				"egrm/public/js/grm_project_wizard/*.js",
+				"egrm/egrm/page/grm_project_wizard/grm_project_wizard.js"
+			],
+			"globals": {
+				"STEP_TITLES": true,
+				"TOTAL_STEPS": true,
+				"grm_render_bulk_toolbar": true,
+				"grm_wire_bulk_table": true,
+				"GRMProjectWizard": true,
+				"GRMWizardStep1ProjectInfo": true,
+				"GRMWizardStep2AdminUnits": true,
+				"GRMWizardStep2AdminLevelsInner": true,
+				"GRMWizardStep2AdminRegionsInner": true,
+				"GRMWizardStep3IssueCategories": true,
+				"GRMWizardStep4IssueTypes": true,
+				"GRMWizardStep5CitizenLookups": true,
+				"GRMWizardStep6NotificationTemplates": true,
+				"GRMWizardStep7ProjectRoles": true,
+				"GRMWizardStep8Departments": true,
+				"GRMWizardStep9Users": true,
+				"GRMWizardStep9UsersList": true,
+				"GRMWizardStep9UserAdd": true,
+				"GRMWizardStep9UserImport": true,
+				"GRMWizardStep10Routing": true,
+				"GRMWizardStep11SLAs": true,
+				"GRMWizardStep12IssueStatuses": true,
+				"GRMWizardStep13Activate": true
+			}
+		}
+	]
 }
