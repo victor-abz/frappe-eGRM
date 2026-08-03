@@ -68,7 +68,7 @@ export default function TrackPage() {
         <button
           type="submit"
           disabled={loading || !code.trim()}
-          className="w-full mt-3 py-2.5 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 text-white font-semibold text-sm rounded-xl shadow-md transition-colors"
+          className="w-full mt-3 min-h-[44px] py-2.5 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 text-white font-semibold text-sm rounded-xl shadow-md transition-colors"
         >
           {loading ? __("Searching...") : __("Track Complaint")}
         </button>

@@ -703,12 +703,12 @@ export default function SubmitPage() {
           {categories.length === 0 ? (
             <p className="text-sm text-grm-muted mb-4">{__("No categories found")}</p>
           ) : (
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
               {categories.map((c) => (
                 <button
                   key={c.name}
                   onClick={() => setField("category", c.name)}
-                  className={`text-left p-2.5 rounded-lg border text-sm transition-all ${
+                  className={`flex min-h-[44px] items-center text-left p-2.5 rounded-lg border text-sm transition-all ${
                     form.category === c.name
                       ? "border-primary-500 bg-primary-50 font-medium"
                       : "border-gray-200 hover:border-primary-300"
@@ -726,12 +726,12 @@ export default function SubmitPage() {
           {issueTypes.length === 0 ? (
             <p className="text-sm text-grm-muted">{__("No issue types found")}</p>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {issueTypes.map((t) => (
                 <button
                   key={t.name}
                   onClick={() => setField("issueType", t.name)}
-                  className={`text-left p-2.5 rounded-lg border text-sm transition-all ${
+                  className={`flex min-h-[44px] items-center text-left p-2.5 rounded-lg border text-sm transition-all ${
                     form.issueType === t.name
                       ? "border-primary-500 bg-primary-50 font-medium"
                       : "border-gray-200 hover:border-primary-300"
@@ -1173,7 +1173,7 @@ export default function SubmitPage() {
             <button
               onClick={nextStep}
               disabled={!isStepValid(step)}
-              className="flex-1 flex items-center justify-center gap-1 px-4 py-2.5 bg-primary-500 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex min-h-[44px] items-center justify-center gap-1 px-4 py-2.5 bg-primary-500 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {__("Next")}
               <ChevronRight className="w-4 h-4" />
