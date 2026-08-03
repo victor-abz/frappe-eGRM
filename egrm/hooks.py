@@ -68,6 +68,14 @@ app_include_js = [
 # Boot session hook — inject frappe.boot.egrm with per-user duty payload
 boot_session = "egrm.utils.boot.boot_session"
 
+# Signing in proves the worker holds the account, which is exactly what the
+# activation OTP proved — so a successful login finishes the activation
+# instead of leaving the assignment rows unusable. Covers desk, portal and
+# the mobile app's /api/method/login in one place.
+on_session_creation = [
+	"egrm.utils.login_activation.activate_pending_assignments_on_login",
+]
+
 # Auto-JSON-decode form_dict child-table values on /api/resource/* POSTs so
 # that Frappe's `create_doc` v1 endpoint accepts JSON-stringified scalars
 # (e.g. ``grm_project_link='[{"project":"RW-WB"}]'``) the same way it

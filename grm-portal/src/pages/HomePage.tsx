@@ -19,6 +19,8 @@ import { stripHtml } from "@/utils";
 type Action = {
   title: string;
   description: string;
+  /** The button names the next action — an arrow alone says nothing on touch. */
+  cta: string;
   icon: typeof Send;
   to: string;
   bgColor: string;
@@ -32,6 +34,7 @@ const ALL_ACTIONS: Action[] = [
   {
     title: "Raise Issue",
     description: "File a new grievance",
+    cta: "Start form",
     icon: Send,
     to: "/grm-portal/submit",
     bgColor: "bg-rose-50",
@@ -42,6 +45,7 @@ const ALL_ACTIONS: Action[] = [
   {
     title: "Track Complaint",
     description: "Check your status",
+    cta: "Enter code",
     icon: Search,
     to: "/grm-portal/track",
     bgColor: "bg-amber-50",
@@ -52,6 +56,7 @@ const ALL_ACTIONS: Action[] = [
   {
     title: "View Reports",
     description: "Download public reports",
+    cta: "Browse reports",
     icon: FileText,
     to: "/grm-portal/reports",
     bgColor: "bg-primary-50",
@@ -63,6 +68,7 @@ const ALL_ACTIONS: Action[] = [
   {
     title: "Dashboard",
     description: "See public statistics",
+    cta: "Open dashboard",
     icon: BarChart3,
     to: "/grm-portal/dashboard",
     bgColor: "bg-blue-50",
@@ -79,15 +85,17 @@ const processSteps = [
   { title: "Resolve", description: "Solution proposed, implemented, and verified", icon: CheckCircle, iconColor: "text-primary-600", bg: "bg-primary-50", ring: "ring-primary-200" },
 ];
 
+// The icon tile carries each project's colour; a thick side border was doing
+// the same job twice and cost 4px of an already narrow phone row.
 const projectColors = [
-  { border: "border-l-indigo-500", iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },
-  { border: "border-l-rose-500", iconBg: "bg-rose-100", iconColor: "text-rose-600" },
-  { border: "border-l-cyan-500", iconBg: "bg-cyan-100", iconColor: "text-cyan-600" },
-  { border: "border-l-violet-500", iconBg: "bg-violet-100", iconColor: "text-violet-600" },
-  { border: "border-l-amber-500", iconBg: "bg-amber-100", iconColor: "text-amber-600" },
-  { border: "border-l-primary-500", iconBg: "bg-primary-100", iconColor: "text-primary-600" },
-  { border: "border-l-sky-500", iconBg: "bg-sky-100", iconColor: "text-sky-600" },
-  { border: "border-l-red-500", iconBg: "bg-red-100", iconColor: "text-red-600" },
+  { iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },
+  { iconBg: "bg-rose-100", iconColor: "text-rose-600" },
+  { iconBg: "bg-cyan-100", iconColor: "text-cyan-600" },
+  { iconBg: "bg-violet-100", iconColor: "text-violet-600" },
+  { iconBg: "bg-amber-100", iconColor: "text-amber-600" },
+  { iconBg: "bg-primary-100", iconColor: "text-primary-600" },
+  { iconBg: "bg-sky-100", iconColor: "text-sky-600" },
+  { iconBg: "bg-red-100", iconColor: "text-red-600" },
 ];
 
 export default function HomePage() {
@@ -141,20 +149,25 @@ export default function HomePage() {
       {/* Action Cards — centered, wrap gracefully when fewer are enabled */}
       <section className="py-8 px-4 -mt-4 relative z-20">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap justify-center gap-4">
+          {/* Phones stack these full width: side-by-side halves squeezed the
+              labels, and the row layout keeps each card one thumb tall. */}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-center gap-3 sm:gap-4">
             {actions.map((action) => (
               <Link
                 key={action.title}
                 to={action.to}
-                className={`${action.bgColor} rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border ${action.borderColor} flex flex-col items-center text-center no-underline basis-[calc(50%-0.5rem)] sm:basis-60 lg:basis-64 max-w-xs`}
+                className={`${action.bgColor} rounded-xl p-3 sm:p-4 shadow-lg hover:shadow-xl transition-all duration-300 sm:transform sm:hover:-translate-y-1 border ${action.borderColor} flex items-center gap-2.5 sm:gap-0 sm:flex-col sm:items-center sm:text-center no-underline sm:basis-60 lg:basis-64 sm:max-w-xs`}
               >
-                <div className={`w-11 h-11 rounded-full bg-white shadow-md flex items-center justify-center mb-2.5 ${action.iconColor}`}>
+                <div className={`w-11 h-11 shrink-0 rounded-full bg-white shadow-md flex items-center justify-center sm:mb-2.5 ${action.iconColor}`}>
                   <action.icon className="w-5 h-5" strokeWidth={2} />
                 </div>
-                <h2 className="text-sm font-bold text-gray-900 mb-0.5">{__(action.title)}</h2>
-                <p className="text-[11px] text-gray-600 mb-3 flex-grow">{__(action.description)}</p>
-                <span className={`w-full py-2 px-3 rounded-lg text-white font-semibold text-xs shadow-sm flex items-center justify-center gap-1.5 ${action.btnColor}`}>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                <div className="min-w-0 flex-1 sm:flex sm:flex-col sm:flex-1">
+                  <h2 className="text-sm font-bold text-gray-900 mb-0.5">{__(action.title)}</h2>
+                  <p className="text-[11px] text-gray-600 sm:mb-3 sm:flex-grow">{__(action.description)}</p>
+                </div>
+                <span className={`shrink-0 min-h-[44px] py-2 px-2.5 sm:px-3 rounded-lg text-white font-semibold text-xs shadow-sm flex items-center justify-center gap-1 sm:gap-1.5 sm:w-full ${action.btnColor}`}>
+                  <span>{__(action.cta)}</span>
+                  <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                 </span>
               </Link>
             ))}
@@ -177,13 +190,13 @@ export default function HomePage() {
                 placeholder={__("Search projects...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+                className="w-full h-11 pl-9 pr-3 text-sm bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
               />
             </div>
             <select
               value={activeCategory}
               onChange={(e) => setActiveCategory(e.target.value)}
-              className="px-3 py-2 text-xs font-medium bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="h-11 px-3 text-xs font-medium bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="All">{__("All Categories")}</option>
               {categories?.map((cat) => (
@@ -202,7 +215,7 @@ export default function HomePage() {
                   key={project.name}
                   to={`/grm-portal/submit?project=${encodeURIComponent(project.name)}`}
                   aria-label={__("Raise an issue about {0}", [project.title])}
-                  className={`group bg-white rounded-lg p-3 shadow-sm border-l-4 ${color.border} hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-3 no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500`}
+                  className="group bg-white rounded-lg p-3 shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-3 no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                 >
                   <div className={`p-2 rounded-lg ${color.iconBg} shrink-0`}>
                     <FolderOpen className={`w-5 h-5 ${color.iconColor}`} />
@@ -210,7 +223,9 @@ export default function HomePage() {
                   <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-semibold text-gray-900 truncate">{project.title}</h3>
                     <p className="text-gray-500 text-xs line-clamp-2">{stripHtml(project.description)}</p>
-                    <span className="text-[11px] font-semibold text-primary-600 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
+                    {/* Touch has no hover: on phones the hint stays visible rather
+                        than sitting invisible while still taking up its line. */}
+                    <span className="text-[11px] font-semibold text-primary-600 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-visible:opacity-100 transition-opacity">
                       {__("Raise Issue")}
                     </span>
                   </div>
