@@ -33,6 +33,7 @@ from egrm.egrm.page.grm_project_wizard.grm_project_wizard_user_import import (
 )
 
 PROJECT_CODE = "TEST-USER-DATA-IMPORT-A"
+ROLE_NAME = "GRM Officer"
 
 LEVELS = [
     ("Province", 1),
@@ -73,11 +74,29 @@ class _ProjectFixture:
                     "level_name": level_name,
                     "level_order": level_order,
                 }).insert(ignore_permissions=True)
+        # Every CSV fixture below assigns the "GRM Officer" role, and
+        # ``materialize_staged_csv`` skips rows whose role does not exist in
+        # the project ("create it in Step 8 first"), so it has to be seeded.
+        if not frappe.db.exists(
+            "GRM Project Role", {"project": PROJECT_CODE, "role_name": ROLE_NAME}
+        ):
+            frappe.get_doc({
+                "doctype": "GRM Project Role",
+                "project": PROJECT_CODE,
+                "role_name": ROLE_NAME,
+                "is_active": 1,
+                "duties": [{"duty": "Intake"}],
+            }).insert(ignore_permissions=True)
         frappe.db.commit()
 
     @classmethod
     def teardown(cls) -> None:
-        # Drop regions first (FK chain); then level types; then project.
+        # Drop regions first (FK chain); then roles; then level types; then project.
+        role_id = frappe.db.get_value(
+            "GRM Project Role", {"project": PROJECT_CODE, "role_name": ROLE_NAME}, "name"
+        )
+        if role_id:
+            _delete_if_exists("GRM Project Role", role_id)
         regions = frappe.get_all(
             "GRM Administrative Region",
             filters={"project": PROJECT_CODE},
@@ -119,10 +138,15 @@ def _save_inline_csv(content: str) -> str:
     return f.file_url
 
 
+# ``prepare_user_import`` defaults ``phone_as_username=True`` (the RDAP
+# default), which makes a phone-bearing column — mobile_no or phone —
+# part of the required mapping. Fixtures carry one so these tests exercise
+# the same path the wizard actually takes.
 _STANDARD_HEADER_MAPPING = {
     "Email": "User.email",
     "First Name": "User.first_name",
     "Last Name": "User.last_name",
+    "Phone": "User.mobile_no",
     "Username": "Assignment.user",
     "Role": "Assignment.role",
     "Province": "administrative_region",
@@ -136,7 +160,7 @@ _STANDARD_LEVEL_MAPPING = {
     "Sector": "Sector",
 }
 
-_STANDARD_HEADERS_LINE = "Email,First Name,Last Name,Username,Role,Province,District,Sector"
+_STANDARD_HEADERS_LINE = "Email,First Name,Last Name,Phone,Username,Role,Province,District,Sector"
 
 
 class PrepareUserImportTests(FrappeTestCase):
@@ -194,8 +218,8 @@ class PrepareUserImportTests(FrappeTestCase):
         """Happy path: small CSV, auto_create_regions=True → Data Import created."""
         csv_content = (
             f"{_STANDARD_HEADERS_LINE}\n"
-            "alice@example.com,Alice,Aaron,alice,GRM Officer,Kigali,Gasabo,Kacyiru\n"
-            "bob@example.com,Bob,Brown,bob,GRM Officer,Kigali,Nyarugenge,Nyamirambo\n"
+            "alice@example.com,Alice,Aaron,0780000001,alice,GRM Officer,Kigali,Gasabo,Kacyiru\n"
+            "bob@example.com,Bob,Brown,0780000002,bob,GRM Officer,Kigali,Nyarugenge,Nyamirambo\n"
         )
         file_url = _save_inline_csv(csv_content)
 
@@ -233,7 +257,7 @@ class PrepareUserImportTests(FrappeTestCase):
         """
         csv_content = (
             f"{_STANDARD_HEADERS_LINE}\n"
-            "ghost@example.com,Ghost,Town,ghost,GRM Officer,Nowhere,Nope,Nada\n"
+            "ghost@example.com,Ghost,Town,0780000003,ghost,GRM Officer,Nowhere,Nope,Nada\n"
         )
         file_url = _save_inline_csv(csv_content)
 
@@ -298,7 +322,7 @@ class PrepareUserImportTests(FrappeTestCase):
 
         csv_content = (
             f"{_STANDARD_HEADERS_LINE}\n"
-            "alice@example.com,Alice,Aaron,alice,GRM Officer,Kigali,Gasabo,Kacyiru\n"
+            "alice@example.com,Alice,Aaron,0780000001,alice,GRM Officer,Kigali,Gasabo,Kacyiru\n"
         )
         file_url = _save_inline_csv(csv_content)
 
@@ -337,7 +361,7 @@ class PollUserImportTests(FrappeTestCase):
         # Reuse the prepare endpoint to set it up cleanly.
         csv_content = (
             f"{_STANDARD_HEADERS_LINE}\n"
-            "alice@example.com,Alice,Aaron,alice,GRM Officer,Kigali,Gasabo,Kacyiru\n"
+            "alice@example.com,Alice,Aaron,0780000001,alice,GRM Officer,Kigali,Gasabo,Kacyiru\n"
         )
         file_url = _save_inline_csv(csv_content)
         prepared = prepare_user_import(
@@ -445,8 +469,8 @@ class AutoDetectUserImportMappingTests(FrappeTestCase):
         """Headers map to the expected targets and project_meta is included."""
         csv_content = (
             f"{_STANDARD_HEADERS_LINE}\n"
-            "alice@example.com,Alice,Aaron,alice,GRM Officer,Kigali,Gasabo,Kacyiru\n"
-            "bob@example.com,Bob,Brown,bob,GRM Officer,Kigali,Nyarugenge,Nyamirambo\n"
+            "alice@example.com,Alice,Aaron,0780000001,alice,GRM Officer,Kigali,Gasabo,Kacyiru\n"
+            "bob@example.com,Bob,Brown,0780000002,bob,GRM Officer,Kigali,Nyarugenge,Nyamirambo\n"
         )
         file_url = _save_inline_csv(csv_content)
 

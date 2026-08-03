@@ -758,6 +758,13 @@ def materialize_staged_csv(
                 user_targets.append(fname)
         elif target.startswith("Assignment."):
             fname = target.split(".", 1)[1]
+            # ``user`` is injected below from the User record we create per
+            # row, so an operator who also maps a column to Assignment.user
+            # must not add a second ``user`` column — Frappe Data Import
+            # would see the header twice and take the raw CSV cell (a
+            # username) over the resolved User name (an email).
+            if fname == "user":
+                continue
             if fname not in asgn_targets:
                 asgn_targets.append(fname)
 
