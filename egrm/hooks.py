@@ -191,6 +191,7 @@ scheduler_events = {
 	"daily": [
 		"egrm.server_scripts.scheduled_tasks.check_issue_escalations",
 		"egrm.egrm.scheduled_jobs.sla_monitor.monitor_sla",
+		"egrm.egrm.doctype.grm_app_request_log.grm_app_request_log.delete_old_logs",
 	]
 }
 

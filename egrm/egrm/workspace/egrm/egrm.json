@@ -56,9 +56,10 @@
     { "label": "Users by Project", "link_to": "grm-users", "link_type": "Page", "type": "Link" },
     { "label": "Frappe Users (raw)", "link_to": "User", "link_type": "DocType", "type": "Link" },
 
-    { "label": "System", "link_count": 3, "link_type": "DocType", "type": "Card Break" },
+    { "label": "System", "link_count": 4, "link_type": "DocType", "type": "Card Break" },
     { "label": "Administrative Level Types", "link_to": "GRM Administrative Level Type", "link_type": "DocType", "type": "Link" },
     { "label": "Android App Versions", "link_to": "Android App Version", "link_type": "DocType", "type": "Link" },
+    { "label": "App Request Logs", "link_to": "GRM App Request Log", "link_type": "DocType", "type": "Link" },
     { "label": "Duties Catalog", "link_to": "GRM Duty", "link_type": "DocType", "type": "Link" }
   ],
   "modified": "2026-05-09 14:00:00",
