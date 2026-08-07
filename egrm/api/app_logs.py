@@ -11,10 +11,11 @@ its own caps and never trusts the client for identity.
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 import frappe
 from frappe import _
-from frappe.utils import cint
+from frappe.utils import cint, convert_utc_to_system_timezone, now_datetime
 
 # Caps applied server-side regardless of what the client sends, so a buggy or
 # hostile client cannot fill the table or a single row.
@@ -30,6 +31,33 @@ def _truncate(value, limit: int):
 	if len(text) <= limit:
 		return text
 	return f"{text[:limit]}… [truncated {len(text) - limit} chars]"
+
+
+def _parse_timestamp(value):
+	"""Convert a client timestamp into a naive datetime in the site timezone.
+
+	The app sends `Date.toISOString()`, i.e. UTC in the form
+	`2026-08-07T11:35:56.951Z`. MariaDB rejects that literal outright, and
+	storing it verbatim would in any case put every row an offset away from
+	the times administrators see everywhere else in the desk.
+
+	Anything unparseable falls back to now, so one malformed entry costs its
+	own timestamp rather than the whole batch.
+	"""
+	if not value:
+		return now_datetime()
+
+	text = str(value).strip()
+	try:
+		parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+	except ValueError:
+		return now_datetime()
+
+	if parsed.tzinfo is None:
+		# No offset given: trust it as already being site-local.
+		return parsed
+
+	return convert_utc_to_system_timezone(parsed).replace(tzinfo=None)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -61,15 +89,17 @@ def ingest(logs=None) -> dict:
 	user = frappe.session.user
 
 	accepted = 0
+	rejected = 0
 	for entry in batch:
 		if not isinstance(entry, dict):
+			rejected += 1
 			continue
 
 		status = cint(entry.get("status"))
 		doc = frappe.get_doc(
 			{
 				"doctype": "GRM App Request Log",
-				"log_time": entry.get("timestamp") or frappe.utils.now(),
+				"log_time": _parse_timestamp(entry.get("timestamp")),
 				"user": user,
 				"app_version": _truncate(entry.get("appVersion"), 40),
 				"runtime_version": _truncate(entry.get("runtimeVersion"), 40),
@@ -86,9 +116,22 @@ def ingest(logs=None) -> dict:
 				"error": _truncate(entry.get("error"), 500),
 			}
 		)
-		doc.insert(ignore_permissions=True)
-		accepted += 1
+		# One malformed entry must not cost the rest of the batch: the client
+		# only retires what we confirm, so a whole-batch failure would make it
+		# resend the same poisoned entry forever.
+		savepoint = f"app_log_{accepted + rejected}"
+		frappe.db.savepoint(savepoint)
+		try:
+			doc.insert(ignore_permissions=True)
+			accepted += 1
+		except Exception:
+			frappe.db.rollback(save_point=savepoint)
+			rejected += 1
+			frappe.log_error(
+				title="GRM App Request Log ingest failed",
+				message=frappe.get_traceback(with_context=True),
+			)
 
 	frappe.db.commit()
 
-	return {"accepted": accepted, "dropped": dropped}
+	return {"accepted": accepted, "dropped": dropped, "rejected": rejected}
