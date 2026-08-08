@@ -28,6 +28,8 @@ After the first launch the app checks for updates on its own and
 installs them over the air. You do not need to re-download the `.apk`
 to get a newer version.
 
+![The mobile app download page, showing the published version and the Download APK button](/assets/egrm/images/docs/portal/04-mobile-download.png)
+
 > **The version number on the download page may not match the file, or
 > the app.** The published record and the `.apk` it points at are
 > currently named for different versions, and the running app updates

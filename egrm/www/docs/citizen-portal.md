@@ -21,6 +21,8 @@ The **Login** link in the portal header goes to the staff desk at
 `/login`. It is not a citizen account — see
 [What the portal does not do](#what-the-portal-does-not-do).
 
+![The portal home page, offering Raise Issue and Track Complaint](/assets/egrm/images/docs/portal/01-home.png)
+
 ---
 
 ## Submit a grievance
@@ -42,6 +44,8 @@ project: on the Rwanda Digital Acceleration Project, for instance,
 *category* carries the nature of the grievance (Complaint, Question,
 Service Issue, Other) and *issue type* records how it reached the
 office (Web Form, Phone Call, SMS, In Person, and so on).
+
+![Step 1 of the submission form — project, category, and issue type](/assets/egrm/images/docs/portal/02-submit-step1.png)
 
 Two limits on step 3 are worth knowing before you start typing: the
 description must be at least **10 characters** and is capped at
@@ -103,6 +107,8 @@ way — you simply cannot be contacted about it.
 ---
 
 ## Track a complaint
+
+![The tracking page — a single box for the tracking code](/assets/egrm/images/docs/portal/03-track.png)
 
 Enter the tracking code on the tracking page. The portal returns:
 
