@@ -180,6 +180,18 @@ Escalate issues when:
 - Use compression for large photos
 - Sync regularly when internet available
 
+### If Data Looks Missing
+Since app version 1.2.3 the app repairs this by itself. Sync once on a
+stable connection and let it finish — it will notice that the device is
+missing records it should have (most often because you were added to a new
+project or region) and download them without being asked.
+
+A first sync after a reinstall, or the first sync after being added to a
+large project, downloads in several batches and can take noticeably longer
+than a routine sync. Leave the screen open until it reports it is done.
+Only if data is still missing after a completed sync should you use
+*Full resync*, and then report it — a completed sync should not need one.
+
 ## 🆘 Getting Help
 
 ### For System Issues
