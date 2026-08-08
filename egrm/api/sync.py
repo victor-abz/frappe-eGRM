@@ -9,15 +9,17 @@ Follows the WatermelonDB sync specification:
 - pushChanges: POST endpoint that accepts and processes client changes
 """
 
+import hashlib
 import json
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint, get_datetime, get_timestamp, now_datetime
+from frappe.utils.caching import request_cache, site_cache
 
 # Import user filtering functions from lookup.py
 from egrm.api.lookup import get_user_accessible_regions, get_user_region_assignments
@@ -88,78 +90,181 @@ SYNC_TABLES = {
 # Reverse mapping for table name lookup
 DOCTYPE_TO_TABLE = {v: k for k, v in SYNC_TABLES.items()}
 
-# Tables whose contents are fully determined by the user's entitlements, so a
-# server-side count can be compared directly against what the device reports
-# holding. Deliberately excludes GRM Issue and the child tables: drafts are
-# stripped per-viewer and attachments are filtered by synced parent, so their
-# counts legitimately differ from a naive COUNT(*) and would make the client
-# look permanently short.
-RECONCILED_SYNC_TABLES = (
-	"grm_projects",
+# Reference tables reachable through a GRM Project Link child row. Their
+# entitled size is a pure function of the user's project set, which is what
+# makes a shared count cache correct across users.
+CHILD_LINKED_REFERENCE_TABLES = (
 	"grm_issue_categories",
 	"grm_issue_types",
 	"grm_issue_statuses",
 	"grm_issue_departments",
 )
 
-# An escalation replays the whole back catalogue, so a device that stays short
-# no matter what (a failed write, a table the client filters locally) must not
-# be able to request one on every pull.
-FULL_SYNC_ESCALATION_COOLDOWN = 3600
+# Tables the device reconciles against. GRM Issue and the sync child tables are
+# deliberately absent: drafts are stripped per-viewer and attachments are
+# filtered by synced parent, so their counts legitimately differ from a plain
+# COUNT and would make every device look permanently short.
+RECONCILED_SYNC_TABLES = ("grm_projects", *CHILD_LINKED_REFERENCE_TABLES)
+
+# Reference data changes on the order of weeks, so a short TTL keeps the grouped
+# count query off the hot path entirely. Being briefly stale only delays a
+# repair by one interval, or costs one bounded extra replay.
+REFERENCE_COUNT_TTL = 300
+
+# Distinct project combinations to keep counts for, per worker process. Users
+# cluster onto a handful of combinations, so a small table covers nearly every
+# request; the cap only bounds memory if that assumption ever breaks.
+REFERENCE_COUNT_CACHE_SIZE = 2048
+
+# A device that stays short no matter what must not be able to demand a replay
+# on every pull. Short enough that a replay lost to a dropped connection is
+# retried on its own rather than leaving the device broken for an hour.
+FULL_SYNC_ESCALATION_COOLDOWN = 900
+
+# Issues per page. A full replay for a district-wide account is otherwise one
+# unbounded response: the server holds every row in memory, the phone parses
+# megabytes of JSON on the UI thread, and a dropped connection loses all of it
+# and starts over. Paging keeps each request's latency and each WatermelonDB
+# transaction bounded, and makes progress durable — an interrupted sync resumes
+# from the last acknowledged page instead of from zero.
+#
+# Chosen against measured latency and payload size, not guessed. Measured on
+# 50k issues locally (see docs/sync-performance.md for the full table):
+#
+#     page size   pages   p50      p95      total replay   bytes/page
+#     unpaged         1   3242ms   3242ms       3242ms     102.2 MB
+#          5000      11    423ms    559ms       4817ms      10.2 MB
+#          2000      26    225ms    244ms       6278ms       4.1 MB
+#          1000      51    166ms    185ms       8755ms       2.0 MB
+#           500     101    135ms    155ms      13888ms       1.0 MB
+#           250     201    119ms    152ms      24640ms       0.5 MB
+#
+# Every size clears the latency budget comfortably, so the binding constraint
+# is the phone, not the server: at ~2.1 KB per record the response is what has
+# to be transferred over a rural connection and parsed into WatermelonDB. 1000
+# is the largest page that keeps that near 2 MB, and it costs 37% less total
+# replay time than 500 to get there. There is a ~100ms floor per pull (the 13
+# reference tables and the deleted-record lookups are paid per request, not per
+# record), which is why halving the page size does not halve page latency.
+#
+# Set to 0 to disable pagination entirely.
+PULL_PAGE_SIZE = 1000
+
+
+@request_cache
+def _sync_scope(user):
+	"""Resolve the user's entitlement scope once per request.
+
+	``get_changes_since`` and the reconciliation both need the project list and
+	region assignments. Without this memo an escalating pull resolves both
+	twice, which at sync volume is the kind of duplicated work that only shows
+	up under load.
+
+	Deliberately request-scoped and not cached longer: a revoked assignment has
+	to take effect on the very next pull, not after a TTL.
+	"""
+	assignments = get_user_region_assignments(user)
+	return {
+		"user": user,
+		"projects": get_user_accessible_projects(user),
+		"assignments": assignments,
+		"region_ids": list({a.administrative_region for a in assignments if a.administrative_region}),
+	}
 
 
 def _entitlement_widened_since(user, last_sync_time):
 	"""True when the user's assignments changed after their last pull.
 
 	A newly granted region or project makes older records visible that were
-	created before the watermark and have not been touched since. Those match
-	neither the "created" nor the "updated" window, so an incremental pull can
-	never deliver them — the device would stay blind to its own new scope until
+	created before the watermark and never touched since. Those match neither
+	the "created" nor the "updated" window, so an incremental pull can never
+	deliver them — the device would stay blind to its own new scope until
 	somebody edited each record by hand.
+
+	Reads the single newest assignment row for the user rather than filtering
+	on ``modified > x``: with the (user, modified) index this is one seek
+	whose cost does not depend on how stale the caller's watermark is. The
+	range form degenerated into a near-full scan for exactly the devices this
+	feature exists to repair.
+
+	Fires at most once per widening. This is not just rate limiting — it is what
+	makes the feature terminate. A widening resets the watermark to the
+	beginning, and the replay that follows is paginated, so every page after the
+	first arrives as an ordinary incremental pull whose watermark is still older
+	than the assignment row. Re-escalating on each of those would rewind the
+	cursor to zero and the device would fetch page one forever. Keyed on the
+	assignment's own ``modified``, so a genuinely new widening still triggers a
+	fresh replay.
 	"""
 	try:
-		return bool(
-			frappe.get_all(
-				"GRM User Project Assignment",
-				filters=[["user", "=", user], ["modified", ">", last_sync_time]],
-				fields=["name"],
-				limit=1,
-			)
+		latest = frappe.get_all(
+			"GRM User Project Assignment",
+			filters={"user": user},
+			fields=["modified"],
+			order_by="modified desc",
+			limit=1,
 		)
+		if not latest:
+			return False
+		widened_at = get_datetime(latest[0].modified)
+		if widened_at <= last_sync_time:
+			return False
+
+		state = hashlib.sha1(f"{user}|{widened_at.isoformat()}".encode(), usedforsecurity=False).hexdigest()
+		cache_key = f"grm_sync_entitlement_replay:{state}"
+		if frappe.cache().get_value(cache_key):
+			return False
+		frappe.cache().set_value(cache_key, 1, expires_in_sec=FULL_SYNC_ESCALATION_COOLDOWN)
+		return True
 	except Exception as e:
 		frappe.log_error(f"[SYNC_BACKEND] Entitlement check failed for {user}: {e!s}")
 		return False
 
 
-def _entitled_counts(user, tables):
-	"""Count what the user is entitled to see in each reference table."""
-	user_accessible_projects = get_user_accessible_projects(user)
-	user_assignments = get_user_region_assignments(user)
-	assigned_region_ids = list({a.administrative_region for a in user_assignments})
+@site_cache(ttl=REFERENCE_COUNT_TTL, maxsize=REFERENCE_COUNT_CACHE_SIZE)
+def _linked_reference_counts(projects):
+	"""Rows of each project-linked reference table the project set entitles.
 
-	counts = {}
-	for table_name in tables:
-		doctype = SYNC_TABLES.get(table_name)
-		if not doctype:
-			continue
-		user_filters = get_user_filters_for_doctype(
-			doctype, user_accessible_projects, assigned_region_ids, user
-		)
-		user_filters.pop("_child_table_filter", None)
+	``projects`` must be a sorted tuple: it is the cache key, so two users with
+	the same entitlements have to hash to the same entry.
 
-		# Same normalisation get_changes_since applies to its created_filters,
-		# so the count matches the rows that pull would actually return.
-		filters = {}
-		for key, value in user_filters.items():
-			if isinstance(value, list) and len(value) > 1:
-				filters[key] = ["in", value]
-			elif isinstance(value, list) and len(value) == 1:
-				filters[key] = value[0]
-			else:
-				filters[key] = value
+	Keyed on the project set rather than the user because millions of users
+	share a handful of project combinations — the query runs once per
+	combination per TTL instead of once per pull. ``site_cache`` keeps that in
+	the worker process, so a hit is a dict lookup with no Redis round-trip and
+	no pickling; the trade-off is one miss per worker, which is what the TTL is
+	sized for.
 
-		counts[table_name] = frappe.db.count(doctype, filters)
+	The ``(parenttype, project, parent)`` index added by
+	``add_sync_reconciliation_indexes`` is what makes the miss cheap. Column
+	order is not incidental — see that patch for the measurements.
+	"""
+	parenttypes = [SYNC_TABLES[t] for t in CHILD_LINKED_REFERENCE_TABLES]
+	rows = frappe.db.sql(
+		"""
+		select parenttype, count(distinct parent) as n
+		from `tabGRM Project Link`
+		where parenttype in %(parenttypes)s and project in %(projects)s
+		group by parenttype
+		""",
+		{"projects": list(projects), "parenttypes": parenttypes},
+		as_dict=True,
+	)
+	by_doctype = {r.parenttype: cint(r.n) for r in rows}
+	return {t: by_doctype.get(SYNC_TABLES[t], 0) for t in CHILD_LINKED_REFERENCE_TABLES}
 
+
+def _entitled_counts(projects):
+	"""How many rows of each reconciled table the project set entitles."""
+	if not projects:
+		return {}
+
+	# GRM Project is filtered by name against this very list, so its entitled
+	# count is the length of the list. No query at all.
+	counts = {"grm_projects": len(projects)}
+
+	# Copy: the cached dict is shared with every other caller in this process.
+	counts.update(_linked_reference_counts(tuple(sorted(projects))))
 	return counts
 
 
@@ -175,28 +280,33 @@ def _resolve_full_sync(user, last_sync_time, local_counts):
 	if not local_counts:
 		return False, None
 
-	cache_key = f"grm_sync_escalated:{user}"
-	if frappe.cache().get_value(cache_key):
-		# Already replayed everything for this user recently. Escalating again
-		# would just resend the same payload on every pull.
-		return False, None
-
 	try:
-		entitled = _entitled_counts(user, RECONCILED_SYNC_TABLES)
+		entitled = _entitled_counts(_sync_scope(user)["projects"])
 	except Exception as e:
+		# Never let the safety net break the sync it is meant to protect.
 		frappe.log_error(f"[SYNC_BACKEND] Reconciliation counts failed for {user}: {e!s}")
 		return False, None
 
 	short = {
-		table: (local_counts.get(table, 0), expected)
+		table: (cint(local_counts.get(table, 0)), expected)
 		for table, expected in entitled.items()
 		if cint(local_counts.get(table, 0)) < expected
 	}
 	if not short:
 		return False, None
 
+	detail = ", ".join(f"{t}={have}/{want}" for t, (have, want) in sorted(short.items()))
+
+	# Keyed by the reported state, not just the user, so a device that made
+	# progress is allowed another replay immediately while one stuck in the
+	# same state waits out the cooldown. Also keeps a second device from being
+	# starved by the first one's escalation.
+	state = hashlib.sha1(f"{user}|{detail}".encode(), usedforsecurity=False).hexdigest()
+	cache_key = f"grm_sync_escalated:{state}"
+	if frappe.cache().get_value(cache_key):
+		return False, None
 	frappe.cache().set_value(cache_key, 1, expires_in_sec=FULL_SYNC_ESCALATION_COOLDOWN)
-	detail = ", ".join(f"{t}={have}/{want}" for t, (have, want) in short.items())
+
 	frappe.log(f"🔁 [SYNC_BACKEND] Escalating {user} to full sync; device short on {detail}")
 	return True, f"missing-records ({detail})"
 
@@ -244,8 +354,15 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
 	    },
 	    "timestamp": 1234567890123,
 	    "fullSync": false,
-	    "fullSyncReason": null
+	    "fullSyncReason": null,
+	    "hasMore": false
 	}
+
+	``hasMore: true`` means the response was capped at a page boundary and
+	``timestamp`` is that boundary rather than the current instant. The client
+	applies the page, then syncs again straight away to fetch the next one. This
+	keeps a full replay for a large account off a single unbounded request, and
+	makes an interrupted replay resume from the last page it acknowledged.
 	"""
 	# Start timing the entire operation
 	start_time = time.time()
@@ -314,8 +431,15 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
 				full_sync = 1
 				full_sync_reason = reason
 
+		# Cap this response at a page boundary. Resolved before the payload is
+		# built so every table can be clamped to the same instant.
+		scope = _sync_scope(frappe.session.user)
+		page_boundary, has_more = _resolve_page_boundary(
+			last_sync_time, scope["projects"], list(scope["region_ids"]), frappe.session.user
+		)
+
 		# Get all changes since last sync
-		changes = get_changes_since(last_sync_time)
+		changes = get_changes_since(last_sync_time, page_boundary)
 
 		# Generate timestamp with validation
 		current_dt = now_datetime()
@@ -333,7 +457,12 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
 		# datetime.timestamp() on a naive datetime resolves it in the process
 		# timezone, which is the same convention datetime.fromtimestamp() uses
 		# when parsing lastPulledAt above, so the round-trip stays exact.
-		current_timestamp = int(current_dt.timestamp() * 1000)
+		#
+		# On a paginated page the watermark is the page boundary, not now:
+		# advancing to now would silently skip everything after the boundary.
+		# The client sends this value straight back as the next lastPulledAt, so
+		# it is also the cursor that resumes the next page.
+		current_timestamp = int((page_boundary or current_dt).timestamp() * 1000)
 
 		# Validate timestamp format
 		if not isinstance(current_timestamp, int) or current_timestamp <= 0:
@@ -350,6 +479,7 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
 		frappe.log(
 			f"✅ [SYNC_BACKEND] pullChanges done: +{total_created} ~{total_updated} -{total_deleted} in {total_duration:.3f}s"
 			+ (f" [full: {full_sync_reason}]" if full_sync else "")
+			+ (" [page: more]" if has_more else "")
 		)
 
 		return {
@@ -360,6 +490,10 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
 			# so an escalation is visible in the request log without guessing.
 			"fullSync": bool(full_sync),
 			"fullSyncReason": full_sync_reason,
+			# More pages remain. The client should sync again immediately rather
+			# than waiting for its next interval; `timestamp` above is already
+			# the cursor to resume from.
+			"hasMore": bool(has_more),
 		}
 
 	except Exception as e:
@@ -533,47 +667,145 @@ def push_changes():
 		frappe.throw(_("Failed to process push changes request."))
 
 
-def get_deleted_records(doctype, since_timestamp):
+def get_deleted_records_by_doctype(doctypes, since_timestamp, until_timestamp=None):
 	"""
-	Get deleted records from Frappe's deleted documents table
+	Get deleted records for several doctypes in one query.
 
-	Returns list of record IDs that were deleted since the given timestamp
+	Returns ``{doctype: [deleted names]}`` with an entry for every requested
+	doctype. ``until_timestamp`` closes the window at a paginated page boundary
+	so a deletion is never reported before the page whose watermark covers it —
+	otherwise the client would advance past a deletion it had not been told
+	about.
+
+	One query, not one per table. ``Deleted Document`` is append-only and never
+	pruned, so it is the one table in the pull that grows without bound; asking
+	it 15 questions per pull made it 85% of the latency of a week-behind
+	incremental sync (486ms of 572ms) on a site with only 39k tombstones.
 	"""
 	start_time = time.time()
+	results = {doctype: [] for doctype in doctypes}
 
 	try:
-		# Query the Deleted Document table for records of this doctype
-		# that were deleted after the given timestamp
-		deleted_docs = frappe.get_list(
+		filters = [
+			["deleted_doctype", "in", list(doctypes)],
+			["creation", ">", since_timestamp],
+		]
+		if until_timestamp is not None:
+			filters.append(["creation", "<=", until_timestamp])
+
+		deleted_docs = frappe.get_all(
 			"Deleted Document",
-			filters={"deleted_doctype": doctype, "creation": [">", since_timestamp]},
-			fields=["deleted_name as name"],
+			filters=filters,
+			fields=["deleted_doctype", "deleted_name"],
 			ignore_permissions=True,  # We need to see all deleted records
 		)
 
-		# Extract just the document names (IDs)
-		deleted_ids = [doc.name for doc in deleted_docs]
+		for doc in deleted_docs:
+			# A tombstone for a doctype we didn't ask about cannot appear given
+			# the filter, but guard anyway rather than raising mid-pull.
+			if doc.deleted_doctype in results:
+				results[doc.deleted_doctype].append(doc.deleted_name)
 
-		return deleted_ids
+		return results
 
 	except Exception as e:
 		duration = time.time() - start_time
-		frappe.log_error(
-			f"❌ [SYNC_BACKEND] Failed to get deleted records for {doctype} after {duration:.3f}s: {e!s}"
+		frappe.log_error(f"❌ [SYNC_BACKEND] Failed to get deleted records after {duration:.3f}s: {e!s}")
+		# Return empty lists on error - don't fail the entire sync
+		return results
+
+
+def _resolve_page_boundary(last_sync_time, user_projects, accessible_region_ids, user):
+	"""Pick the upper bound of this page, or ``None`` for "everything left".
+
+	Pagination hangs on one property of Frappe's timestamps: ``modified`` is set
+	equal to ``creation`` on insert and only ever moves forward, so
+	``modified > watermark`` is exactly the union of this pull's "created" and
+	"updated" streams. That makes ``modified`` a single ordering key for both,
+	which is what lets one watermark page a response that carries two streams
+	per table across fourteen tables.
+
+	Deliver ``watermark < modified <= boundary`` everywhere and the client can
+	advance its watermark to ``boundary`` with no record skipped and none sent
+	twice — the next page picks up at ``> boundary``.
+
+	The boundary is read off GRM Issue alone. Issues are the only table that
+	grows without bound; the reference tables are small enough that clamping
+	them to the same boundary drains them within the first page or two. Cost is
+	one indexed ``limit 2 offset N-1`` seek.
+
+	Returns ``(boundary, has_more)``. ``(None, False)`` means no cap: the caller
+	sends the remainder and advances the watermark to now.
+	"""
+	if not PULL_PAGE_SIZE:
+		return None, False
+
+	filters = get_user_filters_for_doctype("GRM Issue", user_projects, accessible_region_ids, user)
+	filters.pop("_child_table_filter", None)
+
+	conditions = [["modified", ">", last_sync_time]]
+	for key, value in filters.items():
+		if isinstance(value, list) and len(value) > 1:
+			conditions.append([key, "in", value])
+		elif isinstance(value, list) and len(value) == 1:
+			conditions.append([key, "=", value[0]])
+		else:
+			conditions.append([key, "=", value])
+
+	try:
+		# offset N-1 with limit 2: the first row is the Nth record and becomes
+		# the boundary; a second row proves there is a page after this one. When
+		# fewer than N records remain both are absent and there is no cap.
+		tail = frappe.get_all(
+			"GRM Issue",
+			filters=conditions,
+			fields=["modified"],
+			order_by="modified asc",
+			start=PULL_PAGE_SIZE - 1,
+			page_length=2,
 		)
-		# Return empty list on error - don't fail the entire sync
-		return []
+	except Exception as e:
+		# A failure here must not break the pull; fall back to unpaginated.
+		frappe.log_error(f"[SYNC_BACKEND] Page boundary probe failed for {user}: {e!s}")
+		return None, False
+
+	if len(tail) < 2:
+		return None, False
+
+	# The boundary leaves here as a datetime but reaches the client as integer
+	# milliseconds, and `modified` carries microseconds. Truncating would leave
+	# the boundary record still matching `modified > watermark` on the next
+	# request: at best it is re-sent, at worst every record in the page shares
+	# that millisecond and the cursor never moves. Round UP to the next whole
+	# millisecond instead — the boundary record falls inside this page, and the
+	# next page starts strictly after a value the client can represent exactly.
+	raw = get_datetime(tail[0].modified)
+	boundary = raw.replace(microsecond=0) + timedelta(milliseconds=-(-raw.microsecond // 1000))
+
+	# Records sharing the boundary millisecond are all included, so a page can
+	# exceed PULL_PAGE_SIZE after a bulk import. That is deliberate: excluding
+	# them would either skip them or, if they filled the whole page, stall the
+	# cursor forever.
+	return boundary, True
 
 
-def get_changes_since(last_sync_time):
-	"""Get all changes since last sync time with user permissions and region filtering"""
+def get_changes_since(last_sync_time, page_boundary=None):
+	"""Get all changes since last sync time with user permissions and region filtering
+
+	``page_boundary`` closes the window at the top, so the response carries only
+	``last_sync_time < modified <= page_boundary``. ``None`` means no upper
+	bound.
+	"""
 	function_start = time.time()
 	user = frappe.session.user
 
-	# Get user accessible projects and region assignments
-	user_accessible_projects = get_user_accessible_projects(user)
-	user_assignments = get_user_region_assignments(user)
-	assigned_region_ids = list(set([assignment.administrative_region for assignment in user_assignments]))
+	# Get user accessible projects and region assignments. Memoised per request
+	# so the reconciliation check ahead of this call does not pay for the same
+	# two lookups a second time.
+	scope = _sync_scope(user)
+	user_accessible_projects = scope["projects"]
+	user_assignments = scope["assignments"]
+	assigned_region_ids = list(scope["region_ids"])
 
 	# Pre-compute the BFS-expanded accessible-region set ONCE for the
 	# whole pull. Without this, get_user_filters_for_doctype re-runs the
@@ -599,6 +831,12 @@ def get_changes_since(last_sync_time):
 	# Track issues being synced for child table filtering
 	synced_issue_ids = set()
 
+	# Resolve every table's tombstones up front, in one query, rather than
+	# once per table inside the loop below.
+	deleted_by_doctype = get_deleted_records_by_doctype(
+		set(SYNC_TABLES.values()), last_sync_time, page_boundary
+	)
+
 	for table_name, doctype in SYNC_TABLES.items():
 		table_start = time.time()
 		try:
@@ -610,12 +848,21 @@ def get_changes_since(last_sync_time):
 			# Handle child table filtering separately
 			child_table_filter = user_filters.pop("_child_table_filter", None)
 
-			# Combine time filters with user filters
+			# Combine time filters with user filters.
+			#
+			# Both streams are additionally clamped by `modified <= boundary` on
+			# a paginated page. "created" is bounded on modified rather than
+			# creation on purpose: modified is the ordering key the watermark
+			# advances along, and for a freshly created record the two are
+			# equal, so this is the same window expressed once.
 			created_filters = {"creation": [">", last_sync_time]}
 			updated_filters = [
 				["modified", ">", last_sync_time],
 				["creation", "<=", last_sync_time],
 			]
+			if page_boundary is not None:
+				created_filters["modified"] = ["<=", page_boundary]
+				updated_filters.append(["modified", "<=", page_boundary])
 
 			# Add user-specific filters (now properly formatted)
 			if user_filters:
@@ -650,8 +897,13 @@ def get_changes_since(last_sync_time):
 					# Single value - use "=" operator
 					child_filter = [child_doctype, field, "=", values[0]]
 
-				# Convert created_filters to list format and add child filter
+				# Convert created_filters to list format and add child filter.
+				# Carry the page boundary across the format switch — dropping it
+				# here would let the reference tables run past the window the
+				# client is about to acknowledge.
 				created_filters_list = [["creation", ">", last_sync_time], child_filter]
+				if page_boundary is not None:
+					created_filters_list.append(["modified", "<=", page_boundary])
 				# Replace dict format with list format for child table queries
 				created_filters = created_filters_list
 				updated_filters.append(child_filter)
@@ -676,8 +928,8 @@ def get_changes_since(last_sync_time):
 				fields=["*"],
 			)
 
-			# Get deleted records from Frappe's deleted documents table
-			deleted_ids = get_deleted_records(doctype, last_sync_time)
+			# Deleted records came from the single batched tombstone query above.
+			deleted_ids = deleted_by_doctype.get(doctype, [])
 
 			# Hide other users' drafts from the sync payload. Drafts are
 			# private to the creator across desk + REST + sync (matches
@@ -723,7 +975,7 @@ def get_changes_since(last_sync_time):
 	# Optimize attachment fetching with proper parent filtering
 	if "grm_issue_attachments" in changes and synced_issue_ids:
 		changes["grm_issue_attachments"] = optimize_attachment_sync(
-			changes["grm_issue_attachments"], synced_issue_ids, last_sync_time
+			changes["grm_issue_attachments"], last_sync_time, page_boundary
 		)
 
 	function_duration = time.time() - function_start
@@ -2017,14 +2269,18 @@ def get_max_file_size():
 		return default_size
 
 
-def optimize_attachment_sync(attachment_changes, accessible_issue_ids, last_sync_time):
+def optimize_attachment_sync(attachment_changes, last_sync_time, page_boundary=None):
 	"""
 	Optimize attachment sync using Frappe QB for better performance
 
 	Args:
 	    attachment_changes (dict): Current attachment changes from regular sync
-	    accessible_issue_ids (set): Set of issue IDs user has access to
 	    last_sync_time (datetime): Last sync timestamp
+	    page_boundary (datetime | None): Upper bound of the current page. This
+	        function re-queries attachments itself, so it has to honour the same
+	        window as the rest of the response — attachments are the heaviest
+	        rows in the payload (they carry base64 file data), so letting them
+	        ignore the cap would defeat the pagination.
 
 	Returns:
 	    dict: Optimized attachment changes with file data
@@ -2033,21 +2289,24 @@ def optimize_attachment_sync(attachment_changes, accessible_issue_ids, last_sync
 	frappe.log("📎 [SYNC_BACKEND] Starting optimized attachment sync")
 
 	try:
-		# Get all accessible issues that user can see (including existing ones)
-		all_accessible_issues = get_user_accessible_issues(accessible_issue_ids)
-
-		if not all_accessible_issues:
+		# Use Frappe QB for efficient attachment querying
+		attachment_table = frappe.qb.DocType("GRM Issue Attachment")
+		accessible_issues = accessible_issue_subquery(frappe.session.user)
+		if accessible_issues is None:
 			frappe.log("⚠️ [SYNC_BACKEND] No accessible issues found for attachment filtering")
 			return {"created": [], "updated": [], "deleted": attachment_changes.get("deleted", [])}
 
-		# Use Frappe QB for efficient attachment querying
-		attachment_table = frappe.qb.DocType("GRM Issue Attachment")
+		# Only GRM Issue uses this child table; naming the parenttype lets the
+		# standard (parent, parenttype) child index carry the semi-join.
+		in_scope = (attachment_table.parenttype == "GRM Issue") & attachment_table.parent.isin(
+			accessible_issues
+		)
 
 		# Query for created attachments
 		created_query = (
 			frappe.qb.from_(attachment_table)
 			.select("*")
-			.where(attachment_table.parent.isin(all_accessible_issues))
+			.where(in_scope)
 			.where(attachment_table.creation > last_sync_time)
 		)
 
@@ -2055,10 +2314,14 @@ def optimize_attachment_sync(attachment_changes, accessible_issue_ids, last_sync
 		updated_query = (
 			frappe.qb.from_(attachment_table)
 			.select("*")
-			.where(attachment_table.parent.isin(all_accessible_issues))
+			.where(in_scope)
 			.where(attachment_table.modified > last_sync_time)
 			.where(attachment_table.creation <= last_sync_time)
 		)
+
+		if page_boundary is not None:
+			created_query = created_query.where(attachment_table.modified <= page_boundary)
+			updated_query = updated_query.where(attachment_table.modified <= page_boundary)
 
 		# Execute queries
 		created_attachments = created_query.run(as_dict=True)
@@ -2115,48 +2378,51 @@ def optimize_attachment_sync(attachment_changes, accessible_issue_ids, last_sync
 		return attachment_changes
 
 
-def get_user_accessible_issues(synced_issue_ids):
+def accessible_issue_subquery(user):
+	"""Build a subquery selecting every GRM Issue ``user`` may see.
+
+	Attachments are filtered by their parent issue's scope. The obvious way to
+	do that is to materialise the accessible issue IDs and hand them to
+	``parent.isin([...])`` — which is what this used to do, and it does not
+	survive contact with real data. pypika renders every element of an ``IN``
+	list through a Python call, so a user entitled to 50k issues burned ~1s
+	building the SQL string before MariaDB saw the query, twice per pull:
+	cProfile put 2.588s of a 2.731s pull inside this one function. A subquery
+	keeps the ID set server-side, where it is an indexed semi-join, and the
+	cost stops scaling with the user's entitlement.
+
+	Scope is taken from ``get_user_filters_for_doctype`` rather than rebuilt
+	here, so attachments can never be scoped differently from the issues that
+	carry them — the previous hand-rolled filter used directly-assigned
+	regions while the issue query used the BFS-expanded set, and only the
+	union with the synced IDs papered over the difference.
+
+	Returns ``None`` when the user is entitled to nothing.
 	"""
-	Get all issues that user has access to (both synced and existing)
+	issue_table = frappe.qb.DocType("GRM Issue")
+	filters = get_user_filters_for_doctype("GRM Issue", None, None, user)
+	filters.pop("_child_table_filter", None)
+	if not filters:
+		return None
 
-	Args:
-	    synced_issue_ids (set): Set of issue IDs being synced
+	query = frappe.qb.from_(issue_table).select(issue_table.name)
+	for field, value in filters.items():
+		column = getattr(issue_table, field)
+		if isinstance(value, list | tuple | set):
+			if not value:
+				return None
+			query = query.where(column.isin(list(value)))
+		else:
+			query = query.where(column == value)
 
-	Returns:
-	    list: List of all accessible issue IDs
-	"""
-	try:
-		user = frappe.session.user
+	# Mirror _strip_foreign_drafts: a draft is private to its creator, so its
+	# attachments are too. The old ID-list build-up skipped this check and
+	# leaked foreign drafts' attachments for any issue that predated the
+	# watermark.
+	if not _user_can_see_others_drafts(user):
+		query = query.where((issue_table.docstatus != 0) | (issue_table.owner == user))
 
-		# Start with synced issues
-		all_accessible = set(synced_issue_ids)
-
-		# Get user's accessible projects and regions for additional issues
-		user_accessible_projects = get_user_accessible_projects(user)
-		user_assignments = get_user_region_assignments(user)
-		assigned_region_ids = [assignment.administrative_region for assignment in user_assignments]
-
-		if user_accessible_projects and assigned_region_ids:
-			# Use Frappe QB for efficient querying
-			issue_table = frappe.qb.DocType("GRM Issue")
-
-			additional_issues_query = (
-				frappe.qb.from_(issue_table)
-				.select(issue_table.name)
-				.where(issue_table.project.isin(user_accessible_projects))
-				.where(issue_table.administrative_region.isin(assigned_region_ids))
-			)
-
-			additional_issues = additional_issues_query.run(as_dict=True)
-			all_accessible.update([issue.name for issue in additional_issues])
-
-			frappe.log(f"📎 [SYNC_BACKEND] User has access to {len(all_accessible)} total issues")
-
-		return list(all_accessible)
-
-	except Exception as e:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Error getting accessible issues: {e!s}")
-		return list(synced_issue_ids)
+	return query
 
 
 def get_attachment_file_data(file_url):
