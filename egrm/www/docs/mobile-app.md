@@ -16,9 +16,9 @@ see [**Issue Lifecycle**](/docs/issue-lifecycle).
 The app is **not** on the Play Store. You download it once from the
 public portal, and after that it updates itself.
 
-1. On the Android device, open the portal and go to the app download
-   page.
-2. Tap the download link to fetch the `.apk`.
+1. On the Android device, open **`/grm-portal/download`** — the
+   *Mobile App* link in the portal header.
+2. Tap **Download APK** to fetch the file.
 3. Android will warn you that the file came from outside the Play
    Store. Approve installation from this source when prompted.
 4. Open the app and sign in with your eGRM account — the same email and
@@ -27,6 +27,13 @@ public portal, and after that it updates itself.
 After the first launch the app checks for updates on its own and
 installs them over the air. You do not need to re-download the `.apk`
 to get a newer version.
+
+> **The version number on the download page may not match the file, or
+> the app.** The published record and the `.apk` it points at are
+> currently named for different versions, and the running app updates
+> itself past both on first launch. Treat the download page as "the way
+> in", not as a statement of which version you will end up on — check
+> the version inside the app after signing in.
 
 > **Your account must be activated before you can sign in.** A user
 > assignment only grants access once its activation status is

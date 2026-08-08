@@ -148,6 +148,14 @@ category — for example **Complaint**, **Suggestion**, **Question**,
 **Compliment**. They are project-scoped so each project can adjust
 the wording.
 
+> Nothing enforces that reading. Because both lists are free-form, a
+> project can split the two axes however it likes, and live projects
+> do: the Rwanda Digital Acceleration Project puts the nature of the
+> grievance in the **category** (Complaint, Question, Service Issue,
+> Other) and uses the **issue type** for the intake channel (Web Form,
+> Phone Call, SMS, In Person, …). Decide which axis carries what before
+> you seed either list — citizens see both on the submission form.
+
 ![Step 6 — Issue Types](/assets/egrm/images/docs/wizard/06-issue-types.png)
 
 ---

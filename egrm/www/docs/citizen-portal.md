@@ -8,24 +8,45 @@ disagree with, and rate how it was handled.
 This page describes what a citizen can do. Staff handling the resulting
 cases should read [**Issue Lifecycle**](/docs/issue-lifecycle) instead.
 
+### Where things are
+
+| Page | Address |
+| --- | --- |
+| Home | `/grm-portal` |
+| Submit a grievance | `/grm-portal/submit` |
+| Track a complaint | `/grm-portal/track` |
+| Download the mobile app | `/grm-portal/download` |
+
+The **Login** link in the portal header goes to the staff desk at
+`/login`. It is not a citizen account — see
+[What the portal does not do](#what-the-portal-does-not-do).
+
 ---
 
 ## Submit a grievance
 
-No sign-in is required. The form asks for:
+No sign-in is required. Submission is a **four-step form**, and you
+cannot move on until the current step is complete.
 
-| Field | Required | Notes |
+| Step | Asks for | Required |
 | --- | --- | --- |
-| Project | Yes | Only projects marked active are listed |
-| Category | Yes | Must belong to the chosen project |
-| Issue type | Yes | Must belong to the chosen project |
-| Administrative region | Yes | Chosen by drilling down the region hierarchy |
-| Description | Yes | What happened |
-| Date the issue occurred | No | May differ from the submission date |
-| Name, gender, contact details | No | See *Staying anonymous* below |
+| 1 | Project, category, issue type | Yes |
+| 2 | Where it happened — drill down the region hierarchy | Yes, to the lowest level offered |
+| 3 | When it happened, and a description | Yes, both |
+| 4 | Whether you want to be contacted | Yes — one of the two choices |
 
-Categories, issue types, and regions are filtered by the project you
-pick, so choose the project first — the other lists populate from it.
+Categories, issue types, and regions all come from the project you pick
+on step 1, so the later lists only populate once that choice is made.
+The wording of the category and issue-type lists is configured per
+project: on the Rwanda Digital Acceleration Project, for instance,
+*category* carries the nature of the grievance (Complaint, Question,
+Service Issue, Other) and *issue type* records how it reached the
+office (Web Form, Phone Call, SMS, In Person, and so on).
+
+Two limits on step 3 are worth knowing before you start typing: the
+description must be at least **10 characters** and is capped at
+**5,000**, with a live counter. The date is required by the form even
+though the server will accept a complaint without one.
 
 ### Verification
 
@@ -37,7 +58,9 @@ Two checks may apply, depending on how the site is configured:
   *and* you supply a phone number, the portal sends a 6-digit code by
   SMS. The code is valid for **5 minutes** and is consumed once used.
 
-If neither is configured on your site, neither step appears.
+If neither is configured on your site, neither step appears — and
+neither is currently switched on at `egrm.risa.gov.rw`, where the form
+submits without a bot challenge.
 
 ### Limits
 
@@ -55,7 +78,16 @@ to find the complaint again: the portal has no citizen login and no
 
 ## Staying anonymous
 
-You choose how much to reveal, and the choice has consequences later.
+Step 4 puts the choice plainly: **Stay anonymous**, or **I want
+updates**.
+
+Choosing *I want updates* requires a **phone number** — it stays
+required even if you pick Email or WhatsApp as your preferred contact
+method, in which case an email field is added alongside it. Your name
+and gender are optional either way.
+
+Underneath, this is recorded as a contact medium, and the choice has
+consequences later.
 
 | Contact medium | What staff see | Effect downstream |
 | --- | --- | --- |
@@ -139,21 +171,32 @@ Worth stating plainly, because these are reasonable things to expect:
 
 ## Public statistics and reports
 
-The portal also publishes aggregate information that needs no tracking
+The portal can publish aggregate information that needs no tracking
 code: totals and status breakdowns, issues by category and region, and
 trends over time, alongside any reports the administrators have
 published. These are aggregates only — no individual complaint or
 citizen is identifiable from them.
 
-Which of these sections appear is controlled per site by the
-administrator.
+**Both are off by default and are off on `egrm.risa.gov.rw` today.**
+The dashboard and reports cards are shown only when an administrator
+enables `show_dashboard` and `show_reports` in the portal
+configuration; until then the home page offers Submit and Track only.
+The introductory line on the home page mentions viewing statistics
+regardless of the setting, so a citizen may go looking for a page that
+is not switched on.
+
+Administrators: see
+[Administration](/docs/administration#public-portal-configuration).
 
 ---
 
 ## Languages
 
-The portal serves translated text and picks a default language for the
-project being viewed. Citizens can switch languages from the interface.
+The portal is available in **English**, **Français**, and
+**Kinyarwanda**, switchable from the header on every page. It picks a
+default for the project being viewed — Kinyarwanda on
+`egrm.risa.gov.rw` — and the choice does not carry across a reload, so
+a citizen who switches language may need to switch again later.
 
 ---
 

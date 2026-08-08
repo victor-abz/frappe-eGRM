@@ -119,10 +119,22 @@ citizens can read them without a tracking code.
 ## Public portal configuration
 
 The portal's sections are individually switchable per site, so you
-control whether statistics, published reports, and the app download
-page appear.
+control whether statistics and published reports appear.
 
-Two site-level settings change citizen-facing behaviour:
+| Portal setting | When off |
+| --- | --- |
+| `show_dashboard` | No **Dashboard** card; the public statistics view is unreachable from the interface |
+| `show_reports` | No **Reports** card; published reports are unreachable |
+
+Both are off unless you turn them on. Note that the home page's
+introductory line invites citizens to "view statistics" whether or not
+`show_dashboard` is set, so leaving it off advertises something the
+portal does not then offer. The underlying figures are anonymised
+aggregates only — counts by status, category, region, and trend — and
+are served by a guest-readable endpoint whether or not the card is
+shown.
+
+Two further site-level settings change citizen-facing behaviour:
 
 | Setting | Effect when absent |
 | --- | --- |

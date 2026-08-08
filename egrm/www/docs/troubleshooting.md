@@ -152,6 +152,13 @@ Both are once-only and cannot be changed or withdrawn.
 | "SMS service is not configured" | Phone verification is unavailable on this site. Submit without a phone number. |
 | Rate limit reached | **5 submissions per IP per day**, **3 verification codes per IP per hour**. Shared connections share the budget. |
 
+### The home page mentions statistics, but there is no such page
+
+The public dashboard and reports are switched off by default, while the
+home page's introductory line mentions statistics regardless. If you
+want citizens to have them, enable them — see
+[Administration](/docs/administration#public-portal-configuration).
+
 ### A citizen wants to add information to their complaint
 
 They cannot. Public commenting is not implemented. The only text a
