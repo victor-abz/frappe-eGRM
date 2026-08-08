@@ -312,7 +312,7 @@ def _resolve_full_sync(user, last_sync_time, local_counts):
 
 
 @frappe.whitelist()
-def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
+def pull_changes(lastPulledAt=None, fullSync=None, counts=None, paging=None):
 	"""
 	WatermelonDB standard pullChanges endpoint - GET with query parameters
 
@@ -336,6 +336,15 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
 	when the user's assignments changed since their last pull, since records
 	that entered their scope that way are older than the watermark and would
 	otherwise never be sent.
+
+	``paging=1`` marks a request as the continuation of a response that came
+	back with ``hasMore``, and suppresses both of those automatic upgrades. A
+	device walking pages is short of records and carries a watermark older than
+	its own assignment row, so it looks exactly like a device that needs
+	repairing — but escalating restarts the replay from record one, and the
+	client walks back to the same page and trips it again. Send it on every
+	page after the first, and on the first page of a sync that is resuming a
+	replay an earlier sync did not finish. Omit it and the safety net re-arms.
 
 	Returns:
 	{
@@ -376,6 +385,7 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
 		last_pulled_at = args.get("lastPulledAt") if args else lastPulledAt
 		full_sync = cint(args.get("fullSync") if args else fullSync)
 		raw_counts = args.get("counts") if args else counts
+		is_paging = cint(args.get("paging") if args else paging)
 
 		# What the device says it currently holds, per table. Optional: older
 		# clients don't send it and simply lose the reconciliation safety net.
@@ -424,7 +434,20 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
 		# user's scope just widened. Detect that here rather than waiting for
 		# somebody to phone support and be told to tap "Download all my data
 		# again".
-		if not full_sync and last_sync_time != datetime.min:
+		#
+		# Except while the client is walking pages. A continuation page is an
+		# ordinary incremental request as far as this endpoint can tell — same
+		# watermark shape, and a device legitimately mid-replay is short of
+		# records and carries a watermark older than its own assignment row, so
+		# both escalation checks fire on it. Escalating means restarting the
+		# replay from record one, and the client then walks back to the same
+		# page and trips it again. Measured on a paginated replay: pages 2 and 3
+		# each re-escalated and refetched page one, so 5 requests delivered what
+		# 3 should have, and the cursor stood still twice. `paging=1` says "I
+		# know I am behind, I am already fixing it" — the safety net is for
+		# devices that are stuck, not devices making progress. The next pull
+		# without the flag re-arms it.
+		if not full_sync and not is_paging and last_sync_time != datetime.min:
 			should_escalate, reason = _resolve_full_sync(frappe.session.user, last_sync_time, local_counts)
 			if should_escalate:
 				last_sync_time = datetime.min

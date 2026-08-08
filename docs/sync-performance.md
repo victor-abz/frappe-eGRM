@@ -199,6 +199,47 @@ record on a page shared that millisecond the cursor would never advance at all.
 incremental pulls whose watermark is still older than the assignment row, so
 each one re-escalated to a full replay and refetched page one forever.
 
+### The cooldowns are not enough: `paging=1`
+
+The cooldown suppresses a *repeat* of the same escalation, and that is not what a
+paginated replay produces. There are two independent escalation checks, keyed
+separately, and the missing-records key embeds the reported counts — which change
+on every page as the device makes progress. So each page presents a fresh key and
+escalates again.
+
+A continuation page is indistinguishable from a broken device at this endpoint:
+same watermark shape, genuinely short of records, watermark older than its own
+assignment row. Escalating restarts the replay from record one, and the client
+walks back to the same page and trips it again. `paging=1` is the client saying
+"I know I am behind, I am already fixing it".
+
+Replaying the client's own loop against the real endpoint, 115 records, page size
+lowered to 2:
+
+| Client behaviour | Requests | Records | Mid-replay escalations | Cursor stalls |
+| --- | --- | --- | --- | --- |
+| counts on every page | 5 | 115 | 2 | 2 |
+| counts withheld while paging | 4 | 115 | 1 | 1 |
+| `paging=1` on continuation pages | 3 | 115 | 0 | 0 |
+
+Withholding counts only removes one of the two escalations, which is why the flag
+exists rather than just a client-side omission. The flag suppresses, it does not
+disable: the next pull without it escalates normally, asserted in the same run.
+
+### Reference data drains last, and the client must not read that as "empty"
+
+Worth knowing for anyone touching the client: the reference tables carry a newer
+`modified` than the issue-derived page boundaries, so on a large replay they
+arrive on the **last** page. In the run above pages 1–3 are issues and pages 4–5
+are the reference tables.
+
+Any client heuristic of the form "reference tables are empty, so this is a fresh
+install, ask for everything" therefore fires on every page in the middle of a
+replay. The app had exactly that check, and with this ordering it re-sent
+`fullSync=1` on all three pages, so the server restarted from record one each
+time and the device made zero progress until it hit its page cap. The fix is on
+the client: a continuation never re-evaluates the bootstrap check.
+
 ## Reproducing
 
 Correctness (asserts paged output equals unpaginated output, is idempotent, and
