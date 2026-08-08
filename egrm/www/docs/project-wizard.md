@@ -17,8 +17,8 @@ The wizard can be reached two ways:
 
 ### 1. From the project list — "New Project"
 
-Project administrators (System Manager, GRM Platform Administrator,
-or any user with the Administer duty) can click **+ New** on the GRM
+Project administrators (System Manager or GRM Platform Administrator)
+can click **+ New** on the GRM
 Project list and choose **Project Wizard**, which lands them on Step 1
 with a blank form.
 
@@ -103,9 +103,8 @@ The seven duties are:
 | Review | Triage drafts, assign, accept/reject, submit, confirm resolution |
 | Assignment | Manage assignee within an open issue |
 | Investigate & Resolve | Work the issue and submit a proposed resolution |
-| Feedback | Leave comments without mutating the issue |
-| Supervise | Read-only audit access (bypass role) |
-| Administer | Full project administration (bypass role) |
+| Feedback | Handle the citizen rating and the appeal flow |
+| Supervise | Read everything in scope, force reassignment or closure, manage user assignments |
 
 On this step you create roles like **Intake Officer**, **Project
 Director**, **Field Investigator**, etc., and tick the duties each

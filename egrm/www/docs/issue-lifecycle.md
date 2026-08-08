@@ -18,7 +18,7 @@ Each stage of the lifecycle is gated by the user's **duties**.
 A user without the right duty does not see the button on the form,
 and a direct API call (e.g. `egrm.api.issue.assign`) is rejected
 with `Permission denied`. Both checks share the same canonical
-logic in `egrm/permissions/issue_permission.py`.
+logic in `egrm/server_scripts/grm_issue_permissions.py`.
 
 ---
 
@@ -134,7 +134,8 @@ Resolution**. The issue moves to terminal status **Closed**:
 
 The citizen receives a final notification (template configured on
 Step 8 of the wizard), and the issue is locked from further
-mutation by anyone without the Administer duty.
+mutation by anyone without an administrator bypass role
+(System Manager, GRM Platform Administrator, or GRM Supervise).
 
 ---
 
@@ -153,7 +154,7 @@ The rule is uniform across desk, mobile sync, and API:
 This is enforced at three layers:
 
 1. **`permission_query_conditions`** on GRM Issue
-   (`egrm/permissions/issue_permission.py`) — adds the
+   (`egrm/server_scripts/grm_issue_permissions.py`) — adds the
    `(docstatus > 0 OR owner = me)` clause to every desk list query.
 2. **`has_permission` hook** — guards `frappe.has_permission()`
    calls used by individual form loads.
@@ -164,10 +165,9 @@ This is enforced at three layers:
    post-query draft stripping, so the rule holds even when
    `permission_query_conditions` is bypassed.
 
-This belt-and-braces approach is verified by an automated walker
-(`/tmp/step9-walk/walk_api_drafts.py`) that logs in as the owner
-and as another duty-holder, then asserts the non-owner cannot see
-the owner's drafts via any surface.
+This belt-and-braces approach is verified by an automated walker that
+logs in as the owner and as another duty-holder, then asserts the
+non-owner cannot see the owner's drafts via any surface.
 
 ---
 
