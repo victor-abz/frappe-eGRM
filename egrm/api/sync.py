@@ -17,7 +17,7 @@ from datetime import datetime
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import get_datetime, get_timestamp, now_datetime
+from frappe.utils import cint, get_datetime, get_timestamp, now_datetime
 
 # Import user filtering functions from lookup.py
 from egrm.api.lookup import get_user_accessible_regions, get_user_region_assignments
@@ -90,12 +90,20 @@ DOCTYPE_TO_TABLE = {v: k for k, v in SYNC_TABLES.items()}
 
 
 @frappe.whitelist()
-def pull_changes(lastPulledAt=None):
+def pull_changes(lastPulledAt=None, fullSync=None):
 	"""
 	WatermelonDB standard pullChanges endpoint - GET with query parameters
 
 	URL: /api/method/egrm.api.sync.pull_changes?lastPulledAt=<timestamp>
 	Method: GET
+
+	``fullSync=1`` ignores ``lastPulledAt`` and returns the whole back
+	catalogue the user is entitled to see. A device whose local database is
+	empty — a fresh install, cleared app data, a restore — still holds a
+	watermark in its sync metadata, so an incremental pull would hand it only
+	the last few hours of deltas and leave it with no projects to work in.
+	The result is still scoped by ``get_changes_since``, so "everything" only
+	ever means everything within the user's own assignments.
 
 	Returns:
 	{
@@ -119,11 +127,19 @@ def pull_changes(lastPulledAt=None):
 	start_time = time.time()
 
 	try:
-		# Parse timestamp parameter
-		last_pulled_at = frappe.request.args.get("lastPulledAt") if frappe.request.args else lastPulledAt
+		# Parse timestamp parameter. Read the request lazily off frappe.local:
+		# `frappe.request` raises RuntimeError when unbound, which made this
+		# endpoint impossible to exercise from `bench console` or a unit test.
+		request = getattr(frappe.local, "request", None)
+		args = request.args if request is not None else None
+		last_pulled_at = args.get("lastPulledAt") if args else lastPulledAt
+		full_sync = cint(args.get("fullSync") if args else fullSync)
 
 		# Validate and parse timestamp
-		if last_pulled_at:
+		if full_sync:
+			# Caller has no usable local data: replay history from the beginning.
+			last_sync_time = datetime.min
+		elif last_pulled_at:
 			try:
 				# Handle both string and numeric timestamps
 				if isinstance(last_pulled_at, int | float):
@@ -151,8 +167,21 @@ def pull_changes(lastPulledAt=None):
 
 		# Generate timestamp with validation
 		current_dt = now_datetime()
-		# WatermelonDB expects timestamp as milliseconds since epoch (number, not string)
-		current_timestamp = int(get_timestamp(current_dt) * 1000)
+		# WatermelonDB expects timestamp as milliseconds since epoch (number, not
+		# string). It stores whatever we return and sends it back as the next
+		# lastPulledAt, so this must be the real instant of this pull.
+		#
+		# frappe.utils.get_timestamp() is NOT usable here: it runs the value
+		# through getdate(), which returns a date, so the time component is
+		# discarded and every response claimed the client was synced as of
+		# midnight. Clients then re-requested from midnight forever and only
+		# ever received records touched today — records created earlier matched
+		# neither the "created" nor the "updated" filter and were never sent.
+		#
+		# datetime.timestamp() on a naive datetime resolves it in the process
+		# timezone, which is the same convention datetime.fromtimestamp() uses
+		# when parsing lastPulledAt above, so the round-trip stays exact.
+		current_timestamp = int(current_dt.timestamp() * 1000)
 
 		# Validate timestamp format
 		if not isinstance(current_timestamp, int) or current_timestamp <= 0:
