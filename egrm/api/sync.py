@@ -88,9 +88,121 @@ SYNC_TABLES = {
 # Reverse mapping for table name lookup
 DOCTYPE_TO_TABLE = {v: k for k, v in SYNC_TABLES.items()}
 
+# Tables whose contents are fully determined by the user's entitlements, so a
+# server-side count can be compared directly against what the device reports
+# holding. Deliberately excludes GRM Issue and the child tables: drafts are
+# stripped per-viewer and attachments are filtered by synced parent, so their
+# counts legitimately differ from a naive COUNT(*) and would make the client
+# look permanently short.
+RECONCILED_SYNC_TABLES = (
+	"grm_projects",
+	"grm_issue_categories",
+	"grm_issue_types",
+	"grm_issue_statuses",
+	"grm_issue_departments",
+)
+
+# An escalation replays the whole back catalogue, so a device that stays short
+# no matter what (a failed write, a table the client filters locally) must not
+# be able to request one on every pull.
+FULL_SYNC_ESCALATION_COOLDOWN = 3600
+
+
+def _entitlement_widened_since(user, last_sync_time):
+	"""True when the user's assignments changed after their last pull.
+
+	A newly granted region or project makes older records visible that were
+	created before the watermark and have not been touched since. Those match
+	neither the "created" nor the "updated" window, so an incremental pull can
+	never deliver them — the device would stay blind to its own new scope until
+	somebody edited each record by hand.
+	"""
+	try:
+		return bool(
+			frappe.get_all(
+				"GRM User Project Assignment",
+				filters=[["user", "=", user], ["modified", ">", last_sync_time]],
+				fields=["name"],
+				limit=1,
+			)
+		)
+	except Exception as e:
+		frappe.log_error(f"[SYNC_BACKEND] Entitlement check failed for {user}: {e!s}")
+		return False
+
+
+def _entitled_counts(user, tables):
+	"""Count what the user is entitled to see in each reference table."""
+	user_accessible_projects = get_user_accessible_projects(user)
+	user_assignments = get_user_region_assignments(user)
+	assigned_region_ids = list({a.administrative_region for a in user_assignments})
+
+	counts = {}
+	for table_name in tables:
+		doctype = SYNC_TABLES.get(table_name)
+		if not doctype:
+			continue
+		user_filters = get_user_filters_for_doctype(
+			doctype, user_accessible_projects, assigned_region_ids, user
+		)
+		user_filters.pop("_child_table_filter", None)
+
+		# Same normalisation get_changes_since applies to its created_filters,
+		# so the count matches the rows that pull would actually return.
+		filters = {}
+		for key, value in user_filters.items():
+			if isinstance(value, list) and len(value) > 1:
+				filters[key] = ["in", value]
+			elif isinstance(value, list) and len(value) == 1:
+				filters[key] = value[0]
+			else:
+				filters[key] = value
+
+		counts[table_name] = frappe.db.count(doctype, filters)
+
+	return counts
+
+
+def _resolve_full_sync(user, last_sync_time, local_counts):
+	"""Decide whether an incremental pull should be upgraded to a full replay.
+
+	Returns ``(should_escalate, reason)``. The caller has already ruled out an
+	explicit ``fullSync=1`` and a first-ever sync.
+	"""
+	if _entitlement_widened_since(user, last_sync_time):
+		return True, "entitlement-changed"
+
+	if not local_counts:
+		return False, None
+
+	cache_key = f"grm_sync_escalated:{user}"
+	if frappe.cache().get_value(cache_key):
+		# Already replayed everything for this user recently. Escalating again
+		# would just resend the same payload on every pull.
+		return False, None
+
+	try:
+		entitled = _entitled_counts(user, RECONCILED_SYNC_TABLES)
+	except Exception as e:
+		frappe.log_error(f"[SYNC_BACKEND] Reconciliation counts failed for {user}: {e!s}")
+		return False, None
+
+	short = {
+		table: (local_counts.get(table, 0), expected)
+		for table, expected in entitled.items()
+		if cint(local_counts.get(table, 0)) < expected
+	}
+	if not short:
+		return False, None
+
+	frappe.cache().set_value(cache_key, 1, expires_in_sec=FULL_SYNC_ESCALATION_COOLDOWN)
+	detail = ", ".join(f"{t}={have}/{want}" for t, (have, want) in short.items())
+	frappe.log(f"🔁 [SYNC_BACKEND] Escalating {user} to full sync; device short on {detail}")
+	return True, f"missing-records ({detail})"
+
 
 @frappe.whitelist()
-def pull_changes(lastPulledAt=None, fullSync=None):
+def pull_changes(lastPulledAt=None, fullSync=None, counts=None):
 	"""
 	WatermelonDB standard pullChanges endpoint - GET with query parameters
 
@@ -104,6 +216,16 @@ def pull_changes(lastPulledAt=None, fullSync=None):
 	the last few hours of deltas and leave it with no projects to work in.
 	The result is still scoped by ``get_changes_since``, so "everything" only
 	ever means everything within the user's own assignments.
+
+	``counts`` is an optional JSON object of the row counts the device
+	currently holds per table, e.g. ``{"grm_projects": 0}``. The server
+	compares it against what the user is entitled to and upgrades the pull to
+	a full replay by itself when the device is short — so a device missing old
+	records recovers on its next ordinary sync instead of needing someone to
+	tap the manual recovery button. The same upgrade happens automatically
+	when the user's assignments changed since their last pull, since records
+	that entered their scope that way are older than the watermark and would
+	otherwise never be sent.
 
 	Returns:
 	{
@@ -120,7 +242,9 @@ def pull_changes(lastPulledAt=None, fullSync=None):
 	        }
 	        // ... other tables
 	    },
-	    "timestamp": 1234567890123
+	    "timestamp": 1234567890123,
+	    "fullSync": false,
+	    "fullSyncReason": null
 	}
 	"""
 	# Start timing the entire operation
@@ -134,6 +258,20 @@ def pull_changes(lastPulledAt=None, fullSync=None):
 		args = request.args if request is not None else None
 		last_pulled_at = args.get("lastPulledAt") if args else lastPulledAt
 		full_sync = cint(args.get("fullSync") if args else fullSync)
+		raw_counts = args.get("counts") if args else counts
+
+		# What the device says it currently holds, per table. Optional: older
+		# clients don't send it and simply lose the reconciliation safety net.
+		local_counts = {}
+		if raw_counts:
+			try:
+				parsed_counts = json.loads(raw_counts) if isinstance(raw_counts, str) else raw_counts
+				if isinstance(parsed_counts, dict):
+					local_counts = parsed_counts
+			except (ValueError, TypeError) as e:
+				frappe.log(f"⚠️ [SYNC_BACKEND] Ignoring unparsable counts payload: {e!s}")
+
+		full_sync_reason = "requested" if full_sync else None
 
 		# Validate and parse timestamp
 		if full_sync:
@@ -161,6 +299,20 @@ def pull_changes(lastPulledAt=None, fullSync=None):
 		else:
 			# First sync - get all data from beginning of time
 			last_sync_time = datetime.min
+			full_sync_reason = "first-sync"
+
+		# An incremental pull only ever describes the window since the
+		# watermark, so it cannot repair a device that is missing older
+		# records — whether because a bug dropped them, a write failed, or the
+		# user's scope just widened. Detect that here rather than waiting for
+		# somebody to phone support and be told to tap "Download all my data
+		# again".
+		if not full_sync and last_sync_time != datetime.min:
+			should_escalate, reason = _resolve_full_sync(frappe.session.user, last_sync_time, local_counts)
+			if should_escalate:
+				last_sync_time = datetime.min
+				full_sync = 1
+				full_sync_reason = reason
 
 		# Get all changes since last sync
 		changes = get_changes_since(last_sync_time)
@@ -197,9 +349,18 @@ def pull_changes(lastPulledAt=None, fullSync=None):
 		total_deleted = sum(len(t.get("deleted", [])) for t in changes.values())
 		frappe.log(
 			f"✅ [SYNC_BACKEND] pullChanges done: +{total_created} ~{total_updated} -{total_deleted} in {total_duration:.3f}s"
+			+ (f" [full: {full_sync_reason}]" if full_sync else "")
 		)
 
-		return {"changes": changes, "timestamp": current_timestamp}
+		return {
+			"changes": changes,
+			"timestamp": current_timestamp,
+			# Tells the client this response is a full replay rather than a
+			# delta, and why. WatermelonDB ignores extra keys; the app logs it
+			# so an escalation is visible in the request log without guessing.
+			"fullSync": bool(full_sync),
+			"fullSyncReason": full_sync_reason,
+		}
 
 	except Exception as e:
 		total_duration = time.time() - start_time
