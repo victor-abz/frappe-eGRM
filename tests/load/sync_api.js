@@ -80,15 +80,22 @@ export function setup() {
 	}
 	const res = http.post(`${BASE}/api/method/login`, { usr: USER, pwd: PASS });
 	check(res, { "login succeeded": (r) => r.status === 200 });
-	return { cookies: res.cookies };
+
+	// Hand the VUs a plain string, not the cookie objects. k6 JSON-serialises
+	// setup data on its way to the VUs and that round-trip renames the fields
+	// (value -> Value), so a VU reading `.value` gets undefined, seeds the jar
+	// with empty cookies, and every request runs unauthenticated — measuring
+	// 403 latency instead of the API.
+	const sid = res.cookies.sid && res.cookies.sid[0].value;
+	if (!sid) {
+		throw new Error(`login returned no sid cookie (status ${res.status})`);
+	}
+	return { sid };
 }
 
-function jar(data) {
-	const j = http.cookieJar();
-	Object.keys(data.cookies).forEach((name) => {
-		j.set(BASE, name, data.cookies[name][0].value);
-	});
-}
+// Frappe authenticates on the sid cookie alone, so sending it as a header keeps
+// the session explicit per request instead of relying on per-VU jar state.
+const authed = (data, extra) => ({ headers: Object.assign({ Cookie: `sid=${data.sid}` }, extra) });
 
 const pullUrl = (params) =>
 	`${BASE}/api/method/egrm.api.sync.pull_changes?${Object.entries(params)
@@ -96,13 +103,12 @@ const pullUrl = (params) =>
 		.join("&")}`;
 
 export function incrementalPull(data) {
-	jar(data);
 	group("incremental pull", () => {
 		// A watermark an hour old: the common steady-state case.
 		const since = Date.now() - 3600 * 1000;
 		const res = http.get(
 			pullUrl({ lastPulledAt: since, counts: JSON.stringify({ grm_projects: 1 }) }),
-			{ tags: { name: "pull_incremental" } }
+			Object.assign(authed(data), { tags: { name: "pull_incremental" } })
 		);
 		pullIncremental.add(res.timings.duration);
 		check(res, {
@@ -113,7 +119,6 @@ export function incrementalPull(data) {
 }
 
 export function fullReplay(data) {
-	jar(data);
 	group("paged full replay", () => {
 		let cursor = null;
 		let pages = 0;
@@ -127,7 +132,7 @@ export function fullReplay(data) {
 				cursor === null
 					? pullUrl({ fullSync: 1 })
 					: pullUrl({ lastPulledAt: cursor, paging: 1 }),
-				{ tags: { name: "pull_full" } }
+				Object.assign(authed(data), { tags: { name: "pull_full" } })
 			);
 			pullFull.add(res.timings.duration);
 			if (!check(res, { "replay page 200": (r) => r.status === 200 })) return;
@@ -145,13 +150,14 @@ export function fullReplay(data) {
 }
 
 export function push(data) {
-	jar(data);
 	// Empty push: measures the endpoint's fixed cost — auth, session, transaction
 	// setup — which every real push pays on top of its payload.
 	const res = http.post(
 		`${BASE}/api/method/egrm.api.sync.push_changes`,
 		JSON.stringify({ changes: {}, lastPulledAt: Date.now() }),
-		{ headers: { "Content-Type": "application/json" }, tags: { name: "push" } }
+		Object.assign(authed(data, { "Content-Type": "application/json" }), {
+			tags: { name: "push" },
+		})
 	);
 	pushEmpty.add(res.timings.duration);
 	check(res, { "push ok": (r) => r.status === 200 || r.status === 204 });
