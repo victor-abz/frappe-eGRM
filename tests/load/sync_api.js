@@ -13,6 +13,10 @@
  * indicator, so it gets the 10s "limit for keeping attention" bound.
  *
  * Run:
+ *   cp tests/load/.env.example tests/load/.env   # fill in K6_USER / K6_PASS once
+ *   ./tests/load/run.sh
+ *
+ * or pass the environment explicitly:
  *   K6_BASE=http://egrm.local:8000 K6_USER=... K6_PASS=... \
  *     k6 run tests/load/sync_api.js
  */
@@ -115,8 +119,14 @@ export function fullReplay(data) {
 		let pages = 0;
 		// Bounded the same way the app bounds it.
 		for (let i = 0; i < 50; i += 1) {
+			// Continuation pages carry paging=1 and no counts, exactly as the app
+			// sends them. Without the flag the server treats each page as a fresh
+			// incremental pull and re-runs the entitlement check, so the suite
+			// would measure the escalation path rather than the paging path.
 			const res = http.get(
-				cursor === null ? pullUrl({ fullSync: 1 }) : pullUrl({ lastPulledAt: cursor }),
+				cursor === null
+					? pullUrl({ fullSync: 1 })
+					: pullUrl({ lastPulledAt: cursor, paging: 1 }),
 				{ tags: { name: "pull_full" } }
 			);
 			pullFull.add(res.timings.duration);
