@@ -13,6 +13,10 @@
  * indicator, so it gets the 10s "limit for keeping attention" bound.
  *
  * Run:
+ *   cp tests/load/.env.example tests/load/.env   # fill in K6_USER / K6_PASS once
+ *   ./tests/load/run.sh
+ *
+ * or pass the environment explicitly:
  *   K6_BASE=http://egrm.local:8000 K6_USER=... K6_PASS=... \
  *     k6 run tests/load/sync_api.js
  */
@@ -76,15 +80,22 @@ export function setup() {
 	}
 	const res = http.post(`${BASE}/api/method/login`, { usr: USER, pwd: PASS });
 	check(res, { "login succeeded": (r) => r.status === 200 });
-	return { cookies: res.cookies };
+
+	// Hand the VUs a plain string, not the cookie objects. k6 JSON-serialises
+	// setup data on its way to the VUs and that round-trip renames the fields
+	// (value -> Value), so a VU reading `.value` gets undefined, seeds the jar
+	// with empty cookies, and every request runs unauthenticated — measuring
+	// 403 latency instead of the API.
+	const sid = res.cookies.sid && res.cookies.sid[0].value;
+	if (!sid) {
+		throw new Error(`login returned no sid cookie (status ${res.status})`);
+	}
+	return { sid };
 }
 
-function jar(data) {
-	const j = http.cookieJar();
-	Object.keys(data.cookies).forEach((name) => {
-		j.set(BASE, name, data.cookies[name][0].value);
-	});
-}
+// Frappe authenticates on the sid cookie alone, so sending it as a header keeps
+// the session explicit per request instead of relying on per-VU jar state.
+const authed = (data, extra) => ({ headers: Object.assign({ Cookie: `sid=${data.sid}` }, extra) });
 
 const pullUrl = (params) =>
 	`${BASE}/api/method/egrm.api.sync.pull_changes?${Object.entries(params)
@@ -92,13 +103,12 @@ const pullUrl = (params) =>
 		.join("&")}`;
 
 export function incrementalPull(data) {
-	jar(data);
 	group("incremental pull", () => {
 		// A watermark an hour old: the common steady-state case.
 		const since = Date.now() - 3600 * 1000;
 		const res = http.get(
 			pullUrl({ lastPulledAt: since, counts: JSON.stringify({ grm_projects: 1 }) }),
-			{ tags: { name: "pull_incremental" } }
+			Object.assign(authed(data), { tags: { name: "pull_incremental" } })
 		);
 		pullIncremental.add(res.timings.duration);
 		check(res, {
@@ -109,15 +119,20 @@ export function incrementalPull(data) {
 }
 
 export function fullReplay(data) {
-	jar(data);
 	group("paged full replay", () => {
 		let cursor = null;
 		let pages = 0;
 		// Bounded the same way the app bounds it.
 		for (let i = 0; i < 50; i += 1) {
+			// Continuation pages carry paging=1 and no counts, exactly as the app
+			// sends them. Without the flag the server treats each page as a fresh
+			// incremental pull and re-runs the entitlement check, so the suite
+			// would measure the escalation path rather than the paging path.
 			const res = http.get(
-				cursor === null ? pullUrl({ fullSync: 1 }) : pullUrl({ lastPulledAt: cursor }),
-				{ tags: { name: "pull_full" } }
+				cursor === null
+					? pullUrl({ fullSync: 1 })
+					: pullUrl({ lastPulledAt: cursor, paging: 1 }),
+				Object.assign(authed(data), { tags: { name: "pull_full" } })
 			);
 			pullFull.add(res.timings.duration);
 			if (!check(res, { "replay page 200": (r) => r.status === 200 })) return;
@@ -135,13 +150,14 @@ export function fullReplay(data) {
 }
 
 export function push(data) {
-	jar(data);
 	// Empty push: measures the endpoint's fixed cost — auth, session, transaction
 	// setup — which every real push pays on top of its payload.
 	const res = http.post(
 		`${BASE}/api/method/egrm.api.sync.push_changes`,
 		JSON.stringify({ changes: {}, lastPulledAt: Date.now() }),
-		{ headers: { "Content-Type": "application/json" }, tags: { name: "push" } }
+		Object.assign(authed(data, { "Content-Type": "application/json" }), {
+			tags: { name: "push" },
+		})
 	);
 	pushEmpty.add(res.timings.duration);
 	check(res, { "push ok": (r) => r.status === 200 || r.status === 204 });

@@ -281,6 +281,30 @@ Understanding the key concepts and terminology used in EGRM is essential for eff
 - **Delta Sync**: Download only changes since last sync
 - **Upload Sync**: Send local changes to server
 
+**What the app does on its own** (from app version 1.2.3):
+
+- **It pages through large downloads.** The server never sends more than a
+  fixed batch of records at a time. When there is more waiting, it tells the
+  app so, and the app immediately asks for the next batch. One tap on *Sync*
+  can therefore be several rounds behind the scenes. The progress indicator
+  stays up until the last batch arrives.
+- **It resumes instead of restarting.** If a very large download does not
+  finish in one go, the next sync continues from where it stopped. Nothing
+  already downloaded is fetched twice.
+- **It repairs itself.** The app tells the server how much data it already
+  holds. If the server sees that the device is entitled to records it never
+  received — the usual cause is being added to a new project or region after
+  the app was installed — it upgrades that sync to a full download
+  automatically. Users no longer have to call support and be told to press
+  *Full resync*.
+- **Manual *Full resync* still exists** and is still safe to use, but it is
+  now a fallback rather than part of normal operation.
+
+**Reference data arrives last.** Projects, categories, issue types and
+statuses are refreshed at the end of a large download, not the beginning.
+A sync that is still running may briefly show issues before their
+category names have caught up; this resolves when the sync completes.
+
 ### Offline Mode
 **Definition**: Ability to work without internet connection.
 
