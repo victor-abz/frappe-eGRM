@@ -21,6 +21,11 @@ const ROLES = [
     title: 'I set up and run the system',
     body: 'Create a project, load regions, add staff, and decide how complaints are routed.',
   },
+  {
+    href: '/docs/mobile',
+    title: 'I work from a phone',
+    body: 'Record complaints in the field on the mobile app, with or without signal.',
+  },
 ];
 
 export default function HomePage() {

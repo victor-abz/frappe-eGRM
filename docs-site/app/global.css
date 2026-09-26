@@ -11,3 +11,24 @@ html > body[data-scroll-locked] {
   margin-right: 0px !important;
   --removed-body-scroll-bar-size: 0px !important;
 }
+
+/* Phone screenshots (1080x2280) would otherwise fill the whole viewport.
+   Cap them near life size and centre them; clicking still zooms to full size. */
+.phone-shot {
+  display: flex;
+  justify-content: center;
+  margin-block: 1.5rem;
+}
+
+.phone-shot p {
+  margin: 0;
+}
+
+.phone-shot img {
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  margin: 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-fd-border);
+}
