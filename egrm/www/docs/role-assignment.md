@@ -15,22 +15,27 @@ see the companion guide
 ## The duty model in one minute
 
 eGRM is **duty-driven**. Every Project Role is a bundle of one or more
-of seven canonical duties:
+of six canonical duties:
 
 | Duty | Lets the user… | Where it gates an action |
 | --- | --- | --- |
 | **Intake** | File a new issue (own a draft) | "+ New Issue" button, Save, Submit |
-| **Review** | Triage drafts, assign, accept/reject, confirm resolution | Review-duty action buttons in the form header |
-| **Assignment** | Manage the assignee within an open issue | Reassign on an in-progress issue |
-| **Investigate & Resolve** | Work the issue, accept, escalate, propose a resolution | Accept / Escalate / Record Resolution actions |
-| **Feedback** | Leave comments without mutating the issue | Comment box only |
-| **Supervise** | Read-only audit across all projects | Bypass role — sees every project |
-| **Administer** | Full project administration | Bypass role — wizard access |
+| **Review** | Triage drafts, assign, accept/reject, confirm resolution | Review-duty action buttons; status, category, and issue type fields |
+| **Assignment** | Manage the assignee within an open issue | Reassign on an in-progress issue; the assignee field |
+| **Investigate & Resolve** | Work the issue, accept, escalate, propose a resolution | Accept / Escalate / Record Resolution actions; the resolution fields |
+| **Feedback** | Handle the citizen rating and the appeal flow | The rating and appeal fields |
+| **Supervise** | Read everything in scope, force reassignment or closure, manage user assignments | Backed by the `GRM Supervise` bypass role |
+
+Separately, three Frappe roles bypass the duty model entirely:
+**System Manager**, **GRM Platform Administrator**, and
+**GRM Supervise**.
 
 A single person can hold any combination — a small project might give
 one Project Officer both Review and Investigate & Resolve. The duty
-checks are uniform on the server (`egrm/permissions/issue_permission.py`)
-and on the desk client (`egrm/egrm/doctype/grm_issue/grm_issue.js`).
+checks are uniform on the server
+(`egrm/server_scripts/grm_issue_permissions.py`, with field-level rules
+in `egrm/egrm/doctype/grm_issue/grm_issue.py`) and on the desk client
+(`egrm/egrm/doctype/grm_issue/grm_issue.js`).
 **If the action button isn't on screen, the logged-in user lacks the
 duty or isn't currently the assignee** — never patch the client to make
 the button appear.
@@ -218,7 +223,7 @@ either resolve the issue or formally Reject it.
 For maintainers — code, schema, and the reusable patterns:
 
 - **Resolver:** `egrm/services/assignee_routing.py`
-- **Permission hook:** `egrm/permissions/issue_permission.py`
+- **Permission hook:** `egrm/server_scripts/grm_issue_permissions.py`
 - **Issue actions (accept / escalate / resolve / reject / reopen):**
   `egrm/server_scripts/issue_actions.py`
 - **Auto-escalate (SLA Manager):** `egrm/egrm/utils/sla_manager.py`

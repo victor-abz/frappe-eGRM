@@ -17,8 +17,8 @@ The wizard can be reached two ways:
 
 ### 1. From the project list — "New Project"
 
-Project administrators (System Manager, GRM Platform Administrator,
-or any user with the Administer duty) can click **+ New** on the GRM
+Project administrators (System Manager or GRM Platform Administrator)
+can click **+ New** on the GRM
 Project list and choose **Project Wizard**, which lands them on Step 1
 with a blank form.
 
@@ -103,9 +103,8 @@ The seven duties are:
 | Review | Triage drafts, assign, accept/reject, submit, confirm resolution |
 | Assignment | Manage assignee within an open issue |
 | Investigate & Resolve | Work the issue and submit a proposed resolution |
-| Feedback | Leave comments without mutating the issue |
-| Supervise | Read-only audit access (bypass role) |
-| Administer | Full project administration (bypass role) |
+| Feedback | Handle the citizen rating and the appeal flow |
+| Supervise | Read everything in scope, force reassignment or closure, manage user assignments |
 
 On this step you create roles like **Intake Officer**, **Project
 Director**, **Field Investigator**, etc., and tick the duties each
@@ -148,6 +147,14 @@ Issue Types describe the **mode** of an issue, independent of its
 category — for example **Complaint**, **Suggestion**, **Question**,
 **Compliment**. They are project-scoped so each project can adjust
 the wording.
+
+> Nothing enforces that reading. Because both lists are free-form, a
+> project can split the two axes however it likes, and live projects
+> do: the Rwanda Digital Acceleration Project puts the nature of the
+> grievance in the **category** (Complaint, Question, Service Issue,
+> Other) and uses the **issue type** for the intake channel (Web Form,
+> Phone Call, SMS, In Person, …). Decide which axis carries what before
+> you seed either list — citizens see both on the submission form.
 
 ![Step 6 — Issue Types](/assets/egrm/images/docs/wizard/06-issue-types.png)
 
