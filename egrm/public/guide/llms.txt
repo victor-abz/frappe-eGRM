@@ -1,0 +1,19 @@
+# Docs
+
+- [Welcome](/docs): A plain-language guide to the Grievance Redress Mechanism (eGRM) — for the people who report problems and the people who resolve them.
+
+- **For the public**
+- For the public
+  - [Using the public website](/docs/citizen): What the public website lets you do, and how to set it to your language.
+  - [Send a complaint](/docs/citizen/submit): A four-step form on the public website. You can send it without giving your name.
+  - [Check a complaint](/docs/citizen/track): Use your tracking code to see the current status. No account or password needed.
+
+- **For staff**
+- For staff
+  - [Signing in](/docs/staff/signing-in): How to reach your work area, and what the main screen is showing you.
+  - [Field Officer](/docs/staff/field-officer): Recording a complaint that someone brings to you in person, by phone, by SMS or on paper.
+  - [Reviewer and Supervisor](/docs/staff/reviewer): Checking new complaints, sending them to the right officer, recording the outcome, and handling escalations.
+  - [Project Administrator](/docs/staff/administrator): Creating a project, loading its regions, adding staff, and deciding how complaints are routed.
+
+- **Reference**
+- [Screen labels](/docs/glossary): Every Kinyarwanda label on the staff screens, with its English meaning.

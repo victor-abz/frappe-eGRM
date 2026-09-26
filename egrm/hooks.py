@@ -36,7 +36,15 @@ website_redirects = [
 	{"source": "/grievance", "target": "/grm-portal/submit"},
 	{"source": "/track-complaint", "target": "/grm-portal/track"},
 	{"source": "/grievance-reports", "target": "/grm-portal/reports"},
+	# The old hand-written `www/docs` pages were replaced by the generated
+	# user guide; keep their URLs alive rather than 404ing bookmarks.
+	{"source": "/docs", "target": "/guide"},
+	{"source": r"/docs/(.*)", "target": "/guide"},
 ]
+
+# Serves the static user-guide export that ships in `egrm/public/guide/`.
+# See egrm/utils/guide_page.py for why this cannot be a plain asset link.
+page_renderer = ["egrm.utils.guide_page.GuidePage"]
 
 # Ensure Website Settings points to the portal on (re)install and migrations
 after_install = "egrm.install.after_install"
