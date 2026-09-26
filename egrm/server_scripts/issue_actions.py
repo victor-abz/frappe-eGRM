@@ -697,6 +697,7 @@ def get_initial_status(project):
             INNER JOIN `tabGRM Project Link` p ON p.parent = s.name
             WHERE p.project = %s
             AND s.initial_status = 1
+            ORDER BY s.creation ASC
             LIMIT 1
         """,
 			project,
@@ -725,6 +726,7 @@ def get_open_status(project):
             INNER JOIN `tabGRM Project Link` p ON p.parent = s.name
             WHERE p.project = %s
             AND s.open_status = 1
+            ORDER BY s.creation ASC
             LIMIT 1
         """,
 			project,
@@ -740,6 +742,10 @@ def get_open_status(project):
 def get_final_status(project):
 	"""
 	Get final status for a project
+
+	A project normally has two final statuses ("Resolved" then "Closed"), so the
+	row order matters: statuses are seeded in workflow order and the oldest is
+	the one an issue should land on when it is resolved.
 	"""
 	try:
 		if not project:
@@ -753,6 +759,7 @@ def get_final_status(project):
             INNER JOIN `tabGRM Project Link` p ON p.parent = s.name
             WHERE p.project = %s
             AND s.final_status = 1
+            ORDER BY s.creation ASC
             LIMIT 1
         """,
 			project,
@@ -781,6 +788,7 @@ def get_rejected_status(project):
             INNER JOIN `tabGRM Project Link` p ON p.parent = s.name
             WHERE p.project = %s
             AND s.rejected_status = 1
+            ORDER BY s.creation ASC
             LIMIT 1
         """,
 			project,
