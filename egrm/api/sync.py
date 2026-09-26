@@ -155,21 +155,66 @@ PULL_PAGE_SIZE = 1000
 def _sync_scope(user):
 	"""Resolve the user's entitlement scope once per request.
 
-	``get_changes_since`` and the reconciliation both need the project list and
-	region assignments. Without this memo an escalating pull resolves both
-	twice, which at sync volume is the kind of duplicated work that only shows
-	up under load.
+	``get_changes_since``, the page-boundary probe and the reconciliation all
+	need the project list and region assignments. A single escalating pull
+	reaches this three times, and neither underlying lookup is cached — one of
+	them issues a query per accessible project — so the memo is what keeps that
+	at one resolution per request.
 
-	Deliberately request-scoped and not cached longer: a revoked assignment has
+	Stored on ``frappe.local``, which Frappe discards at the end of the request,
+	deliberately rather than in a longer-lived cache: a revoked assignment has
 	to take effect on the very next pull, not after a TTL.
 	"""
-	assignments = get_user_region_assignments(user)
-	return {
-		"user": user,
-		"projects": get_user_accessible_projects(user),
-		"assignments": assignments,
-		"region_ids": list({a.administrative_region for a in assignments if a.administrative_region}),
-	}
+	cache = getattr(frappe.local, "grm_sync_scope", None)
+	if cache is None:
+		cache = {}
+		frappe.local.grm_sync_scope = cache
+
+	if user not in cache:
+		assignments = get_user_region_assignments(user)
+		cache[user] = {
+			"projects": get_user_accessible_projects(user),
+			"assignments": assignments,
+			"region_ids": list({a.administrative_region for a in assignments if a.administrative_region}),
+		}
+	return cache[user]
+
+
+def _accessible_region_ids(user):
+	"""The user's regions expanded down the hierarchy, resolved once per request.
+
+	Only ``GRM Issue`` filtering consumes this, and it is the expensive half of
+	the scope — a full walk of ~5k regions per project at PF-21 scale — so it is
+	computed on first use rather than eagerly in ``_sync_scope``, and memoised
+	alongside it so the 14-table loop pays for it once.
+
+	Falls back to the directly-assigned regions if expansion yields nothing, so
+	a failed walk narrows the filter rather than silently dropping it.
+	"""
+	scope = _sync_scope(user)
+	if "expanded_region_ids" not in scope:
+		from egrm.api.lookup import get_user_accessible_regions
+
+		expanded = get_user_accessible_regions(scope["assignments"]) or []
+		ids = list({r.get("name") or r.get("id") for r in expanded if (r.get("name") or r.get("id"))})
+		scope["expanded_region_ids"] = ids or list(scope["region_ids"])
+	return scope["expanded_region_ids"]
+
+
+def _claim_once(namespace, *parts):
+	"""True the first time this exact state is seen, False until the cooldown lapses.
+
+	Both escalation paths need the same guarantee: fire once per distinct
+	situation, then stay quiet long enough that a device walking pages cannot
+	re-trigger it. Hashed because ``parts`` can carry an arbitrarily long detail
+	string and the cache key has to stay bounded.
+	"""
+	state = hashlib.sha1("|".join(parts).encode(), usedforsecurity=False).hexdigest()
+	key = f"{namespace}:{state}"
+	if frappe.cache().get_value(key):
+		return False
+	frappe.cache().set_value(key, 1, expires_in_sec=FULL_SYNC_ESCALATION_COOLDOWN)
+	return True
 
 
 def _entitlement_widened_since(user, last_sync_time):
@@ -192,9 +237,7 @@ def _entitlement_widened_since(user, last_sync_time):
 	beginning, and the replay that follows is paginated, so every page after the
 	first arrives as an ordinary incremental pull whose watermark is still older
 	than the assignment row. Re-escalating on each of those would rewind the
-	cursor to zero and the device would fetch page one forever. Keyed on the
-	assignment's own ``modified``, so a genuinely new widening still triggers a
-	fresh replay.
+	cursor to zero and the device would fetch page one forever.
 	"""
 	try:
 		latest = frappe.get_all(
@@ -210,12 +253,9 @@ def _entitlement_widened_since(user, last_sync_time):
 		if widened_at <= last_sync_time:
 			return False
 
-		state = hashlib.sha1(f"{user}|{widened_at.isoformat()}".encode(), usedforsecurity=False).hexdigest()
-		cache_key = f"grm_sync_entitlement_replay:{state}"
-		if frappe.cache().get_value(cache_key):
-			return False
-		frappe.cache().set_value(cache_key, 1, expires_in_sec=FULL_SYNC_ESCALATION_COOLDOWN)
-		return True
+		# Keyed on the assignment's own `modified`, so a genuinely new widening
+		# still triggers a fresh replay.
+		return _claim_once("grm_sync_entitlement_replay", user, widened_at.isoformat())
 	except Exception as e:
 		frappe.log_error(f"[SYNC_BACKEND] Entitlement check failed for {user}: {e!s}")
 		return False
@@ -301,11 +341,8 @@ def _resolve_full_sync(user, last_sync_time, local_counts):
 	# progress is allowed another replay immediately while one stuck in the
 	# same state waits out the cooldown. Also keeps a second device from being
 	# starved by the first one's escalation.
-	state = hashlib.sha1(f"{user}|{detail}".encode(), usedforsecurity=False).hexdigest()
-	cache_key = f"grm_sync_escalated:{state}"
-	if frappe.cache().get_value(cache_key):
+	if not _claim_once("grm_sync_escalated", user, detail):
 		return False, None
-	frappe.cache().set_value(cache_key, 1, expires_in_sec=FULL_SYNC_ESCALATION_COOLDOWN)
 
 	frappe.log(f"🔁 [SYNC_BACKEND] Escalating {user} to full sync; device short on {detail}")
 	return True, f"missing-records ({detail})"
@@ -456,10 +493,7 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None, paging=None):
 
 		# Cap this response at a page boundary. Resolved before the payload is
 		# built so every table can be clamped to the same instant.
-		scope = _sync_scope(frappe.session.user)
-		page_boundary, has_more = _resolve_page_boundary(
-			last_sync_time, scope["projects"], list(scope["region_ids"]), frappe.session.user
-		)
+		page_boundary, has_more = _resolve_page_boundary(last_sync_time, frappe.session.user)
 
 		# Get all changes since last sync
 		changes = get_changes_since(last_sync_time, page_boundary)
@@ -486,13 +520,6 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None, paging=None):
 		# The client sends this value straight back as the next lastPulledAt, so
 		# it is also the cursor that resumes the next page.
 		current_timestamp = int((page_boundary or current_dt).timestamp() * 1000)
-
-		# Validate timestamp format
-		if not isinstance(current_timestamp, int) or current_timestamp <= 0:
-			frappe.log_error(
-				f"❌ [SYNC_BACKEND] Invalid timestamp generated: {current_timestamp} (type: {type(current_timestamp)})"
-			)
-			raise ValueError(f"Invalid timestamp generated: {current_timestamp}")
 
 		# Single-line completion summary (instead of ~10 chatty lines)
 		total_duration = time.time() - start_time
@@ -522,7 +549,6 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None, paging=None):
 	except Exception as e:
 		total_duration = time.time() - start_time
 		frappe.log_error(f"❌ [SYNC_BACKEND] pullChanges failed after {total_duration:.3f}s: {e!s}")
-		frappe.log_error(f"Pull changes failed: {e!s}")
 		frappe.throw(_("Sync failed. Please try again."))
 
 
@@ -677,7 +703,6 @@ def push_changes():
 			frappe.db.rollback()
 			transaction_duration = time.time() - transaction_start
 			frappe.log_error(f"❌ [SYNC_BACKEND] Transaction failed after {transaction_duration:.3f}s: {e!s}")
-			frappe.log_error(f"Push changes failed: {e!s}")
 			frappe.throw(_("Failed to save changes. Please try again."))
 
 		total_duration = time.time() - start_time
@@ -686,7 +711,6 @@ def push_changes():
 	except Exception as e:
 		total_duration = time.time() - start_time
 		frappe.log_error(f"❌ [SYNC_BACKEND] pushChanges failed after {total_duration:.3f}s: {e!s}")
-		frappe.log_error(f"Push changes failed: {e!s}")
 		frappe.throw(_("Failed to process push changes request."))
 
 
@@ -738,7 +762,7 @@ def get_deleted_records_by_doctype(doctypes, since_timestamp, until_timestamp=No
 		return results
 
 
-def _resolve_page_boundary(last_sync_time, user_projects, accessible_region_ids, user):
+def _resolve_page_boundary(last_sync_time, user):
 	"""Pick the upper bound of this page, or ``None`` for "everything left".
 
 	Pagination hangs on one property of Frappe's timestamps: ``modified`` is set
@@ -763,7 +787,7 @@ def _resolve_page_boundary(last_sync_time, user_projects, accessible_region_ids,
 	if not PULL_PAGE_SIZE:
 		return None, False
 
-	filters = get_user_filters_for_doctype("GRM Issue", user_projects, accessible_region_ids, user)
+	filters = get_user_filters_for_doctype("GRM Issue", user)
 	filters.pop("_child_table_filter", None)
 
 	conditions = [["modified", ">", last_sync_time]]
@@ -822,32 +846,6 @@ def get_changes_since(last_sync_time, page_boundary=None):
 	function_start = time.time()
 	user = frappe.session.user
 
-	# Get user accessible projects and region assignments. Memoised per request
-	# so the reconciliation check ahead of this call does not pay for the same
-	# two lookups a second time.
-	scope = _sync_scope(user)
-	user_accessible_projects = scope["projects"]
-	user_assignments = scope["assignments"]
-	assigned_region_ids = list(scope["region_ids"])
-
-	# Pre-compute the BFS-expanded accessible-region set ONCE for the
-	# whole pull. Without this, get_user_filters_for_doctype re-runs the
-	# full hierarchy walk for every one of the 14 SYNC_TABLES entries
-	# even though only GRM Issue actually consumes it. At ~5k regions
-	# per project (PF-21 scale) that was ~50ms wasted per pull.
-	from egrm.api.lookup import get_user_accessible_regions as _gar
-
-	_accessible_regions_full = _gar(user_assignments) or []
-	accessible_region_ids_full = list(
-		{r.get("name") or r.get("id") for r in _accessible_regions_full if (r.get("name") or r.get("id"))}
-	)
-	if not accessible_region_ids_full:
-		accessible_region_ids_full = list(assigned_region_ids)
-	# Stash on frappe.local.flags so get_user_filters_for_doctype reuses
-	# them. The flag is request-scoped so it auto-clears after the pull.
-	frappe.local.flags.aqe_sync_user_projects = user_accessible_projects
-	frappe.local.flags.aqe_sync_accessible_regions = accessible_region_ids_full
-
 	changes = {}
 	total_records_processed = 0
 
@@ -864,9 +862,7 @@ def get_changes_since(last_sync_time, page_boundary=None):
 		table_start = time.time()
 		try:
 			# Build user-specific filters based on doctype
-			user_filters = get_user_filters_for_doctype(
-				doctype, user_accessible_projects, assigned_region_ids, user
-			)
+			user_filters = get_user_filters_for_doctype(doctype, user)
 
 			# Handle child table filtering separately
 			child_table_filter = user_filters.pop("_child_table_filter", None)
@@ -1019,30 +1015,20 @@ def remove_duplicates_by_id(objects):
 	return unique_objects
 
 
-def get_user_filters_for_doctype(doctype, user_projects, accessible_region_ids, user):
+def get_user_filters_for_doctype(doctype, user):
 	"""
 	Get user-specific filters for a given doctype based on their project assignments
 
 	Args:
 	    doctype (str): The Frappe doctype to filter
-	    user_projects (list): List of project IDs the user has access to (not used, will get fresh)
-	    accessible_region_ids (list): List of region IDs the user has access to (not used, will get fresh)
 	    user (str): Current user email
 
 	Returns:
 	    dict: Filters to apply for the doctype. Values are either single values or lists (without operator wrapping)
 	"""
 
-	# Reuse the request-scoped cache populated by get_changes_since to
-	# avoid re-resolving the project list 14 times per pull. Falls back
-	# to a fresh resolution for callers outside the sync hot path.
-	user_accessible_projects = (
-		getattr(frappe.local.flags, "aqe_sync_user_projects", None)
-		if hasattr(frappe, "local") and getattr(frappe, "local", None) is not None
-		else None
-	)
-	if user_accessible_projects is None:
-		user_accessible_projects = get_user_accessible_projects(user)
+	# The scope memo is what makes this cheap to call once per SYNC_TABLES entry.
+	user_accessible_projects = _sync_scope(user)["projects"]
 
 	# If user has no project access, they get no data
 	if not user_accessible_projects:
@@ -1066,47 +1052,14 @@ def get_user_filters_for_doctype(doctype, user_projects, accessible_region_ids, 
 		# Special case: Filter issues by both project AND accessible regions.
 		filters["project"] = user_accessible_projects  # Return just the list, not wrapped
 
-		# Reuse the BFS-expanded region set computed once in
-		# get_changes_since (cached on frappe.local.flags). Falls back to
-		# an in-place BFS for callers outside the sync hot path.
-		cached_regions = (
-			getattr(frappe.local.flags, "aqe_sync_accessible_regions", None)
-			if hasattr(frappe, "local") and getattr(frappe, "local", None) is not None
-			else None
-		)
-		if cached_regions is not None:
-			accessible_region_ids_local = list(cached_regions)
-		else:
-			from egrm.api.lookup import get_user_accessible_regions
-
-			user_assignments = get_user_region_assignments(user)
-			accessible = get_user_accessible_regions(user_assignments) or []
-			accessible_region_ids_local = list(
-				{r.get("name") or r.get("id") for r in accessible if (r.get("name") or r.get("id"))}
-			)
-			# Fall back to direct assignments when hierarchy expansion fails
-			# (defensive: never let an empty accessible-set silently leak all
-			# issues — keep the strict filter on direct assignments).
-			if not accessible_region_ids_local:
-				accessible_region_ids_local = list(
-					{a.administrative_region for a in user_assignments if a.administrative_region}
-				)
-
-		if accessible_region_ids_local:
-			filters["administrative_region"] = accessible_region_ids_local  # Return just the list
+		expanded_region_ids = _accessible_region_ids(user)
+		if expanded_region_ids:
+			filters["administrative_region"] = expanded_region_ids  # Return just the list
 
 	elif doctype == "GRM Administrative Region":
-		# For regions, the caller's `accessible_region_ids` already holds
-		# the user's directly-assigned region set (computed in
-		# get_changes_since from get_user_region_assignments). Reuse it
-		# to avoid a redundant per-doctype query.
-		if accessible_region_ids:
-			assigned_region_ids = list(accessible_region_ids)
-		else:
-			user_assignments = get_user_region_assignments(user)
-			assigned_region_ids = list(
-				set([a.administrative_region for a in user_assignments if a.administrative_region])
-			)
+		# Regions themselves are scoped to what the user is directly assigned,
+		# not the hierarchy expansion used for issues.
+		assigned_region_ids = _sync_scope(user)["region_ids"]
 
 		if assigned_region_ids:
 			# Filter regions by both user-assigned regions AND projects
@@ -2423,7 +2376,7 @@ def accessible_issue_subquery(user):
 	Returns ``None`` when the user is entitled to nothing.
 	"""
 	issue_table = frappe.qb.DocType("GRM Issue")
-	filters = get_user_filters_for_doctype("GRM Issue", None, None, user)
+	filters = get_user_filters_for_doctype("GRM Issue", user)
 	filters.pop("_child_table_filter", None)
 	if not filters:
 		return None
