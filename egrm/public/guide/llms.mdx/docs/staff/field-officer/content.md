@@ -17,6 +17,12 @@ it up.
 
 ## Record a complaint [#record-a-complaint]
 
+<Callout type="info">
+  Away from a desk? The same complaint can be recorded on the
+  [mobile app](/docs/mobile/record), which works with no signal and syncs when
+  you get back into coverage.
+</Callout>
+
 From the sidebar, click **Andika Ikibazo** (*Record Issue*).
 
 <img alt="The complaint form, empty" src="__img0" />

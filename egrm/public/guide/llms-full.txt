@@ -354,6 +354,8 @@ sounds like you.
   <Card title="I assign and resolve complaints" description="Reviewer or Supervisor — check new complaints, send them to the right officer, and record the outcome." href="/docs/staff/reviewer" />
 
   <Card title="I set up and run the system" description="Project Administrator — create a project, load regions, add staff, and decide how complaints are routed." href="/docs/staff/administrator" />
+
+  <Card title="I work from a phone" description="The mobile app — record complaints in the field, with or without signal, and see the figures for your area." href="/docs/mobile" />
 </Cards>
 
 ## How a complaint moves [#how-a-complaint-moves]
@@ -403,6 +405,411 @@ selector in the top-right corner.
   display. Every staff label is also listed in English on the
   [Screen labels](/docs/glossary) page.
 </Callout>
+
+
+# The mobile app (/docs/mobile)
+
+
+
+
+
+
+
+
+
+
+
+Field officers do most of their work away from a desk — at a community
+meeting, at a site visit, in a village with no reliable signal. The eGRM
+mobile app is the same system as the website, sized for a phone, and it keeps
+working when the network does not.
+
+<Callout type="info">
+  The app is for **staff*&#x2A;, not for the public. Members of the public report
+  problems on the website at
+  &#x2A;*[egrm.risa.gov.rw/grm-portal](https://egrm.risa.gov.rw/grm-portal)** — see
+  [For the public](/docs/citizen). You need a staff account to get past the
+  sign-in screen.
+</Callout>
+
+## What you can do with it [#what-you-can-do-with-it]
+
+* **Record a complaint** a citizen brings to you, through a six-step
+  conversation designed to be read aloud.
+* **See the complaints assigned to you**, and what stage each one is at.
+* **See the figures** for your area — how many complaints, how many resolved,
+  how long they take.
+
+Assigning and resolving are possible from the app too, but they are easier on
+the website. This guide covers recording and viewing.
+
+## Open the app [#open-the-app]
+
+The first screen asks whether you have used the app before, and lets you pick
+your language.
+
+<Phone>
+    <img alt="The first screen, asking whether you have used the app before" src="__img0" />
+</Phone>
+
+Choose **YES** if you already have an account — which you do, if an
+administrator created one for you. Your language choice here applies to the
+whole app, and you can change it later from **Profile**.
+
+## Sign in [#sign-in]
+
+<Phone>
+    <img alt="The sign-in screen" src="__img1" />
+</Phone>
+
+Enter the same **email address and password** you use on the website. If you
+have never signed in anywhere, ask your administrator for them.
+
+<Callout type="warn">
+  The app needs a working internet connection **the first time you sign in**,
+  and again whenever you want to send in what you have collected. It does not
+  need one in between — see [Working without signal](/docs/mobile/reports#working-without-signal).
+</Callout>
+
+## The home screen [#the-home-screen]
+
+<Phone>
+    <img alt="The app home screen with its four cards" src="__img2" />
+</Phone>
+
+Four cards, in the order you will normally use them:
+
+| Card                              | What it does                                                 |
+| --------------------------------- | ------------------------------------------------------------ |
+| **Collect Reports from Citizens** | Record a new complaint — [step by step](/docs/mobile/record) |
+| **Search Reports**                | The complaints assigned to you, grouped by stage             |
+| **Sync Files**                    | Send what you have collected and pull down anything new      |
+| **View Reports**                  | Totals and trends for your area                              |
+
+At the bottom are three tabs — **Dashboard**, **Notifications** and
+**Profile**. Profile shows your name, your email, the regions you cover, and
+a **Change Password** link.
+
+<Phone>
+    <img alt="The Profile tab" src="__img3" />
+</Phone>
+
+
+# Recording a complaint (/docs/mobile/record)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tap **Collect Reports from Citizens** on the home screen. What follows is a
+six-step conversation. Each step shows you, in grey, the words to say to the
+person in front of you — you can read them aloud as they are written.
+
+<Callout type="info">
+  Nothing is sent anywhere until you finish **Step 5**. You can work through
+  all six steps with no signal at all; the complaint is stored on the phone and
+  goes up the next time you are connected.
+</Callout>
+
+## Before you start: pick the project [#before-you-start-pick-the-project]
+
+<Phone>
+    <img alt="The welcome screen, with the project selector" src="__img0" />
+</Phone>
+
+Choose the project the complaint belongs to. If you only work on one project
+it is already selected. Then tap **NEXT**.
+
+<Steps>
+  <Step>
+    ### How should we contact them? [#how-should-we-contact-them]
+
+    <Phone>
+            <img alt="Step 1 — preferred method of contact" src="__img1" />
+    </Phone>
+
+    Three choices:
+
+    | Choice                               | Use it when                                                        |
+    | ------------------------------------ | ------------------------------------------------------------------ |
+    | **Do not receive updates**           | They want nothing sent to them at all                              |
+    | **Receive updates from facilitator** | They will come back to you for news — the safest default           |
+    | **Receive alerts directly**          | They want an SMS or email, and will give you the number or address |
+
+    If you are unsure, leave it on **Receive updates from facilitator** and make
+    sure they leave with their tracking code.
+  </Step>
+
+  <Step>
+    ### Who is reporting? [#who-is-reporting]
+
+    <Phone>
+            <img alt="Step 2 — name of person or group" src="__img2" />
+    </Phone>
+
+    The name is **optional**. Say so out loud — the screen tells you to. If they
+    would rather not be named, leave it blank and move on; the complaint is
+    recorded exactly the same way.
+
+    Three tick-boxes below it matter:
+
+    * **Keep name confidential** — the name is stored but only the officer
+      resolving the complaint can see it.
+    * **Filing on behalf of someone else** — an individual, or an organisation.
+
+    Age group, gender, occupation and education are all optional. They are used
+    for reporting on who the mechanism actually reaches, so fill them in if the
+    person is comfortable answering — and skip them if not.
+  </Step>
+
+  <Step>
+    ### What happened? [#what-happened]
+
+    <Phone>
+            <img alt="Step 3 — details of the issue" src="__img3" />
+    </Phone>
+
+    This is the step that decides whether the complaint can be resolved.
+
+    * **The date** — when the problem happened, not today. Tap **Set for Today**
+      only if it is happening now. Tick **Current event or multiple occurrences**
+      for something ongoing.
+    * **How it reached you** — In Person, Phone Call, SMS, Email, Verbal or
+      Written. Choose the channel the person actually used, not the device you
+      are typing on.
+    * **What kind of issue** — Complaint, Service Issue, Question or Other.
+    * **The description** — in the person's own words, as fully as you can. A
+      reviewer who was not there has only this to work from.
+
+    You can attach a **photo**, pick an existing **image**, or record **audio**
+    using the three buttons below the description. Attachments upload when the
+    phone next has signal.
+  </Step>
+
+  <Step>
+    ### Where did it happen? [#where-did-it-happen]
+
+    <Phone>
+            <img alt="Step 4 — selecting the location on the map" src="__img4" />
+    </Phone>
+
+    Two ways to set the place:
+
+    * **Get GPS Location** — use this when you are standing at the spot.
+    * **Tap on the map** — use this when the person is describing somewhere else.
+      Tap, and drag the pin to adjust.
+
+    Either way the app shows the coordinates it captured and where they came
+    from.
+
+    Scroll down and the app names the **region** the complaint will be filed
+    under. If you only cover one region it is chosen for you and says so.
+
+    <Phone>
+            <img alt="Step 4 continued — the region and the location description" src="__img5" />
+    </Phone>
+
+    Underneath, add anything that helps someone find the place — a street corner,
+    a facility name, a landmark. A district name on its own is rarely enough.
+
+    <Callout type="warn">
+      The region decides **who receives the complaint**. If the place the person
+      describes is not in a region you cover, record it anyway, name the exact
+      place in the description, and tell your administrator afterwards.
+    </Callout>
+  </Step>
+
+  <Step>
+    ### Read it back [#read-it-back]
+
+    <Phone>
+            <img alt="Step 5 — the confirmation summary" src="__img6" />
+    </Phone>
+
+    The app shows everything you entered on one screen. Read the description back
+    to the person and check the date. Anything wrong — go back with the arrow at
+    the top-left and fix it.
+
+    Then tap **SUBMIT**.
+  </Step>
+
+  <Step>
+    ### Give them the code [#give-them-the-code]
+
+    <Phone>
+            <img alt="Step 6 — the issue access code" src="__img7" />
+    </Phone>
+
+    The app produces a tracking code like `RDAP-260926-4369`.
+
+    <Callout type="warn">
+      Read the code back to the person and make sure they have written it down
+      before they leave. If they chose not to give contact details, this code is
+      the only way they will ever be able to check their complaint again.
+    </Callout>
+
+    Tell them they can check it at **egrm.risa.gov.rw/grm-portal** under
+    **Track**, or by coming back to you with the code.
+
+    Tap **Back to Citizen Input Home** to record the next one.
+  </Step>
+</Steps>
+
+## Ask before you save [#ask-before-you-save]
+
+The quality of a complaint is decided entirely in this conversation. Before
+Step 5, check you have:
+
+* **Where exactly** — a village, facility or landmark, not just a district.
+* **When exactly** — a date, even an approximate one.
+* **What specifically went wrong**, in their words rather than a summary like
+  "service problem".
+* **Whether they want to be contacted**, and a number if they do.
+
+
+# Seeing your work (/docs/mobile/reports)
+
+
+
+
+
+
+
+
+
+
+
+
+
+## The complaints assigned to you [#the-complaints-assigned-to-you]
+
+Tap **Search Reports** on the home screen. It opens **Summary of Your Work**.
+
+<Phone>
+    <img alt="Summary of Your Work, with the Open, Assigned and Resolved tabs" src="__img0" />
+</Phone>
+
+Three tabs across the top, with a count on each:
+
+| Tab          | What is in it                          |
+| ------------ | -------------------------------------- |
+| **Open**     | Recorded, not yet resolved             |
+| **Assigned** | Everything that has been routed to you |
+| **Resolved** | Closed, with an outcome recorded       |
+
+Each row shows how the complaint arrived, its tracking code, the first line
+of the description, who reported it, the date, how long ago, its status, and
+the region.
+
+The newest is at the top — so a complaint you have just recorded appears
+first, with **0 days ago** against it.
+
+## Opening one complaint [#opening-one-complaint]
+
+Tap any row.
+
+<Phone>
+    <img alt="One complaint, showing the Actions tab" src="__img1" />
+</Phone>
+
+Three tabs:
+
+* **ACTIONS** — what you can do next.
+* **DETAILS** — everything that was recorded about it.
+* **HISTORY** — every step anyone has taken on it, with names and dates.
+
+The actions run in order, and only the next one is available. A complaint
+that has just arrived offers **Accept Issue** and nothing else; once accepted
+it offers **Record Steps Taken**, then **Record Resolution**, then
+**Rate & Appeal**. **Escalate** sends it up to a supervisor when it cannot be
+settled at your level.
+
+<Callout type="info">
+  A greyed-out button is not broken — it is a step that comes later. Work down
+  the list in order.
+</Callout>
+
+## The figures for your area [#the-figures-for-your-area]
+
+Tap **View Reports** on the home screen.
+
+<Phone>
+    <img alt="The statistics dashboard" src="__img2" />
+</Phone>
+
+Four numbers at the top:
+
+| Card                   | What it counts                                           |
+| ---------------------- | -------------------------------------------------------- |
+| **Total Issues**       | Everything you can see, with this month's share below it |
+| **This Week**          | Recorded in the current week                             |
+| **Resolved**           | Closed with an outcome, and the resolution rate          |
+| **Average Resolution** | How many days a complaint takes, on average              |
+
+Each card also compares against the period before it, so you can see whether
+the direction is up or down.
+
+Scroll down for the trends.
+
+<Phone>
+    <img alt="Category and type trends over the last three months" src="__img3" />
+</Phone>
+
+* **Category Trends** — Complaint, Service Issue, Question, Other.
+* **Type Trends** — the channel complaints arrived through: Mobile App, In
+  Person, Email, Web Form, SMS, Phone Call.
+
+These are the figures used to decide which channels the public actually rely
+on, which is why getting the channel right at
+[Step 3](/docs/mobile/record) matters.
+
+## Working without signal [#working-without-signal]
+
+The app keeps a copy of your work on the phone. You can record complaints all
+day with no network and lose nothing.
+
+Tap **Sync Files** to see where things stand.
+
+<Phone>
+    <img alt="The Sync Files screen" src="__img4" />
+</Phone>
+
+* **Everything synchronized** with a green dot, and the time of the last
+  sync, means the phone and the server agree.
+* **Check for Updates** sends anything waiting and pulls down anything new.
+  Do this whenever you get back into signal.
+* **Download all my data again** rebuilds the phone's copy from scratch. Use
+  it only if complaints or projects you expect are missing.
+
+<Callout type="warn">
+  A complaint you recorded in the field is **not visible to anyone else** until
+  the phone has synced. Before you finish for the day, open **Sync Files** and
+  check that it says *Everything synchronized*.
+</Callout>
+
+### If sync fails [#if-sync-fails]
+
+You may see *Background sync failed* while you are out of coverage. That on
+its own is not a problem — nothing is lost. Get back into signal, open
+**Sync Files**, and tap **Check for Updates**.
+
+If it still fails with a good connection, sign out from **Profile** and sign
+in again. If that does not clear it, report it to your administrator with the
+time it happened.
 
 
 # Project Administrator (/docs/staff/administrator)
@@ -634,6 +1041,12 @@ system accurately, so it reaches the right officer and the person can follow
 it up.
 
 ## Record a complaint [#record-a-complaint]
+
+<Callout type="info">
+  Away from a desk? The same complaint can be recorded on the
+  [mobile app](/docs/mobile/record), which works with no signal and syncs when
+  you get back into coverage.
+</Callout>
 
 From the sidebar, click **Andika Ikibazo** (*Record Issue*).
 

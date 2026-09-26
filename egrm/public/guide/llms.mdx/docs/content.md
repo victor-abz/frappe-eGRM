@@ -19,6 +19,8 @@ sounds like you.
   <Card title="I assign and resolve complaints" description="Reviewer or Supervisor — check new complaints, send them to the right officer, and record the outcome." href="/docs/staff/reviewer" />
 
   <Card title="I set up and run the system" description="Project Administrator — create a project, load regions, add staff, and decide how complaints are routed." href="/docs/staff/administrator" />
+
+  <Card title="I work from a phone" description="The mobile app — record complaints in the field, with or without signal, and see the figures for your area." href="/docs/mobile" />
 </Cards>
 
 ## How a complaint moves [#how-a-complaint-moves]

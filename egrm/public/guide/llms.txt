@@ -14,6 +14,10 @@
   - [Field Officer](/docs/staff/field-officer): Recording a complaint that someone brings to you in person, by phone, by SMS or on paper.
   - [Reviewer and Supervisor](/docs/staff/reviewer): Checking new complaints, sending them to the right officer, recording the outcome, and handling escalations.
   - [Project Administrator](/docs/staff/administrator): Creating a project, loading its regions, adding staff, and deciding how complaints are routed.
+- On a phone
+  - [The mobile app](/docs/mobile): What the eGRM phone app is for, how to sign in, and what the four buttons on the home screen do.
+  - [Recording a complaint](/docs/mobile/record): The six-step Citizen Input flow — what to ask at each step, and what to hand back at the end.
+  - [Seeing your work](/docs/mobile/reports): The complaints assigned to you, the figures for your area, and how syncing works when you have no signal.
 
 - **Reference**
 - [Screen labels](/docs/glossary): Every Kinyarwanda label on the staff screens, with its English meaning.
