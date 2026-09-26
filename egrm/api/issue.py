@@ -417,7 +417,10 @@ def update(issue_id, issue_data):
 			"confirmed",
 			"resolution_accepted",
 			"rating",
-			"research_result",
+			# `research_result` was listed here but is not a field on GRM Issue,
+			# so the getattr() guard below silently dropped it on every update.
+			# The schema field holding the outcome text is `resolution_text`.
+			"resolution_text",
 			"reject_reason",
 		]
 
@@ -599,10 +602,16 @@ def resolve(issue_id, resolution_text=None):
 		# Find resolved status — MUST be project-scoped to avoid picking up
 		# a final status from a different project (each GRM Project owns
 		# its own status taxonomy).
+		#
+		# A project normally has more than one final status ("Resolved" and
+		# "Closed"), so an unordered LIMIT 1 is a coin toss that can close an
+		# issue outright. Statuses are seeded in workflow order, so the oldest
+		# final status is the one resolution should land on.
 		resolved_status = frappe.get_all(
 			"GRM Issue Status",
 			filters={"final_status": 1, "project": issue.project},
 			fields=["name"],
+			order_by="creation asc",
 			limit=1,
 		)
 
@@ -613,11 +622,9 @@ def resolve(issue_id, resolution_text=None):
 		# Update issue
 		issue.status = resolved_status[0].name
 		issue.resolution_date = now_datetime()
+		issue.resolved_by = user
 		if resolution_text:
-			issue.research_result = resolution_text
-
-		# Save issue
-		issue.save()
+			issue.resolution_text = resolution_text
 
 		# Add resolution log (text/user/timestamp — see update() for context).
 		issue.append(

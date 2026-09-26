@@ -71,6 +71,8 @@ app_logo_url = "/assets/egrm/images/egrm-logo.svg"
 app_include_js = [
 	"egrm_workspace_filter.bundle.js",
 	"egrm_app_route.bundle.js",
+	# Frappe's Geolocation control defaults to Mumbai; re-centre it on Rwanda.
+	"egrm_map_defaults.bundle.js",
 ]
 
 # Boot session hook — inject frappe.boot.egrm with per-user duty payload

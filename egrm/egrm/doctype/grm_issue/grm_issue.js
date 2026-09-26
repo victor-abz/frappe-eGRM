@@ -796,9 +796,12 @@ frappe.ui.form.on("GRM Issue", {
 				});
 			}).addClass("btn-primary");
 
+			// Tell the officer what this means for them, not how the data is
+			// stored — the storage mechanism is not something an end user can
+			// act on, and naming it on screen only invites questions.
 			frm.set_intro(
 				__(
-					"This issue contains confidential citizen data that is securely stored using Frappe's Password field type."
+					'The person who reported this issue asked to stay confidential. Their name and contact details are hidden on this form — use "View Confidential Info" when you need them to follow up.'
 				),
 				"yellow"
 			);
