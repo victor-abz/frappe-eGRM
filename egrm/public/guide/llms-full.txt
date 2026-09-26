@@ -1,0 +1,919 @@
+# Using the public website (/docs/citizen)
+
+
+
+
+
+
+
+You do **not** need an account, a password, or a smartphone app to report a
+problem. Everything on this page works from any web browser.
+
+Open &#x2A;*[egrm.risa.gov.rw/grm-portal](https://egrm.risa.gov.rw/grm-portal)**.
+
+<img alt="The eGRM public website home page" src="__img0" />
+
+## The two things you can do [#the-two-things-you-can-do]
+
+| I want to…                         | Where to click                      |
+| ---------------------------------- | ----------------------------------- |
+| Report a new problem               | **Submit a Complaint → Start form** |
+| Check a problem I already reported | **Track a Complaint → Enter code**  |
+
+Both buttons are on the home page, and both are also in the menu along the
+top of every page.
+
+## Change the language [#change-the-language]
+
+The website opens in Kinyarwanda. To read it in another language, use the
+selector at the **top-right** of any page. Three choices are available:
+
+* **Kinyarwanda** (the default)
+* **English**
+* **Français**
+
+Your choice applies immediately and stays as you move between pages.
+
+<img alt="The public website in Kinyarwanda, with the language selector top-right" src="__img1" />
+
+<Callout type="info">
+  Changing the language changes the labels and buttons. It does not change
+  anything about your complaint, and you can switch back at any time.
+</Callout>
+
+## What "Mobile App" in the menu is for [#what-mobile-app-in-the-menu-is-for]
+
+The **Mobile App** link is for field officers who collect complaints in places
+with no internet. As a member of the public you do not need it — the website
+does everything you need.
+
+## Next [#next]
+
+<Cards>
+  <Card title="Send a complaint" description="A four-step form. Takes a few minutes." href="/docs/citizen/submit" />
+
+  <Card title="Check a complaint" description="Use your tracking code to see the current status." href="/docs/citizen/track" />
+</Cards>
+
+
+# Send a complaint (/docs/citizen/submit)
+
+
+
+
+
+
+
+
+
+
+
+Open &#x2A;*[egrm.risa.gov.rw/grm-portal](https://egrm.risa.gov.rw/grm-portal)** and
+click **Submit a Complaint → Start form**, or **Submit** in the top menu.
+
+The form has four steps. A row of dots at the top shows how far along you are,
+and **Back** always returns to the previous step without losing what you typed.
+
+<Steps>
+  <Step>
+    ### Say what kind of problem it is [#say-what-kind-of-problem-it-is]
+
+        <img alt="Step 1 — choosing a category and how the complaint is reaching us" src="__img0" />
+
+    Two choices on this screen:
+
+    **Category** — what your complaint is about:
+
+    | Choice            | Use it when                                          |
+    | ----------------- | ---------------------------------------------------- |
+    | **Complaint**     | Something went wrong and you want it put right       |
+    | **Service Issue** | A service is not working, is late, or is unavailable |
+    | **Question**      | You want information, not a correction               |
+    | **Other**         | None of the above fits                               |
+
+    **Issue Type** — how you are reporting it. Choosing from the website, pick
+    **Web Form**. The other options (In Person, Phone Call, SMS, Email, Verbal,
+    Written, Mobile App) are used by officers recording a complaint on someone
+    else's behalf.
+
+    **Next** stays grey until you have picked one of each.
+  </Step>
+
+  <Step>
+    ### Say where it happened [#say-where-it-happened]
+
+        <img alt="Step 2 — choosing the location" src="__img1" />
+
+    Choose the area the problem relates to, starting from the top level and
+    working down. Each choice you make reveals the next level, so keep selecting
+    until there are no more lists to fill.
+
+    This is what decides which office receives your complaint, so pick the place
+    the problem actually happened — not where you live, if they are different.
+  </Step>
+
+  <Step>
+    ### Describe what happened [#describe-what-happened]
+
+        <img alt="Step 3 — the date and description" src="__img2" />
+
+    Two required fields:
+
+    * **When did this happen?** — the date of the problem. Today's date is filled
+      in already; change it if the problem happened earlier.
+    * **Description** — what happened, where, and how it affected you. At least
+      10 characters, up to 5,000.
+
+    <Callout type="warn">
+      Write the description in your own words and include anything that would help
+      someone find the problem: a place name, a date, a reference number. An officer
+      who has never been to the location will be reading this.
+    </Callout>
+  </Step>
+
+  <Step>
+    ### Choose whether to give your contact details [#choose-whether-to-give-your-contact-details]
+
+        <img alt="Step 4 — anonymous or contactable" src="__img3" />
+
+    | Choice             | What happens                                                                                                                                       |
+    | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | **Stay anonymous** | Your complaint is handled without any contact details. Nobody can call you for more information, and you will not be notified when it is resolved. |
+    | **I want updates** | You give a phone number or email, and you can be contacted about progress and the outcome.                                                         |
+
+    **Stay anonymous** is selected by default. Either way you still get a tracking
+    code, and you can still check the status yourself at any time.
+
+    Click **Submit Complaint** to finish.
+  </Step>
+</Steps>
+
+## After you submit [#after-you-submit]
+
+You are shown a **tracking code** that looks like `RDAP-260907-6503`.
+
+<Callout type="warn">
+  Write this code down or take a photograph of the screen before you close the
+  page. If you chose to stay anonymous, this code is the **only** way to check
+  your complaint later — it cannot be recovered or sent to you again.
+</Callout>
+
+Then see [Check a complaint](/docs/citizen/track).
+
+## If you get stuck [#if-you-get-stuck]
+
+* **The Next button stays grey.** A required field on that step is still
+  empty. On step 1 you need both a category and an issue type; on step 3 the
+  description must be at least 10 characters.
+* **Your location is not in the list.** Choose the closest area above it and
+  name the exact place in the description instead.
+* **You closed the page mid-way.** Nothing is saved until you press
+  **Submit Complaint**, so start again from the beginning.
+
+
+# Check a complaint (/docs/citizen/track)
+
+
+
+
+
+
+
+Open &#x2A;*[egrm.risa.gov.rw/grm-portal/track](https://egrm.risa.gov.rw/grm-portal/track)**,
+or click **Track** in the top menu.
+
+<Steps>
+  <Step>
+    ### Type in your tracking code [#type-in-your-tracking-code]
+
+        <img alt="Entering a tracking code" src="__img0" />
+
+    This is the code you were given when you submitted, in the form
+    `RDAP-260907-6503`. Type it exactly, including the dashes.
+  </Step>
+
+  <Step>
+    ### Click Track Complaint [#click-track-complaint]
+
+        <img alt="The tracking result" src="__img1" />
+
+    You are shown the current status, the category, and the date you submitted it.
+  </Step>
+</Steps>
+
+## What the statuses mean [#what-the-statuses-mean]
+
+| Status          | What it means for you                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **New**         | Received, waiting for an officer to review it.                                                                                  |
+| **In Progress** | Assigned to an officer who is working on it.                                                                                    |
+| **Resolved**    | The officer has recorded an outcome.                                                                                            |
+| **Closed**      | Finished and filed.                                                                                                             |
+| **Rejected**    | Not taken forward — usually because it falls outside what this mechanism covers, or there was not enough information to act on. |
+
+## What you will and will not see [#what-you-will-and-will-not-see]
+
+The tracking page deliberately shows only the status, category and submission
+date. It does not show your description, your contact details, or the names of
+the officers involved. This is so that a tracking code shared with or
+overheard by someone else cannot expose personal information.
+
+## If you get stuck [#if-you-get-stuck]
+
+* **"Not found" or no result.** Check the code character by character — the
+  letters are the project code and the digits include the date. It is easy to
+  read `0` as `O`.
+* **You lost the code.** If you gave contact details when you submitted, the
+  office can look your complaint up for you. If you chose to stay anonymous,
+  there is no way to recover it — you would need to submit again.
+* **The status has not changed in a long time.** Contact the office handling
+  the project and quote your tracking code.
+
+
+# Screen labels (/docs/glossary)
+
+
+
+Staff screens on this system display in Kinyarwanda. If you are reading this
+guide in English, use this page to match what is on your screen to what is
+written here.
+
+## Navigation [#navigation]
+
+| On screen            | English            |
+| -------------------- | ------------------ |
+| Ahabanza             | Home               |
+| Shakisha             | Search             |
+| Imenyekanisha        | Notifications      |
+| Andika Ikibazo       | Record Issue       |
+| Ibibazo Bifunguye    | Open Issues        |
+| Ibibazo Byose        | All Issues         |
+| Iby'integuro Byanjye | My Assignments     |
+| Inyandiko z'Integuro | Assignment Records |
+
+## Sections of the main screen [#sections-of-the-main-screen]
+
+| On screen                         | English                    |
+| --------------------------------- | -------------------------- |
+| Kwakira                           | Intake                     |
+| Igitekerezo                       | Feedback                   |
+| Ubujurire                         | Appeals                    |
+| Igenzura                          | Supervision                |
+| Ibyitwajwe                        | Escalated                  |
+| Imishinga                         | Projects                   |
+| Imishinga Yose                    | All Projects               |
+| Tangiriza Umushinga Mushya        | Start New Project          |
+| Abakoresha & Uburenganzira        | Users and Permissions      |
+| Abakoresha ku Mushinga            | Project Users              |
+| Sisitemu                          | System                     |
+| Amoko y'Inzego z'Ubuyobozi        | Administrative Level Types |
+| Verisiyo za Porogaramu ya Android | Android App Versions       |
+| Igitabo cy'Inshingano             | Duty Catalogue             |
+
+## Fields on a complaint [#fields-on-a-complaint]
+
+| On screen            | English               |
+| -------------------- | --------------------- |
+| Umushinga            | Project               |
+| Icyiciro             | Category              |
+| Ubwoko bw'Ikibazo    | Issue Type            |
+| Kode yo Gukurikirana | Tracking Code         |
+| Imimerere            | Status                |
+| Ibisobanuro          | Description           |
+| Itariki y'Ikibazo    | Issue Date            |
+| Itariki yo Kwakira   | Intake Date           |
+| Inshingano Yahawe    | Assigned To           |
+| Ishami Ryahawe       | Assigned Department   |
+| Akarere k'Ubuyobozi  | Administrative Region |
+| Aho Ikibazo Kiri     | Issue Location        |
+| Wahawe               | Assignee              |
+
+## Tabs on a complaint [#tabs-on-a-complaint]
+
+| On screen                       | English             |
+| ------------------------------- | ------------------- |
+| Amakuru y'Ikibazo               | Issue Details       |
+| Amakuru y'Umuturage             | Citizen Information |
+| Inyandiko z'ibikorwa by'ikibazo | Issue Activity Log  |
+| Gukurikirana Ibibazo            | Issue Tracking      |
+| Iyinjizwa                       | Escalation          |
+
+## Statuses [#statuses]
+
+| On screen  | English     | Meaning                      |
+| ---------- | ----------- | ---------------------------- |
+| Gishya     | New         | Recorded, not yet reviewed   |
+| Birakorwa  | In Progress | Assigned and being worked on |
+| Byakemuwe  | Resolved    | An outcome has been recorded |
+| Bifunze    | Closed      | Finished and filed           |
+| Byanzwe    | Rejected    | Not taken forward            |
+| Bitegereje | Pending     | Awaiting the next action     |
+
+## Buttons [#buttons]
+
+| On screen              | English         |
+| ---------------------- | --------------- |
+| Komeza                 | Continue / Next |
+| Subira inyuma          | Back            |
+| Ongeraho               | Add             |
+| Ibikorwa               | Actions         |
+| Hagarika               | Cancel          |
+| Injira                 | Log in          |
+| Ohereza                | Submit          |
+| Kurikirana             | Track           |
+| Hitamo                 | Choose / Select |
+| Porogaramu ya Telefoni | Mobile App      |
+| Urubuga rwa GRM        | GRM Portal      |
+
+<Callout type="info">
+  Words that are project data rather than interface text — category names like
+  *Complaint*, issue types like *Web Form*, and department names — stay in the
+  language they were entered in when the project was set up. That is why you
+  will see English words on an otherwise Kinyarwanda screen.
+</Callout>
+
+
+# Welcome (/docs)
+
+
+
+eGRM is how a problem gets reported, tracked, and fixed. A member of the
+public raises a complaint; a government officer records it, routes it to the
+right person, and resolves it. Everyone can see where it stands.
+
+This guide assumes no technical background. Pick the description below that
+sounds like you.
+
+## Which part do you need? [#which-part-do-you-need]
+
+<Cards>
+  <Card title="I want to report a problem" description="Send a complaint from the public website, with or without giving your name, and check on it later. No account needed." href="/docs/citizen" />
+
+  <Card title="I record complaints from the public" description="Field Officer — take a complaint in person, by phone or by SMS and enter it into the system correctly." href="/docs/staff/field-officer" />
+
+  <Card title="I assign and resolve complaints" description="Reviewer or Supervisor — check new complaints, send them to the right officer, and record the outcome." href="/docs/staff/reviewer" />
+
+  <Card title="I set up and run the system" description="Project Administrator — create a project, load regions, add staff, and decide how complaints are routed." href="/docs/staff/administrator" />
+</Cards>
+
+## How a complaint moves [#how-a-complaint-moves]
+
+Every complaint follows the same path, no matter how it arrives:
+
+<Steps>
+  <Step>
+    ### It is reported [#it-is-reported]
+
+    Someone submits it on the public website, or tells a field officer in person,
+    by phone, by SMS, or through the mobile app. The officer records it for them.
+  </Step>
+
+  <Step>
+    ### It gets a tracking code [#it-gets-a-tracking-code]
+
+    The system gives the complaint a code like `RDAP-260907-6503`. Anyone holding
+    that code can check the status without logging in.
+  </Step>
+
+  <Step>
+    ### It is reviewed and assigned [#it-is-reviewed-and-assigned]
+
+    A reviewer confirms the details and sends it to the officer or department
+    responsible for that area.
+  </Step>
+
+  <Step>
+    ### It is resolved [#it-is-resolved]
+
+    The assigned officer investigates, records what was done, and closes it. The
+    status visible to the public updates at the same time.
+  </Step>
+</Steps>
+
+## About the language [#about-the-language]
+
+The system opens in **Kinyarwanda**. The public website also offers
+**English** and **Français**, and you can switch at any time using the
+selector in the top-right corner.
+
+<Callout type="info">
+  The public website screenshots in this guide show the **English** version, so
+  they match the English text around them. The staff screens are shown in
+  **Kinyarwanda**, because that is what staff accounts on this system actually
+  display. Every staff label is also listed in English on the
+  [Screen labels](/docs/glossary) page.
+</Callout>
+
+
+# Project Administrator (/docs/staff/administrator)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A project is the container for everything else — its regions, its categories,
+its staff, and its complaints. Setting one up is done through the **Project
+Setup Wizard**, which walks through the steps in order and saves as it goes.
+
+From the main screen, open **Imishinga → Tangiriza Umushinga Mushya**
+(*Projects → Start New Project*). To change a project that already exists,
+open it and choose **Edit in Wizard**.
+
+<img alt="Opening an existing project in the wizard" src="__img0" />
+
+## Step 1 — Name the project [#step-1--name-the-project]
+
+<img alt="Project information" src="__img1" />
+
+The title, an optional start and end date, and the locale — country, default
+language, number and date format, time zone.
+
+<Callout type="warn">
+  **Default Language** here sets the labels that both citizens and staff see.
+  Choose it deliberately: changing it later changes the interface for everyone
+  on the project at once.
+</Callout>
+
+## Step 2 — Build the region structure [#step-2--build-the-region-structure]
+
+This is the most important step in the whole setup, and the hardest to change
+afterwards.
+
+First define the **levels** — the tiers your administrative hierarchy has,
+such as Province, District, Sector, Cell.
+
+<img alt="Administrative levels" src="__img2" />
+
+Then load the actual regions into those levels. They can be imported rather
+than typed one by one.
+
+<img alt="Regions being imported" src="__img3" />
+
+<img alt="Regions after import" src="__img4" />
+
+<Callout type="warn">
+  Every complaint is routed by its region, and every officer sees complaints
+  based on the region they are assigned to. If the structure is wrong or
+  incomplete, complaints will reach the wrong office and officers will be unable
+  to see work that belongs to them. Get this right before adding anyone.
+</Callout>
+
+## Steps 3 to 8 — Define the vocabulary [#steps-3-to-8--define-the-vocabulary]
+
+These steps set the lists people will choose from. Each is a simple table you
+add rows to.
+
+| Step                   | What it defines                              |
+| ---------------------- | -------------------------------------------- |
+| User types             | The kinds of staff account the project has   |
+| Departments            | The units that complaints can be assigned to |
+| Categories             | What a complaint can be about                |
+| Issue types            | The channels complaints arrive through       |
+| Citizen groups         | How complainants are grouped for reporting   |
+| Notification templates | The wording of the messages the system sends |
+
+<img alt="User types" src="__img5" />
+
+<img alt="Departments" src="__img6" />
+
+<img alt="Categories" src="__img7" />
+
+<img alt="Issue types" src="__img8" />
+
+<img alt="Citizen groups" src="__img9" />
+
+<img alt="Notification templates" src="__img10" />
+
+Keep these lists short. A category list with thirty entries produces
+inconsistent filing, because two officers will classify the same complaint
+differently.
+
+## Step 9 — Add the staff [#step-9--add-the-staff]
+
+Users can be added one at a time, or loaded in bulk from a file.
+
+<img alt="The users step" src="__img11" />
+
+For a bulk load, upload the file, map its columns to the fields eGRM expects,
+check the preview, and confirm.
+
+<img alt="Uploading a user file" src="__img12" />
+
+<img alt="Mapping the columns" src="__img13" />
+
+<img alt="Previewing before import" src="__img14" />
+
+<img alt="Import complete" src="__img15" />
+
+<Callout type="warn">
+  **An account by itself grants nothing.** What determines which complaints a
+  person can see is the **region they are assigned to** — not their role. Staff
+  in this system typically hold the same set of duties as each other and differ
+  only by region. A new user with no region assignment signs in successfully and
+  sees an empty system.
+</Callout>
+
+Check the preview before confirming a bulk import. Correcting a bad import is
+considerably more work than reading the preview.
+
+## Steps 10 to 12 — Routing, time limits and statuses [#steps-10-to-12--routing-time-limits-and-statuses]
+
+<img alt="Issue routing" src="__img16" />
+
+**Routing** decides which department or role receives a complaint, based on
+its category and region.
+
+<img alt="Service level agreements" src="__img17" />
+
+**Time limits** set how long each stage may take before a complaint escalates
+on its own.
+
+<img alt="Issue statuses" src="__img18" />
+
+**Statuses** are the stages a complaint passes through. Some are marked as
+*final*, meaning the complaint is finished.
+
+<Callout type="warn">
+  Be careful with **final** statuses. Marking more than one status as final —
+  for example both *Resolved* and *Closed* — makes the end state of a complaint
+  ambiguous, and which one a resolved complaint lands in may not be the one you
+  intended. Keep exactly one final status unless you have a firm reason
+  otherwise, and check the result on a test complaint afterwards.
+</Callout>
+
+## Step 13 — Activate [#step-13--activate]
+
+<img alt="Activating the project" src="__img19" />
+
+<img alt="Confirming activation" src="__img20" />
+
+Activation opens the project for real complaints.
+
+<img alt="Activation complete" src="__img21" />
+
+## Before you hand it over [#before-you-hand-it-over]
+
+Check each of these yourself rather than assuming:
+
+* Submit a test complaint through the public website and confirm it appears
+  for the officer who should receive it.
+* Sign in as one ordinary staff account and confirm they see the complaints
+  they should — and not the ones they should not.
+* Check the tracking page returns a sensible result for the test complaint's
+  code.
+* Delete the test complaint before real use begins.
+
+## If you get stuck [#if-you-get-stuck]
+
+* **A user sees nothing after signing in.** They have no region assignment.
+  This is the most common report by a wide margin.
+* **Complaints reach the wrong office.** Check the region structure first and
+  the routing rules second — a misplaced region explains most of these.
+* **A region is missing.** Add it at the right level; do not attach it to the
+  wrong parent as a shortcut, because visibility for every officer above it
+  follows that parent.
+
+
+# Field Officer (/docs/staff/field-officer)
+
+
+
+
+
+
+
+
+
+
+
+Most complaints do not arrive through the website. Someone stops you at a
+meeting, calls the office, or sends an SMS. Your job is to get that into the
+system accurately, so it reaches the right officer and the person can follow
+it up.
+
+## Record a complaint [#record-a-complaint]
+
+From the sidebar, click **Andika Ikibazo** (*Record Issue*).
+
+<img alt="The complaint form, empty" src="__img0" />
+
+Fill in the form:
+
+| Field (Kinyarwanda) | English     | What to put                                                                 |
+| ------------------- | ----------- | --------------------------------------------------------------------------- |
+| Umushinga           | Project     | The project this belongs to                                                 |
+| Icyiciro            | Category    | Complaint, Service Issue, Question or Other                                 |
+| Ubwoko bw'Ikibazo   | Issue Type  | **How it reached you** — In Person, Phone Call, SMS, Email, Verbal, Written |
+| Itariki y'Ikibazo   | Issue Date  | When the problem happened                                                   |
+| Itariki yo Kwakira  | Intake Date | When it reached you                                                         |
+| Ibisobanuro         | Description | What happened, in as much detail as you have                                |
+| Akarere             | Region      | Where the problem happened                                                  |
+
+<img alt="The same form, filled in" src="__img1" />
+
+<Callout type="warn">
+  **Issue Type** records the channel the complaint arrived through, not how
+  serious it is. If someone telephoned you, choose **Phone Call** — not
+  **Web Form**, even though you are typing it into a web page. These figures are
+  used to decide which channels the public actually rely on.
+</Callout>
+
+Then save.
+
+<img alt="The saved complaint, with its tracking code" src="__img2" />
+
+## Give the person their tracking code [#give-the-person-their-tracking-code]
+
+Saving produces a tracking code like `RDAP-260907-6503`.
+
+<Callout type="warn">
+  Read this code back to the person, and make sure they have written it down,
+  before they leave or you end the call. If they gave no contact details, this
+  code is the only way they can ever check their complaint again.
+</Callout>
+
+Tell them they can check it at **egrm.risa.gov.rw/grm-portal** under
+**Track**, and that it will show the status but not their description.
+
+## Ask before you write [#ask-before-you-write]
+
+The quality of a complaint depends almost entirely on what you capture at this
+moment. Before you save, check you have:
+
+* **Where exactly.** A village or facility name, not just a district. This is
+  what decides who receives it.
+* **When exactly.** A date, even an approximate one.
+* **What specifically went wrong**, in the person's own words rather than a
+  summary like "service problem".
+* **Whether they want to be contacted.** If they do, take a phone number. If
+  they would rather not be named, that is their right — record it anonymously
+  and say so.
+
+## Checking on what you have recorded [#checking-on-what-you-have-recorded]
+
+**Ibibazo Bifunguye** (*Open Issues*) in the sidebar lists complaints that are
+still active.
+
+<img alt="The complaint list with status pills" src="__img3" />
+
+The coloured pill in the **Imimerere** (*Status*) column shows where each one
+has got to:
+
+| Pill      | English     | Meaning                      |
+| --------- | ----------- | ---------------------------- |
+| Gishya    | New         | Recorded, not yet reviewed   |
+| Birakorwa | In Progress | Assigned, being worked on    |
+| Byakemuwe | Resolved    | An outcome has been recorded |
+
+You will only see complaints for the regions you are assigned to.
+
+## If you get stuck [#if-you-get-stuck]
+
+* **The region you need is not in the list.** Choose the nearest level above
+  it and name the exact place in the description. Then tell your administrator
+  the region is missing.
+* **You saved it with the wrong details.** Open the complaint and use
+  **Reassign Issue** for the wrong owner, or ask a reviewer for anything else
+  — once submitted, some fields are locked to keep the record trustworthy.
+* **Someone reports the same problem twice.** Record it anyway and mention the
+  earlier tracking code in the description. A reviewer will merge them.
+
+
+# Reviewer and Supervisor (/docs/staff/reviewer)
+
+
+
+
+
+
+
+
+
+
+
+You are the point where a complaint stops being a piece of text and becomes
+someone's assigned work. Two things depend on you: that it reaches the right
+officer, and that what happened is written down.
+
+## Find what needs your attention [#find-what-needs-your-attention]
+
+Three places in the sidebar:
+
+| Kinyarwanda          | English        | What is in it                           |
+| -------------------- | -------------- | --------------------------------------- |
+| Ibibazo Bifunguye    | Open Issues    | Everything still active in your regions |
+| Iby'integuro Byanjye | My Assignments | Complaints assigned to you personally   |
+| Andika Ikibazo       | Record Issue   | Enter a new complaint yourself          |
+
+<img alt="The complaint list" src="__img0" />
+
+The list shows the tracking code, the status pill, and the reference. The grey
+boxes along the top filter it — by project, category, department, assignee,
+issue type, status or region. Newly arrived complaints carry the
+**Gishya** (*New*) pill.
+
+## Open a complaint [#open-a-complaint]
+
+Click any row.
+
+<img alt="An open complaint" src="__img1" />
+
+The tabs across the top separate the record into sections:
+
+| Kinyarwanda                     | English             | Holds                                                               |
+| ------------------------------- | ------------------- | ------------------------------------------------------------------- |
+| Amakuru y'Ikibazo               | Issue Details       | The complaint itself — dates, category, description, region, status |
+| Amakuru y'Umuturage             | Citizen Information | Contact details, if any were given                                  |
+| Inyandiko z'ibikorwa by'ikibazo | Issue Activity Log  | Every action taken, in order                                        |
+| Gukurikirana Ibibazo            | Issue Tracking      | Progress against the complaint                                      |
+| Iyinjizwa                       | Escalation          | Escalation history, if it was escalated                             |
+
+<Callout type="warn">
+  **Citizen Information may be empty, and that is deliberate.** People are
+  allowed to report anonymously. An empty contact tab is not a data problem and
+  is not something to chase — it means nobody may be called about this
+  complaint, and the outcome has to be published through the tracking code
+  instead.
+</Callout>
+
+## Assign it to someone [#assign-it-to-someone]
+
+Use **Assign** in the right-hand panel to add an officer, or **Reassign
+Issue** at the top of the page to move it to a different one.
+
+<img alt="A complaint being assigned" src="__img2" />
+
+Before you assign, check two things:
+
+1. **Is the region right?** Routing follows the region on the complaint. If it
+   is wrong, the complaint sits with an office that cannot act on it.
+2. **Is the category right?** A "Question" misfiled as a "Complaint" enters a
+   resolution process it never needed.
+
+Both are quicker to correct now than after the work has been handed on.
+
+## Record the outcome [#record-the-outcome]
+
+When the assigned officer has finished, the outcome is recorded against the
+complaint and the status moves on.
+
+<img alt="A complaint after the outcome was recorded" src="__img3" />
+
+<Callout type="warn">
+  After you record a resolution, **re-open the complaint and check the status
+  field reads what you expect**. The status the public sees on the tracking page
+  is this field — if it has not moved, the person checking their tracking code
+  will still be told the complaint is open.
+</Callout>
+
+Write the outcome so that it makes sense to someone who was not involved: what
+was found, what was done, and when. This text is the record of the decision.
+
+## Escalations and appeals [#escalations-and-appeals]
+
+Two cards on the main screen cover work that did not finish normally:
+
+* **Igenzura → Ibyitwajwe** (*Supervision → Escalated*) — complaints raised to
+  a higher level, usually because they passed their time limit or needed
+  authority the assigned officer did not have.
+* **Igitekerezo → Ubujurire** (*Feedback → Appeals*) — where someone has come
+  back dissatisfied with the outcome.
+
+Check both regularly. Neither will come to you as a notification if you are
+not assigned to the individual complaint.
+
+## What you can and cannot see [#what-you-can-and-cannot-see]
+
+You see complaints for the regions you are assigned to, **including the
+regions beneath them**. A supervisor assigned at province level sees the
+districts within it; an officer assigned to one district sees only that one.
+
+If a complaint you expect is missing, the usual cause is a region assignment,
+not a permission setting — check with your administrator.
+
+## If you get stuck [#if-you-get-stuck]
+
+* **A complaint is in the wrong region.** Correct the region, then reassign.
+  Changing the assignee alone leaves the routing wrong for next time.
+* **Nobody is available in the assigned department.** Reassign to another
+  officer rather than leaving it unassigned — an unassigned complaint has no
+  owner and will not be picked up by anyone.
+* **The same problem is reported twice.** Resolve one and record the other's
+  tracking code in the outcome, so both codes give the person a real answer.
+
+
+# Signing in (/docs/staff/signing-in)
+
+
+
+
+
+
+
+Staff work in a different part of the system from the public website. You need
+an account, which an administrator creates for you.
+
+## Sign in [#sign-in]
+
+Go to &#x2A;*[egrm.risa.gov.rw/login](https://egrm.risa.gov.rw/login)** and enter
+the email address and password you were given.
+
+<img alt="The sign-in page" src="__img0" />
+
+After signing in you land on the **eGRM** work area.
+
+## The main screen [#the-main-screen]
+
+<img alt="The eGRM work area" src="__img1" />
+
+Two parts matter:
+
+**The sidebar on the left** is always there. Its entries are:
+
+| Kinyarwanda          | English        |
+| -------------------- | -------------- |
+| Shakisha             | Search         |
+| Imenyekanisha        | Notifications  |
+| Ahabanza             | Home           |
+| Andika Ikibazo       | Record Issue   |
+| Ibibazo Bifunguye    | Open Issues    |
+| Iby'integuro Byanjye | My Assignments |
+
+**The cards in the middle** group everything else by the kind of work it
+belongs to — intake, feedback, supervision, projects, users, and system
+settings. You will only be able to open the ones your role allows.
+
+Your name and email are shown at the bottom-left. Click there to sign out.
+
+<Callout type="info">
+  The staff screens display in **Kinyarwanda**, because that is the language
+  this system is set to. The [Screen labels](/docs/glossary) page lists every
+  label you will meet with its English meaning. If you would rather work in
+  English, ask your administrator to set the language on your own account — it
+  changes only what you see, not what anyone else sees.
+</Callout>
+
+## Which role am I? [#which-role-am-i]
+
+Roles in eGRM are about **duties**, and most staff hold several at once. What
+actually differs between two officers is usually the **region** they are
+assigned to, not the buttons they can press.
+
+| If your job is…                                              | Read                                               |
+| ------------------------------------------------------------ | -------------------------------------------------- |
+| Taking complaints from the public and entering them          | [Field Officer](/docs/staff/field-officer)         |
+| Checking new complaints and sending them to the right person | [Reviewer and Supervisor](/docs/staff/reviewer)    |
+| Setting up projects, regions and staff accounts              | [Project Administrator](/docs/staff/administrator) |
+
+## If you get stuck [#if-you-get-stuck]
+
+* **Your password does not work.** Passwords are not shown to anyone, so a
+  reset is the only fix — ask your administrator.
+* **You sign in but see almost nothing.** You have an account but no region
+  assignment yet. Until an administrator assigns you to a region, there are no
+  complaints you are allowed to see.
+* **A complaint you expect is missing.** You only see complaints for the
+  regions you are assigned to. If it belongs to a neighbouring district, it
+  will not appear for you.
