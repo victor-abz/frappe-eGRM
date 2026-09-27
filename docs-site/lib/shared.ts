@@ -5,6 +5,14 @@ export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
 
+// Kinyarwanda lives in a parallel route rather than behind fumadocs' i18n
+// middleware: middleware cannot run under `output: "export"`, and keeping the
+// English URLs exactly where they are means every existing bookmark and every
+// link already sent to staff keeps working.
+export const appNameRw = 'Gukoresha eGRM';
+export const docsRouteRw = '/rw/docs';
+export const homeRouteRw = '/rw';
+
 const getContentUrl = createGetUrl(docsContentRoute);
 
 export function getPageMarkdownUrl(page: { slugs: string[]; locale?: string }) {

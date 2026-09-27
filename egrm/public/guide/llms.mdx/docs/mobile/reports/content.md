@@ -60,6 +60,16 @@ settled at your level.
   the list in order.
 </Callout>
 
+### Calling the person back [#calling-the-person-back]
+
+If the person left a phone or WhatsApp number when they reported, a **call**
+or **WhatsApp** button sits next to their name at the top of this screen. Tap
+it to reach them without copying the number out by hand.
+
+The button is absent when no number was given, and when the person asked for
+their name to be kept confidential — in that case the screen shows
+**Confidential** and withholds the contact details along with the name.
+
 ## The figures for your area [#the-figures-for-your-area]
 
 Tap **View Reports** on the home screen.

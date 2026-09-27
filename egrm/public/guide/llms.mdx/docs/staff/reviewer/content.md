@@ -78,11 +78,11 @@ complaint and the status moves on.
 
 <img alt="A complaint after the outcome was recorded" src="__img3" />
 
-<Callout type="warn">
-  After you record a resolution, **re-open the complaint and check the status
-  field reads what you expect**. The status the public sees on the tracking page
-  is this field — if it has not moved, the person checking their tracking code
-  will still be told the complaint is open.
+<Callout type="info">
+  Recording the outcome moves the complaint to **Resolved** and stores your name
+  against it as the resolver. That status is the one the public sees on the
+  tracking page, so the person checking their code is told as soon as you save —
+  there is no separate step to publish it.
 </Callout>
 
 Write the outcome so that it makes sense to someone who was not involved: what
