@@ -1,4 +1,12 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { appNameRw } from '@/lib/shared';
+
+export const metadata: Metadata = {
+  title: { absolute: appNameRw },
+  description:
+    'Uko watanga ikibazo ku buryo bwo gukemura ibibazo by’abaturage, n’uko abakozi bakyandika, bakagitanga kandi bakagikemura.',
+};
 
 const ROLES = [
   {

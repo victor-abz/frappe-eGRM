@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
+import { appNameRw } from '@/lib/shared';
 
 export default async function Page(props: PageProps<'/rw/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -42,7 +43,9 @@ export async function generateMetadata(props: PageProps<'/rw/docs/[[...slug]]'>)
   if (!page) notFound();
 
   return {
-    title: page.data.title,
+    // Absolute, so the root layout's English `%s · eGRM User Guide` template
+    // does not put an English product name in a Kinyarwanda browser tab.
+    title: { absolute: `${page.data.title} · ${appNameRw}` },
     description: page.data.description,
   };
 }
