@@ -7,6 +7,8 @@ import os
 
 import frappe
 
+from egrm.egrm.doctype.egrm_settings.egrm_settings import get_portal_visibility
+
 
 @frappe.whitelist(allow_guest=True)
 def get_public_reports():
@@ -20,7 +22,20 @@ def get_public_reports():
 	Returns:
 	    list[dict]: Each entry has keys *filename*, *url*, *date*,
 	                *project*, *type*.
+
+	Raises:
+	    frappe.PermissionError: When public reports are not published.
 	"""
+	# Reports carry programme-level detail that is published deliberately or
+	# not at all, so there is no staff bypass -- staff read them in the desk.
+	# Gating only the nav link left this endpoint listing every PDF to anyone
+	# who called it directly, which is not what "turned off" promises.
+	if not get_portal_visibility()["enable_public_reports"]:
+		frappe.throw(
+			frappe._("Public reports are not published."),
+			frappe.PermissionError,
+		)
+
 	reports = []
 	site_path = frappe.get_site_path()
 	reports_path = os.path.join(site_path, "public", "files", "grm_reports")

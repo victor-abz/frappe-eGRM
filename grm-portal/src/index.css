@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The portal's readers include people filing land and resettlement
+   grievances, many of them reading a second language on a cheap phone in
+   daylight. An explicit 16px base keeps Tailwind's scale anchored where
+   body copy stays legible, and stops iOS zooming the page when a text
+   input smaller than 16px takes focus. */
+html {
+  font-size: 16px;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
@@ -9,4 +18,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: #171717;
   background-color: #ffffff;
+}
+
+/* Vestibular disorders and motion sensitivity are common enough in any
+   population-scale service that the spinners, hover lifts and scaling
+   progress dots have to be able to stop. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

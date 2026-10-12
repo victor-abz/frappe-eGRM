@@ -11,9 +11,29 @@ Part of WB GRM Compliance Phase 1: Public Transparency.
 import frappe
 from frappe.utils import add_to_date, getdate
 
+from egrm.api.portal_config import _is_staff
+from egrm.egrm.doctype.egrm_settings.egrm_settings import get_portal_visibility
+
 # ---------------------------------------------------------------------------
 # Main public endpoint
 # ---------------------------------------------------------------------------
+
+
+def _guard_dashboard() -> None:
+	"""Refuse the figures when the public dashboard is switched off.
+
+	Hiding the nav link left the endpoint itself answering anyone who asked,
+	so "turned off" meant the page was merely harder to find. Staff keep the
+	preview the navbar badges; everyone else is refused here, not in the SPA.
+	"""
+	if get_portal_visibility()["enable_public_dashboard"]:
+		return
+	if _is_staff():
+		return
+	frappe.throw(
+		frappe._("The public dashboard is not published."),
+		frappe.PermissionError,
+	)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -28,8 +48,14 @@ def get_public_dashboard(project_id=None, date_range=None):
 	Returns:
 	    dict: ``{"status": "success", "data": {...}}`` with keys
 	          *overview*, *status_breakdown*, *category_breakdown*,
-	          *region_breakdown*, and *trend_data*.
+	          *type_breakdown*, *region_breakdown*, and *trend_data*.
+
+	Raises:
+	    frappe.PermissionError: When the dashboard is unpublished and the
+	        caller is not staff.
 	"""
+	_guard_dashboard()
+
 	try:
 		# Only show data for active projects
 		projects = _get_active_projects(project_id)
@@ -42,6 +68,7 @@ def get_public_dashboard(project_id=None, date_range=None):
 			"overview": _get_overview_stats(projects, date_filter),
 			"status_breakdown": _get_status_breakdown(projects, date_filter),
 			"category_breakdown": _get_category_breakdown(projects, date_filter),
+			"type_breakdown": _get_type_breakdown(projects, date_filter),
 			"region_breakdown": _get_region_breakdown(projects, date_filter),
 			"trend_data": _get_trend_data(projects, date_range),
 		}
@@ -86,9 +113,14 @@ def _empty_dashboard():
 			"open_issues": 0,
 			"resolved_issues": 0,
 			"pending_issues": 0,
+			"issues_this_week": 0,
+			"issues_this_month": 0,
+			"resolution_rate": 0.0,
+			"avg_resolution_days": None,
 		},
 		"status_breakdown": [],
 		"category_breakdown": [],
+		"type_breakdown": [],
 		"region_breakdown": [],
 		"trend_data": [],
 	}
@@ -139,28 +171,54 @@ def _where_clause(projects, date_filter):
 
 def _get_overview_stats(projects, date_filter):
 	where, params = _where_clause(projects, date_filter)
+	today = getdate()
+	week_start = add_to_date(today, days=-7)
+	month_start = add_to_date(today, days=-30)
 
+	# The mobile Statistics screen leads with resolution rate and average
+	# resolution time; the public dashboard published neither, so the same
+	# programme looked different depending on which door you came through.
+	# Both are derived here in the one existing aggregate query rather than
+	# added as extra round trips.
 	row = frappe.db.sql(
 		f"""
         SELECT
             COUNT(*) AS total_issues,
             SUM(CASE WHEN s.open_status = 1 THEN 1 ELSE 0 END) AS open_issues,
             SUM(CASE WHEN s.final_status = 1 THEN 1 ELSE 0 END) AS resolved_issues,
-            SUM(CASE WHEN s.initial_status = 1 THEN 1 ELSE 0 END) AS pending_issues
+            SUM(CASE WHEN s.initial_status = 1 THEN 1 ELSE 0 END) AS pending_issues,
+            SUM(CASE WHEN gi.creation >= %s THEN 1 ELSE 0 END) AS issues_this_week,
+            SUM(CASE WHEN gi.creation >= %s THEN 1 ELSE 0 END) AS issues_this_month,
+            AVG(
+                CASE
+                    WHEN s.final_status = 1 AND gi.resolution_date IS NOT NULL
+                    THEN DATEDIFF(gi.resolution_date, DATE(gi.creation))
+                END
+            ) AS avg_resolution_days
         FROM `tabGRM Issue` gi
         LEFT JOIN `tabGRM Issue Status` s ON gi.status = s.name
         WHERE {where}
         """,
-		params,
+		[week_start, month_start, *params],
 		as_dict=True,
 	)
 
 	r = row[0] if row else {}
+	total = r.get("total_issues") or 0
+	resolved = r.get("resolved_issues") or 0
+	avg_days = r.get("avg_resolution_days")
+
 	return {
-		"total_issues": r.get("total_issues") or 0,
+		"total_issues": total,
 		"open_issues": r.get("open_issues") or 0,
-		"resolved_issues": r.get("resolved_issues") or 0,
+		"resolved_issues": resolved,
 		"pending_issues": r.get("pending_issues") or 0,
+		"issues_this_week": r.get("issues_this_week") or 0,
+		"issues_this_month": r.get("issues_this_month") or 0,
+		"resolution_rate": round(resolved * 100.0 / total, 1) if total else 0.0,
+		# None, not 0 -- "no issue has been resolved yet" and "issues are
+		# resolved the same day" are different facts and must not render alike.
+		"avg_resolution_days": round(float(avg_days), 1) if avg_days is not None else None,
 	}
 
 
@@ -211,6 +269,31 @@ def _get_category_breakdown(projects, date_filter):
 		as_dict=True,
 	)
 	return [{"category": r.category, "count": r.count} for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Issue-type breakdown — 1 query with JOIN
+# ---------------------------------------------------------------------------
+
+
+def _get_type_breakdown(projects, date_filter):
+	where, params = _where_clause(projects, date_filter)
+
+	rows = frappe.db.sql(
+		f"""
+        SELECT it.type_name AS issue_type, COUNT(*) AS count
+        FROM `tabGRM Issue` gi
+        JOIN `tabGRM Issue Type` it ON gi.issue_type = it.name
+        WHERE {where}
+          AND gi.issue_type IS NOT NULL AND gi.issue_type != ''
+        GROUP BY gi.issue_type
+        HAVING count > 0
+        ORDER BY count DESC
+        """,
+		params,
+		as_dict=True,
+	)
+	return [{"issue_type": r.issue_type, "count": r.count} for r in rows]
 
 
 # ---------------------------------------------------------------------------

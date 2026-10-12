@@ -5,13 +5,26 @@ export default {
 		extend: {
 			colors: {
 				grm: {
-					accent: "#2490EF",
 					text: "#171717",
+					// Body copy on white, so it is held at or above the 4.5:1
+					// WCAG AA floor rather than chosen by eye: #707070
+					// measures 4.95:1. The #7C7C7C it replaced measured
+					// 4.17:1.
 					secondary: "#707070",
-					muted: "#7C7C7C",
+					// The resting border of every text input, select and
+					// textarea. Tailwind's gray-300 (#d1d5db) measures 1.47:1
+					// on white, well under the 3:1 WCAG 1.4.11 floor for the
+					// boundary of a control. #8a8a8a clears 3:1 on all five
+					// surfaces the portal puts a field on: white 3.45,
+					// gray-50 3.30, gray-100 3.14, primary-50 3.24,
+					// amber-50 3.33.
+					field: "#8a8a8a",
 					border: "#EDEDED",
-					bg: "#F8F8F8",
 				},
+				// White text is only legible from 700 down: 500 measures 2.27:1
+				// and 600 measures 3.11:1 against white, both below the 4.5:1
+				// AA floor. 500/600 are for icons, borders and fills only --
+				// every white-on-colour button uses 700 or darker.
 				primary: {
 					50: "#edfaf4",
 					100: "#e1f2eb",
@@ -25,9 +38,6 @@ export default {
 					900: "#0f563c",
 					950: "#083022",
 				},
-				dark: "#4A4A4A",
-				error: "#ef6a78",
-				"in-progress": "#f5ba74",
 			},
 		},
 	},
