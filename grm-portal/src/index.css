@@ -33,3 +33,19 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* A capped scroll area whose bottom edge is flush with a card reads as the
+   end of the list, so a citizen stops at the fifth category and never sees
+   the other four. These two shadows are painted by the scroller itself:
+   `local` gradients scroll with the content and mask the `scroll` ones, so a
+   shadow is visible exactly when there is more list in that direction and
+   gone at either end. No JS, no scroll listener, correct at any list length. */
+.scroll-hint {
+  background:
+    linear-gradient(#fff 30%, rgba(255, 255, 255, 0)) top / 100% 1.5rem no-repeat local,
+    linear-gradient(rgba(255, 255, 255, 0), #fff 70%) bottom / 100% 1.5rem no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0)) top / 100% 0.625rem
+      no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0)) bottom / 100%
+      0.625rem no-repeat scroll;
+}

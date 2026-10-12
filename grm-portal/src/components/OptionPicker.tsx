@@ -102,7 +102,7 @@ export default function OptionPicker({
           {label}
         </h3>
         {searchable && (
-          <span className="text-xs text-grm-secondary" aria-hidden="true">
+          <span className="text-xs text-grm-secondary">
             {__("{0} options").replace("{0}", String(options.length))}
           </span>
         )}
@@ -165,7 +165,7 @@ export default function OptionPicker({
         <div
           id={`${idPrefix}-list`}
           className={`grid grid-cols-1 sm:grid-cols-2 gap-2 ${
-            searchable ? "max-h-64 overflow-y-auto pr-1" : ""
+            searchable ? "scroll-hint max-h-64 overflow-y-auto overscroll-contain pr-1 pb-1" : ""
           }`}
           role="group"
           aria-labelledby={labelId}
