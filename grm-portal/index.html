@@ -1,16 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ portal_lang }}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="GRM Public Portal — Track complaints, view statistics, and submit grievances" />
-    <title>GRM Public Portal</title>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <meta name="description" content="{{ _('GRM Public Portal - Track complaints, view statistics, and submit grievances') }}" />
+    <title>{{ _("GRM Public Portal") }}</title>
+    <!-- The shell below is the only thing on screen between the first byte and
+         React's first commit. On a 3G handset that gap is seconds long, and it
+         used to be a white page: indistinguishable, to a citizen trying to
+         report a problem, from a government site that is down. Styles are
+         inline because the stylesheet is one of the things still arriving. -->
+    <style>
+      :root { color-scheme: light; }
+      body { margin: 0; background: #fff; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: #171717; }
+      #boot { }
+      #boot .bar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; border-bottom: 1px solid #EDEDED; padding: .75rem 1rem; }
+      #boot .row { display: flex; align-items: center; gap: .75rem; }
+      #boot .shape { background: #ededed; border-radius: .375rem; }
+      #boot .main { max-width: 80rem; margin: 0 auto; padding: 1.5rem 1rem; }
+      #boot .cards { display: grid; gap: .75rem; grid-template-columns: 1fr; margin-top: 1.5rem; }
+      #boot .card { border: 1px solid #EDEDED; border-radius: .5rem; padding: 1rem; display: flex; flex-direction: column; gap: .625rem; }
+      @media (min-width: 640px) { #boot .cards { grid-template-columns: 1fr 1fr; } }
+      @media (prefers-reduced-motion: no-preference) {
+        #boot .shape { animation: boot-pulse 1.6s ease-in-out infinite; }
+        @keyframes boot-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .55 } }
+      }
+    </style>
   </head>
   <body>
+    <!-- Removed by App.tsx once React has committed, rather than left for
+         createRoot to clear, so the handoff does not depend on a React
+         implementation detail. aria-hidden because it says nothing: the shapes
+         carry no text, which also means they cannot be in the wrong language. -->
+    <div id="boot" aria-hidden="true">
+      <div class="bar">
+        <div class="row">
+          <div class="shape" style="height:2rem;width:2rem;border-radius:.5rem"></div>
+          <div class="shape" style="height:1rem;width:7.5rem"></div>
+        </div>
+        <div class="shape" style="height:1.75rem;width:5.5rem"></div>
+      </div>
+      <div class="main">
+        <div class="shape" style="height:1.75rem;width:min(22rem,70%)"></div>
+        <div class="shape" style="height:1rem;width:min(30rem,90%);margin-top:.75rem"></div>
+        <div class="cards">
+          <div class="card">
+            <div class="shape" style="height:1.25rem;width:60%"></div>
+            <div class="shape" style="height:.875rem;width:90%"></div>
+            <div class="shape" style="height:2.5rem;width:100%;margin-top:.25rem"></div>
+          </div>
+          <div class="card">
+            <div class="shape" style="height:1.25rem;width:55%"></div>
+            <div class="shape" style="height:.875rem;width:85%"></div>
+            <div class="shape" style="height:2.5rem;width:100%;margin-top:.25rem"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
+    <!-- Without this the page is blank when scripts are blocked, which on a
+         public grievance portal reads as "the government site is down". It
+         names the other ways a complaint can be filed instead. -->
+    <noscript>
+      <div style="max-width:40rem;margin:3rem auto;padding:0 1rem;color:#171717">
+        <h1 style="font-size:1.25rem;margin:0 0 .5rem">{{ _("Grievance Redress Portal") }}</h1>
+        <p>{{ _("This portal needs JavaScript to run, and your browser has it turned off. Turn it on and reload this page to submit or track a complaint.") }}</p>
+        <p>{{ _("You can also file a complaint through the eGRM mobile app, or in person with a field officer for your project.") }}</p>
+      </div>
+      <style>#boot { display: none }</style>
+    </noscript>
+    <!-- The portal's own strings, already in the language resolved server-side
+         by egrm/www/grm_portal.py. The SPA reads them synchronously, so its
+         first render is in the citizen's language rather than English
+         corrected a round trip later. A JSON script tag rather than a global
+         because `vite dev` serves this file without rendering the Jinja, and
+         an unrendered expression in a JS block would be a syntax error --
+         here it is inert text that JSON.parse simply rejects. -->
+    <script type="application/json" id="portal-i18n">{{ portal_translations }}</script>
     <script>
-      window.csrf_token = "{{ frappe.session.csrf_token }}";
+      // The controller's value, not `frappe.session.csrf_token`: for a guest
+      // the session carries no token and that expression renders the string
+      // "None", which every POST then sends as its header. get_csrf_token()
+      // mints one, so a citizen who is not signed in can still submit.
+      window.csrf_token = "{{ csrf_token }}";
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
