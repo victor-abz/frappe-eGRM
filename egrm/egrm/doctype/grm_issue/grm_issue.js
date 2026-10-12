@@ -1,3 +1,36 @@
+/**
+ * Render every active notice as one blue banner.
+ *
+ * Each ``frm.set_intro`` call appends another coloured block, so the old
+ * two-call form stacked a yellow box on a red one and the officer had to read
+ * two paragraphs to learn two facts. One call, one block, a bold lead-in per
+ * notice, so the thing that matters is findable at a glance.
+ *
+ * @param {object} frm - the form being rendered.
+ * @param {Array<{label: string, text: string}>} notices - active notices.
+ */
+function render_issue_notices(frm, notices) {
+	// Nothing to say. Deliberately a no-op rather than set_intro(""): that
+	// empties the shared form-message container, which would also delete a
+	// banner some other handler had already put there. refresh() clears the
+	// container itself before client scripts run, so there is nothing stale
+	// left for us to tidy up.
+	if (!notices.length) {
+		return;
+	}
+
+	const html = notices
+		.map(
+			(n) =>
+				`<div class="grm-issue-notice"><b>${frappe.utils.escape_html(
+					n.label
+				)}:</b> ${frappe.utils.escape_html(n.text)}</div>`
+		)
+		.join("");
+
+	frm.set_intro(html, "blue");
+}
+
 frappe.ui.form.on("GRM Issue", {
 	// Helper functions for button enablement logic
 
@@ -767,6 +800,11 @@ frappe.ui.form.on("GRM Issue", {
 			});
 		}
 
+		// Confidentiality, escalation and appeal are all things the officer
+		// must know the moment the form opens. Collected here and rendered as
+		// a single banner rather than as separate stacked boxes.
+		const notices = [];
+
 		// Show confidential information button
 		if (frm.doc.citizen_type === "Confidential") {
 			frm.add_custom_button(__("View Confidential Info"), function () {
@@ -799,19 +837,42 @@ frappe.ui.form.on("GRM Issue", {
 			// Tell the officer what this means for them, not how the data is
 			// stored — the storage mechanism is not something an end user can
 			// act on, and naming it on screen only invites questions.
-			frm.set_intro(
-				__(
+			notices.push({
+				label: __("Confidential"),
+				text: __(
 					'The person who reported this issue asked to stay confidential. Their name and contact details are hidden on this form — use "View Confidential Info" when you need them to follow up.'
 				),
-				"yellow"
-			);
+			});
 		}
 
 		// Highlight escalated issues
 		if (frm.doc.escalate_flag) {
 			frm.get_field("escalate_flag").$input.css("background-color", "#ffccc7");
-			frm.set_intro(__("This issue has been escalated and requires attention."), "red");
+			notices.push({
+				label: __("Escalated"),
+				text: frm.doc.escalation_reason
+					? __("This issue has been escalated and requires attention. Reason: {0}", [
+							frm.doc.escalation_reason,
+					  ])
+					: __("This issue has been escalated and requires attention."),
+			});
 		}
+
+		// The citizen rejected the resolution. That is the single most
+		// consequential thing an officer opening this form can know, and
+		// until now it was buried in a collapsed section far below the fold.
+		if (frm.doc.appeal_submitted) {
+			notices.push({
+				label: __("Appeal"),
+				text: frm.doc.appeal_reason
+					? __("The citizen appealed this resolution. Their reason: {0}", [
+							frm.doc.appeal_reason,
+					  ])
+					: __("The citizen appealed this resolution. No reason was recorded."),
+			});
+		}
+
+		render_issue_notices(frm, notices);
 
 		// Manual escalate button
 		if (!frm.is_new() && !["Resolved", "Closed"].includes(frm.doc.status)) {
