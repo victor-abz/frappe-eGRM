@@ -61,7 +61,24 @@ jspm_packages/
 CLAUDE.md
 
 egrm/public/node_modules/
-yarn.lock
+
+# Lockfiles are tracked on purpose. `bench build --apps egrm` runs
+# `yarn install --frozen-lockfile`, which fails without them, and pinning the
+# frontend's dependency tree is the only thing making a server-side build
+# reproduce what was tested here.
+!yarn.lock
+!grm-portal/yarn.lock
+
+# Build output of the grm-portal SPA, produced by `bench build --apps egrm`
+# (see package.json -> scripts.build). vite is configured with
+# emptyOutDir, so this whole directory is regenerated from src/ every time
+# and nothing hand-written survives in it; grm-portal.html is the same
+# bundle's index.html, copied into place by the copy-html-entry script.
+# Committing them meant every build produced a diff of minified bytes under
+# fresh content hashes, and left stale chunks behind whenever a build was
+# forgotten.
+egrm/public/grm-portal/
+egrm/www/grm-portal.html
 
 # Debug / scratch output
 analyzed_output.dat
@@ -70,3 +87,7 @@ analyzed_output.dat
 *.bak
 *.bak.*
 .test-credentials
+
+# Working notes and runbooks for demos/training. They carry throwaway demo
+# credentials and are rewritten per session, so they stay out of the repo.
+plan/
