@@ -122,7 +122,7 @@ def export_regions_template(context, project_code, level=None, output_file=None,
 		regions = regions_query.orderby("administrative_level", "region_name").run(as_dict=True)
 
 		if not regions:
-			click.echo(f"❌ No regions found for project {project_code}")
+			click.echo(f"No regions found for project {project_code}")
 			if level:
 				click.echo(f"   No regions found at level: {level}")
 			return
@@ -276,12 +276,12 @@ def export_regions_template(context, project_code, level=None, output_file=None,
 					# Write empty template row
 					writer.writerow(base_row)
 
-		click.echo(f"✅ Exported {len(regions)} regions to: {output_file}")
-		click.echo(f"📝 Template includes {len(regions)} regions at {level or 'all'} level(s)")
-		click.echo("🔧 Edit the file to add worker details, then use create-government-workers --csv-file")
+		click.echo(f"Exported {len(regions)} regions to: {output_file}")
+		click.echo(f"Template includes {len(regions)} regions at {level or 'all'} level(s)")
+		click.echo("Edit the file to add worker details, then use create-government-workers --csv-file")
 
 	except Exception as e:
-		click.echo(f"❌ Error: {e!s}")
+		click.echo(f"Error: {e!s}")
 		frappe.log_error(f"Export template command failed: {e!s}")
 	finally:
 		frappe.destroy()
@@ -381,10 +381,10 @@ def create_government_workers(
 		frappe.log(f"Starting optimized government worker creation for project {project_code}")
 
 		if dry_run:
-			click.echo("🔍 DRY RUN MODE - No actual changes will be made")
+			click.echo("DRY RUN MODE - No actual changes will be made")
 
 		if send_emails:
-			click.echo("⚠️  Email sending is not recommended for bulk operations")
+			click.echo("Email sending is not recommended for bulk operations")
 
 		# Initialize the optimized creator. The context manager ensures
 		# ``frappe.flags`` (in_import / ignore_permissions) get restored
@@ -405,34 +405,34 @@ def create_government_workers(
 
 			if success and not dry_run:
 				frappe.db.commit()
-				click.echo("✅ Government workers created successfully!")
-				click.echo(f"📊 Total created: {creator.total_created} assignments")
-				click.echo(f"👥 Total users created: {creator.total_users}")
+				click.echo("Government workers created successfully!")
+				click.echo(f"Total created: {creator.total_created} assignments")
+				click.echo(f"Total users created: {creator.total_users}")
 				if hasattr(creator, "skipped_users") and hasattr(creator, "skipped_assignments"):
 					click.echo(
-						f"⏭️  Skipped existing: {creator.skipped_users} users, {creator.skipped_assignments} assignments"
+						f"⏭Skipped existing: {creator.skipped_users} users, {creator.skipped_assignments} assignments"
 					)
 				if creator.errors:
-					click.echo(f"⚠️  Errors encountered: {len(creator.errors)}")
+					click.echo(f"Errors encountered: {len(creator.errors)}")
 					for error in creator.errors[:5]:  # Show first 5 errors
 						click.echo(f"   - {error}")
 			elif success and dry_run:
-				click.echo("✅ Dry run completed successfully!")
-				click.echo(f"📊 Would create: {creator.total_created} assignments")
-				click.echo(f"👥 Would create: {creator.total_users} users")
+				click.echo("Dry run completed successfully!")
+				click.echo(f"Would create: {creator.total_created} assignments")
+				click.echo(f"Would create: {creator.total_users} users")
 			else:
 				if not dry_run:
 					frappe.db.rollback()
-				click.echo("❌ Worker creation failed. Check logs for details.")
+				click.echo("Worker creation failed. Check logs for details.")
 				if creator.errors:
-					click.echo("❌ Errors:")
+					click.echo("Errors:")
 					for error in creator.errors:
 						click.echo(f"   - {error}")
 
 	except Exception as e:
 		if not dry_run:
 			frappe.db.rollback()
-		click.echo(f"❌ Error: {e!s}")
+		click.echo(f"Error: {e!s}")
 		frappe.log_error(f"Command failed: {e!s}")
 	finally:
 		frappe.destroy()
@@ -502,10 +502,10 @@ def auto_generate_regional_workers(
 		frappe.log(f"Auto-generating regional workers for project {project_code}")
 
 		if dry_run:
-			click.echo("🔍 DRY RUN MODE - No actual changes will be made")
+			click.echo("DRY RUN MODE - No actual changes will be made")
 
 		if send_emails:
-			click.echo("⚠️  Email sending is disabled for auto-generation to prevent spam")
+			click.echo("Email sending is disabled for auto-generation to prevent spam")
 
 		# Initialize the optimized generator. The context manager ensures
 		# ``frappe.flags`` (in_import / ignore_permissions) get restored
@@ -525,34 +525,34 @@ def auto_generate_regional_workers(
 
 			if success and not dry_run:
 				frappe.db.commit()
-				click.echo("✅ Regional workers generated successfully!")
-				click.echo(f"📊 Total created: {generator.total_created} assignments")
-				click.echo(f"👥 Total users created: {generator.total_users}")
+				click.echo("Regional workers generated successfully!")
+				click.echo(f"Total created: {generator.total_created} assignments")
+				click.echo(f"Total users created: {generator.total_users}")
 				if hasattr(generator, "skipped_users") and hasattr(generator, "skipped_assignments"):
 					click.echo(
-						f"⏭️  Skipped existing: {generator.skipped_users} users, {generator.skipped_assignments} assignments"
+						f"⏭Skipped existing: {generator.skipped_users} users, {generator.skipped_assignments} assignments"
 					)
 				if generator.errors:
-					click.echo(f"⚠️  Errors encountered: {len(generator.errors)}")
+					click.echo(f"Errors encountered: {len(generator.errors)}")
 					for error in generator.errors[:5]:  # Show first 5 errors
 						click.echo(f"   - {error}")
 			elif success and dry_run:
-				click.echo("✅ Dry run completed successfully!")
-				click.echo(f"📊 Would create: {generator.total_created} assignments")
-				click.echo(f"👥 Would create: {generator.total_users} users")
+				click.echo("Dry run completed successfully!")
+				click.echo(f"Would create: {generator.total_created} assignments")
+				click.echo(f"Would create: {generator.total_users} users")
 			else:
 				if not dry_run:
 					frappe.db.rollback()
-				click.echo("❌ Regional worker generation failed. Check logs for details.")
+				click.echo("Regional worker generation failed. Check logs for details.")
 				if generator.errors:
-					click.echo("❌ Errors:")
+					click.echo("Errors:")
 					for error in generator.errors:
 						click.echo(f"   - {error}")
 
 	except Exception as e:
 		if not dry_run:
 			frappe.db.rollback()
-		click.echo(f"❌ Error: {e!s}")
+		click.echo(f"Error: {e!s}")
 		frappe.log_error(f"Auto-generation command failed: {e!s}")
 	finally:
 		frappe.destroy()
@@ -616,7 +616,7 @@ def export_activation_codes(context, project_code, output_file=None, status_filt
 		workers = query.run(as_dict=True)
 
 		if not workers:
-			click.echo(f"❌ No workers found for project {project_code}")
+			click.echo(f"No workers found for project {project_code}")
 			return
 
 		# Generate output filename if not provided
@@ -657,10 +657,10 @@ def export_activation_codes(context, project_code, output_file=None, status_filt
 					}
 				)
 
-		click.echo(f"✅ Exported {len(workers)} worker records to: {output_file}")
+		click.echo(f"Exported {len(workers)} worker records to: {output_file}")
 
 	except Exception as e:
-		click.echo(f"❌ Error: {e!s}")
+		click.echo(f"Error: {e!s}")
 		frappe.log_error(f"Export command failed: {e!s}")
 	finally:
 		frappe.destroy()
@@ -683,7 +683,7 @@ def generate_worker_template(context, project_code, output_file):
 	Note: Use 'export-regions-template' for the new dynamic approach.
 	"""
 	try:
-		click.echo("⚠️  This is a legacy command. Consider using 'export-regions-template' instead.")
+		click.echo("This is a legacy command. Consider using 'export-regions-template' instead.")
 
 		site = get_site(context)
 		frappe.init(site=site)
@@ -699,7 +699,7 @@ def generate_worker_template(context, project_code, output_file):
 		)
 
 		if not regions:
-			click.echo(f"❌ No regions found for project {project_code}")
+			click.echo(f"No regions found for project {project_code}")
 			return
 
 		with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
@@ -734,12 +734,12 @@ def generate_worker_template(context, project_code, output_file):
 					}
 				)
 
-		click.echo(f"✅ Template generated: {output_file}")
-		click.echo(f"📝 Includes examples for {min(len(regions), 5)} regions")
-		click.echo("🔧 Edit the file and run create-government-workers with --csv-file option")
+		click.echo(f"Template generated: {output_file}")
+		click.echo(f"Includes examples for {min(len(regions), 5)} regions")
+		click.echo("Edit the file and run create-government-workers with --csv-file option")
 
 	except Exception as e:
-		click.echo(f"❌ Error: {e!s}")
+		click.echo(f"Error: {e!s}")
 	finally:
 		frappe.destroy()
 
