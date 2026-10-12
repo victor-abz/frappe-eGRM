@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FrappeContext, FrappeConfig } from "frappe-react-sdk";
+import OptionPicker from "../components/OptionPicker";
 import { useTranslate } from "@/hooks/useTranslate";
 
 // ---------------------------------------------------------------------------
@@ -1090,67 +1091,39 @@ export default function SubmitPage() {
         </div>
       ) : (
         <>
-          <h3 id="category-label" className="text-sm font-semibold text-gray-800 mb-2">
-            {__("Category")}
-          </h3>
-          {categories.length === 0 ? (
-            <p className="text-sm text-grm-secondary mb-4">{__("No categories found")}</p>
-          ) : (
-            <div
-              className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4"
-              role="group"
-              aria-labelledby="category-label"
-            >
-              {categories.map((c) => (
-                <button
-                  key={c.name}
-                  type="button"
-                  aria-pressed={form.category === c.name}
-                  onClick={() => setField("category", c.name)}
-                  className={`flex min-h-[44px] items-center text-left p-2.5 rounded-lg border text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-700 ${
-                    form.category === c.name
-                      ? "border-primary-700 bg-primary-50 font-medium"
-                      : "border-grm-field hover:border-primary-700"
-                  }`}
-                >
-                  {/* Category and type names are administrator-defined rows,
-                      so they are translated through the same dictionary the
-                      rest of the portal uses. An admin adds a Translation for
-                      the name and it resolves here with no code change. */}
-                  {__(c.category_name ?? "")}
-                </button>
-              ))}
-            </div>
-          )}
+          <OptionPicker
+            idPrefix="category"
+            label={__("Category")}
+            options={categories.map((c) => ({
+              // Category and type names are administrator-defined rows, so they
+              // are translated through the same dictionary the rest of the
+              // portal uses. An admin adds a Translation for the name and it
+              // resolves here with no code change.
+              value: c.name,
+              label: __(c.category_name ?? ""),
+            }))}
+            value={form.category}
+            onChange={(v) => setField("category", v)}
+            __={__}
+            emptyText={__("No categories found")}
+            searchPlaceholder={__("Search categories")}
+          />
 
-          <h3 id="issue-type-label" className="text-sm font-semibold text-gray-800 mb-2">
-            {__("Issue Type")}
-          </h3>
-          {issueTypes.length === 0 ? (
-            <p className="text-sm text-grm-secondary">{__("No issue types found")}</p>
-          ) : (
-            <div
-              className="grid grid-cols-1 sm:grid-cols-2 gap-2"
-              role="group"
-              aria-labelledby="issue-type-label"
-            >
-              {issueTypes.map((t) => (
-                <button
-                  key={t.name}
-                  type="button"
-                  aria-pressed={form.issueType === t.name}
-                  onClick={() => setField("issueType", t.name)}
-                  className={`flex min-h-[44px] items-center text-left p-2.5 rounded-lg border text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-700 ${
-                    form.issueType === t.name
-                      ? "border-primary-700 bg-primary-50 font-medium"
-                      : "border-grm-field hover:border-primary-700"
-                  }`}
-                >
-                  {__(t.issue_type_name ?? "")}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="mt-4">
+            <OptionPicker
+              idPrefix="issue-type"
+              label={__("Issue Type")}
+              options={issueTypes.map((t) => ({
+                value: t.name,
+                label: __(t.issue_type_name ?? ""),
+              }))}
+              value={form.issueType}
+              onChange={(v) => setField("issueType", v)}
+              __={__}
+              emptyText={__("No issue types found")}
+              searchPlaceholder={__("Search issue types")}
+            />
+          </div>
         </>
       )}
     </div>
@@ -1190,7 +1163,7 @@ export default function SubmitPage() {
           value={form.issueDate}
           max={new Date().toISOString().slice(0, 10)}
           onChange={(e) => setField("issueDate", e.target.value)}
-          className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary-700"
+          className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg placeholder:text-grm-secondary text-base focus:outline-none focus:ring-2 focus:ring-primary-700"
         />
       </div>
 
@@ -1208,7 +1181,7 @@ export default function SubmitPage() {
           maxLength={5000}
           rows={5}
           placeholder={__("Describe what happened, when, and how it affected you...")}
-          className="w-full p-3 border border-grm-field rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary-700 resize-none"
+          className="w-full p-3 border border-grm-field rounded-lg placeholder:text-grm-secondary text-base focus:outline-none focus:ring-2 focus:ring-primary-700 resize-none"
         />
         <div className="flex justify-between gap-3 mt-1" id="description-help">
           <span className="text-sm text-grm-secondary">
@@ -1285,7 +1258,7 @@ export default function SubmitPage() {
               value={form.phone}
               onChange={(e) => setField("phone", e.target.value)}
               placeholder="+250..."
-              className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary-700"
+              className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg placeholder:text-grm-secondary text-base focus:outline-none focus:ring-2 focus:ring-primary-700"
             />
           </div>
 
@@ -1330,7 +1303,7 @@ export default function SubmitPage() {
                 value={form.contactInformation}
                 onChange={(e) => setField("contactInformation", e.target.value)}
                 placeholder="email@example.com"
-                className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary-700"
+                className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg placeholder:text-grm-secondary text-base focus:outline-none focus:ring-2 focus:ring-primary-700"
               />
             </div>
           )}
@@ -1346,7 +1319,7 @@ export default function SubmitPage() {
               autoComplete="name"
               value={form.citizenName}
               onChange={(e) => setField("citizenName", e.target.value)}
-              className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary-700"
+              className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg placeholder:text-grm-secondary text-base focus:outline-none focus:ring-2 focus:ring-primary-700"
             />
           </div>
 
@@ -1424,7 +1397,7 @@ export default function SubmitPage() {
                 }}
                 placeholder="000000"
                 maxLength={6}
-                className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg text-center text-lg font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary-700"
+                className="w-full min-h-[48px] p-2.5 border border-grm-field rounded-lg placeholder:text-grm-secondary text-center text-lg font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary-700"
               />
               <button
                 type="button"

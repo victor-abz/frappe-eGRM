@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="{{ _('GRM Public Portal - Track complaints, view statistics, and submit grievances') }}" />
     <title>{{ _("GRM Public Portal") }}</title>
+    <!-- Declared explicitly: without it every browser asks for
+         /favicon.ico, which this site does not serve, and each page
+         load logged a 404 that looked like a broken asset to anyone
+         reading the console. -->
+    <link rel="icon" href="/assets/egrm/images/egrm-logo.svg" type="image/svg+xml" />
     <!-- The shell below is the only thing on screen between the first byte and
          React's first commit. On a 3G handset that gap is seconds long, and it
          used to be a white page: indistinguishable, to a citizen trying to

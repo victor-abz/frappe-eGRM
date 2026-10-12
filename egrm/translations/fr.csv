@@ -290,6 +290,7 @@ Citizen Type,Type de Citoyen
 Clear,Effacer
 clear,effacer
 Clear Filters,Effacer les Filtres
+Clear search,Effacer la recherche
 Clear selection,Effacer la sélection
 Click,Cliquer
 Click to set,Cliquer pour définir
@@ -869,6 +870,7 @@ No issue types found,Aucun type de plainte trouvé
 "No issue types yet — click ""Add Type"" to create the first one.","Aucun type de plainte — cliquez sur ""Ajouter un Type"" pour créer le premier."
 No items,Aucun élément
 No items found,Aucun élément trouvé
+No matches for “{0}”,Aucun résultat pour « {0} »
 No matching,Aucune correspondance
 No mobile app version is published yet.,Aucune version mobile publiée.
 "No notification templates yet — click ""Add Template"" to create the first one.","Aucun modèle de notification — cliquez sur ""Ajouter un Modèle"" pour créer le premier."
@@ -1158,6 +1160,8 @@ Schedule,Calendrier
 Search,Rechercher
 Search ...,Rechercher ...
 Search by email or name,Rechercher par e-mail ou nom
+Search categories,Rechercher une catégorie
+Search issue types,Rechercher un type de plainte
 Search name / email / position,Rechercher nom / e-mail / poste
 Search projects,Rechercher des projets
 Search projects...,Rechercher des projets...
@@ -1179,6 +1183,7 @@ Selected issue type does not belong to this project,Le type de plainte sélectio
 Selected project is not active,Le projet sélectionné n'est pas actif
 Selected region does not belong to this project,La région sélectionnée n'appartient pas à ce projet
 Selected user does not have access to this project,L'utilisateur sélectionné n'a pas accès
+Selected:,Sélectionné :
 Send,Envoyer
 Send automated email/SMS notifications to citizens,Envoyer des notifications automatisées aux citoyens
 Send code to my email,Envoyer le code par e-mail
@@ -1496,6 +1501,8 @@ yyyy-mm-dd,aaaa-mm-jj
 {0} of {1} region(s) missing duty coverage,{0} sur {1} région(s) sans couverture de fonctions
 {0} of {1} regions fully covered.,{0} sur {1} régions entièrement couvertes.
 {0} of {1} regions have full duty coverage.,{0} sur {1} régions avec couverture complète.
+{0} of {1} shown,{0} sur {1} affichés
+{0} options,{0} options
 {0} out of 5,{0} sur 5
 {0} pending,{0} en attente
 {0} projects found,{0} projets trouvés

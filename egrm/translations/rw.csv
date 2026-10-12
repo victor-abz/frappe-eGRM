@@ -287,6 +287,7 @@ Citizen Type,Ubwoko bw'Umuturage
 Clear,Siba
 clear,siba
 Clear Filters,Siba Utumenyetso
+Clear search,Hanagura ishakisha
 Clear selection,Siba ibyatoranyijwe
 Click,Kanda
 Click to set,Kanda hano ushyireho
@@ -863,6 +864,7 @@ No issue types found,Nta bwoko bw'ibibazo bwabonetse
 "No issue types yet — click ""Add Type"" to create the first one.","Nta moko y'ibibazo arahari — kanda ""Ongeraho Ubwoko"" kugira ngo ukore iya mbere."
 No items,Nta bintu
 No items found,Nta bintu byabonetse
+No matches for “{0}”,Nta kintu kihuye na “{0}”
 No matching,Nta gihuye
 No mobile app version is published yet.,Nta verisiyo ya porogaramu ya telefoni yatangajwe.
 "No notification templates yet — click ""Add Template"" to create the first one.","Nta byitegererezo byo kumenyesha bihari — kanda ""Ongeraho Icyitegererezo"" kugira ngo ukore icya mbere."
@@ -1152,6 +1154,8 @@ Schedule,Gahunda
 Search,Shakisha
 Search ...,Shakisha ...
 Search by email or name,Shakisha ukoresheje imeyili cyangwa izina
+Search categories,Shakisha ibyiciro
+Search issue types,Shakisha ubwoko bw'ibibazo
 Search name / email / position,Shakisha izina / imeyili / umwanya
 Search projects,Shakisha imishinga
 Search projects...,Shakisha imishinga...
@@ -1173,6 +1177,7 @@ Selected issue type does not belong to this project,Ubwoko bw'ikibazo bwatoranyi
 Selected project is not active,Umushinga watoranyijwe ntukora
 Selected region does not belong to this project,Akarere katoranyijwe ntikari kuri uyu mushinga
 Selected user does not have access to this project,Ukoresha watoranyijwe ntagira uburenganzira ku mushinga
+Selected:,Byatoranyijwe:
 Send,Ohereza
 Send automated email/SMS notifications to citizens,Kohereza imenyekanisha yikora ya imeyili/SMS ku baturage
 Send code to my email,Wohereze kode kuri imeyili yanjye
@@ -1483,6 +1488,8 @@ yyyy-mm-dd,yyyy-mm-dd
 {0} of {1} region(s) missing duty coverage,Uturere {0} kuri {1} ntiturafasha mu nshingano
 {0} of {1} regions fully covered.,Uturere {0} kuri {1} twuzuye.
 {0} of {1} regions have full duty coverage.,Uturere {0} kuri {1} twuzuye inshingano.
+{0} of {1} shown,{0} kuri {1} byerekanwe
+{0} options,Amahitamo {0}
 {0} out of 5,{0} kuri 5
 {0} pending,{0} bitegereje
 {0} projects found,Imishinga {0} yabonetse
