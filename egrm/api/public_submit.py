@@ -222,6 +222,81 @@ def get_region_children(project, parent_region=None):
 		return {"status": "error", "message": _("Failed to load regions")}
 
 
+@frappe.whitelist(allow_guest=True)
+def get_region_path(project, region):
+	"""Rebuild the whole cascade that ends at ``region``.
+
+	The portal holds the cascade in component state, so leaving the region
+	step -- or reloading the page -- destroys it while the chosen region
+	survives in the draft. ``get_region_children`` cannot restore it: it only
+	walks downward. Without this the citizen returns to an empty dropdown
+	while the form still holds their answer, so the screen and the submission
+	disagree and Next stays enabled over a selection nobody can see.
+
+	Each entry carries that level's full option list as well as the ancestor
+	chosen at it, so the client restores the step in one request rather than
+	one per level.
+	"""
+	try:
+		if not project or not region:
+			return {"status": "error", "message": _("Project and region are required")}
+
+		# Walk up to the root. The bound is a guard against a parent cycle in
+		# the data, not a limit on real depth -- Rwanda's deepest project tree
+		# is five levels.
+		chain = []
+		cursor = region
+		seen = set()
+		while cursor and cursor not in seen and len(chain) < 20:
+			seen.add(cursor)
+			row = frappe.db.get_value(
+				"GRM Administrative Region",
+				cursor,
+				["name", "region_name", "administrative_level", "parent_region", "project"],
+				as_dict=True,
+			)
+			# A region that was deleted or belongs to another project is not a
+			# path we can rebuild. Say so plainly and let the client start over.
+			if not row or row.get("project") != project:
+				return {"status": "success", "data": []}
+			chain.append(row)
+			cursor = row.get("parent_region")
+		chain.reverse()
+
+		# Where the visible cascade starts is whatever the children endpoint
+		# offers first -- it skips a lone root, and reusing it here keeps the
+		# restored first dropdown identical to the one the citizen used.
+		first = get_region_children(project)
+		if first.get("status") != "success":
+			return first
+		options = first.get("data") or []
+		names = {r["name"] for r in options}
+
+		start = next((i for i, row in enumerate(chain) if row["name"] in names), None)
+		if start is None:
+			return {"status": "success", "data": []}
+
+		levels = []
+		for idx in range(start, len(chain)):
+			if idx > start:
+				children = get_region_children(project, chain[idx - 1]["name"])
+				if children.get("status") != "success":
+					return children
+				options = children.get("data") or []
+			levels.append(
+				{
+					"administrative_level": chain[idx]["administrative_level"],
+					"selected": chain[idx]["name"],
+					"options": options,
+				}
+			)
+
+		return {"status": "success", "data": levels}
+	except Exception as e:
+		frappe.log_error(title="Region Path Error", message=str(e))
+		return {"status": "error", "message": _("Failed to load regions")}
+
+
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(key="ip", limit=_otp_limit, seconds=3600)
 def send_otp(phone):
