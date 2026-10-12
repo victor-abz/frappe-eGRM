@@ -23,6 +23,7 @@ def get_latest_app():
 
 	Returns a dict with ``version_name``, ``download_url`` (absolute URL
 	so the SPA can use it as-is for an ``<a download href=...>``),
+	``file_size`` (bytes, or ``None`` when the File row cannot be found),
 	``release_notes`` (HTML), and ``available`` (boolean — false when no
 	APK has been uploaded yet, surfaced to the UI for the empty-state).
 	"""
@@ -55,5 +56,22 @@ def get_latest_app():
 		"available": True,
 		"version_name": row.get("version_name"),
 		"download_url": frappe.utils.get_url(row.get("apk_file")),
+		# Most citizens download this over mobile data, so the size belongs
+		# next to the button rather than as a surprise in the notification
+		# tray.
+		"file_size": _get_file_size(row.get("apk_file")),
 		"release_notes": row.get("release_notes") or "",
 	}
+
+
+def _get_file_size(file_url: str | None) -> int | None:
+	"""Return the APK's size in bytes, or ``None`` if it cannot be read.
+
+	The File row is looked up by URL because ``apk_file`` stores the public
+	path, not the File name. A missing row is not an error here -- the page
+	simply omits the size.
+	"""
+	if not file_url:
+		return None
+	size = frappe.db.get_value("File", {"file_url": file_url}, "file_size")
+	return int(size) if size else None

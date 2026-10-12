@@ -11,6 +11,7 @@ export interface TrackingResult {
     submission_date: string;
     acknowledged_date?: string;
     resolution_date?: string;
+    resolution_text?: string;
     appeal_submitted: boolean;
     appeal_date?: string | null;
     appeal_reason?: string;

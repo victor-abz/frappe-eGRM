@@ -25,6 +25,12 @@ const PAGE_SIZE_CHOICES = [20, 50, 100];
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 250;
 
+// Deliberately permissive: this only decides whether to offer "create this
+// user", and the server re-validates with frappe.utils.validate_email_address
+// before inserting anything.
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const is_email = (txt) => EMAIL_RE.test((txt || "").trim());
+
 class GRMUsersPage {
 	constructor(page) {
 		this.page = page;
@@ -759,35 +765,132 @@ class GRMUsersPage {
 		if (seq !== this.user_search_seq) return; // stale response — discard
 
 		const $box = $("#grm-user-results");
-		if (!results.length) {
-			$box.html(
-				`<div class="grm-user-result-empty text-muted">${__("No users found.")}</div>`
-			).removeClass("hidden");
+		const typed = (txt || "").trim();
+		// An exact hit means the account already exists, so offering to
+		// create it would only produce a confusing no-op.
+		const exact = results.some(
+			(u) =>
+				(u.name || "").toLowerCase() === typed.toLowerCase() ||
+				(u.email || "").toLowerCase() === typed.toLowerCase()
+		);
+		const create_html =
+			is_email(typed) && !exact
+				? `<div class="grm-user-result grm-user-create" data-email="${frappe.utils.escape_html(
+						typed
+				  )}">
+                      <div class="grm-user-result-name">
+                        <b>+ ${__("Create user")}</b> ${frappe.utils.escape_html(typed)}
+                      </div>
+                      <div class="grm-user-result-email text-muted small">
+                        ${__("No account yet — set them up and assign in one go.")}
+                      </div>
+                   </div>`
+				: "";
+
+		if (!results.length && !create_html) {
+			const hint = typed
+				? __("No users found. Type a full email address to create one.")
+				: __("No users found.");
+			$box.html(`<div class="grm-user-result-empty text-muted">${hint}</div>`).removeClass(
+				"hidden"
+			);
 			return;
 		}
-		const html = results
-			.map((u) => {
-				const id = frappe.utils.escape_html(u.name);
-				const label = frappe.utils.escape_html(u.full_name || u.name);
-				const email = frappe.utils.escape_html(u.email || u.name);
-				return `
+		const html =
+			results
+				.map((u) => {
+					const id = frappe.utils.escape_html(u.name);
+					const label = frappe.utils.escape_html(u.full_name || u.name);
+					const email = frappe.utils.escape_html(u.email || u.name);
+					return `
                     <div class="grm-user-result" data-name="${id}"
                          data-full-name="${label}" data-email="${email}">
                       <div class="grm-user-result-name">${label}</div>
                       <div class="grm-user-result-email text-muted small">${email}</div>
                     </div>
                 `;
-			})
-			.join("");
+				})
+				.join("") + create_html;
 		$box.html(html).removeClass("hidden");
 		$box.find(".grm-user-result").on("click", (e) => {
 			const $el = $(e.currentTarget);
+			if ($el.hasClass("grm-user-create")) {
+				this.prompt_create_user($el.data("email"));
+				return;
+			}
 			this.pick_user({
 				name: $el.data("name"),
 				full_name: $el.data("full-name"),
 				email: $el.data("email"),
 			});
 		});
+	}
+
+	/**
+	 * Collect the few fields a Frappe User needs, create it server-side and
+	 * select it into the open assignment form.
+	 *
+	 * The project is required because the server authorises on Supervise
+	 * duty over that project — the same gate ``create_assignment`` uses.
+	 */
+	prompt_create_user(email) {
+		if (!this.form_state.project) {
+			frappe.show_alert({
+				message: __("Pick a project first — it decides who may create this user."),
+				indicator: "orange",
+			});
+			return;
+		}
+		$("#grm-user-results").addClass("hidden");
+		frappe.prompt(
+			[
+				{
+					fieldname: "email",
+					label: __("Email"),
+					fieldtype: "Data",
+					options: "Email",
+					default: email,
+					reqd: 1,
+				},
+				{
+					fieldname: "first_name",
+					label: __("First Name"),
+					fieldtype: "Data",
+					default: (email || "").split("@")[0],
+					reqd: 1,
+				},
+				{ fieldname: "last_name", label: __("Last Name"), fieldtype: "Data" },
+				{
+					fieldname: "mobile_no",
+					label: __("Mobile Number"),
+					fieldtype: "Data",
+					description: __("Optional. When set, they can sign in with this number."),
+				},
+			],
+			async (values) => {
+				try {
+					const user = await this.call("create_user", {
+						payload: {
+							...values,
+							project: this.form_state.project,
+							role: this.form_state.role || null,
+						},
+					});
+					if (!user) return;
+					frappe.show_alert({
+						message: user.created
+							? __("User {0} created", [user.name])
+							: __("User {0} already existed — selected", [user.name]),
+						indicator: "green",
+					});
+					this.pick_user(user);
+				} catch (e) {
+					/* frappe.call already surfaced the error */
+				}
+			},
+			__("Create User"),
+			__("Create & Select")
+		);
 	}
 
 	pick_user(user) {

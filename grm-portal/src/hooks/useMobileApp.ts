@@ -4,6 +4,7 @@ export interface MobileAppInfo {
   available: boolean;
   version_name: string | null;
   download_url: string | null;
+  file_size: number | null;
   release_notes: string | null;
   message?: string;
 }
@@ -12,6 +13,7 @@ const DEFAULT: MobileAppInfo = {
   available: false,
   version_name: null,
   download_url: null,
+  file_size: null,
   release_notes: null,
 };
 

@@ -22,7 +22,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Type Name",
-   "reqd": 1
+   "reqd": 1,
+   "translatable": 1
   },
   {
    "fieldname": "grm_project_link",

@@ -150,6 +150,11 @@ FULL_SYNC_ESCALATION_COOLDOWN = 900
 # Set to 0 to disable pagination entirely.
 PULL_PAGE_SIZE = 1000
 
+# Rwanda's deepest chain is village -> cell -> sector -> district -> province ->
+# country. The cap is a cycle guard, not a tuning knob: a region table with a
+# parent loop would otherwise spin here forever.
+MAX_REGION_ANCESTOR_DEPTH = 10
+
 
 @request_cache
 def _sync_scope(user):
@@ -199,6 +204,58 @@ def _accessible_region_ids(user):
 		ids = list({r.get("name") or r.get("id") for r in expanded if (r.get("name") or r.get("id"))})
 		scope["expanded_region_ids"] = ids or list(scope["region_ids"])
 	return scope["expanded_region_ids"]
+
+
+def _syncable_region_ids(user):
+	"""Every region record the device needs: the user's subtree plus its ancestors.
+
+	``_accessible_region_ids`` answers "what may this user act on" — assignment
+	plus everything below it. That is the right scope for issues, but it is the
+	wrong scope for shipping the region table itself.
+
+	A user assigned to a single leaf (PIU, say) used to receive exactly one
+	region row. The picker then had nothing to cascade through and collapsed
+	into the auto-selected single-region card, which is why every issue raised
+	from that device carried the same location. Worse, any region row whose
+	``parent_region`` was not itself synced left a dangling parent on the
+	device, so even a multi-region user could not render a path.
+
+	So the pull ships the ancestors too. They are *display* context — the write
+	gate in ``update_record`` still consults ``_accessible_region_ids`` — but
+	without them the hierarchy simply cannot be drawn.
+
+	Memoised on the same per-request scope dict as its two inputs.
+	"""
+	scope = _sync_scope(user)
+	if "syncable_region_ids" in scope:
+		return scope["syncable_region_ids"]
+
+	ids = set(_accessible_region_ids(user))
+	if not ids:
+		scope["syncable_region_ids"] = []
+		return []
+
+	# Walk upwards in batches. Depth is bounded by the administrative-level
+	# count (village -> cell -> sector -> district -> province -> country), so
+	# this terminates in a handful of round trips regardless of subtree size.
+	frontier = set(ids)
+	for _depth in range(MAX_REGION_ANCESTOR_DEPTH):
+		parents = {
+			row.parent_region
+			for row in frappe.get_all(
+				"GRM Administrative Region",
+				filters={"name": ("in", list(frontier))},
+				fields=["parent_region"],
+			)
+			if row.parent_region
+		}
+		frontier = parents - ids
+		if not frontier:
+			break
+		ids |= frontier
+
+	scope["syncable_region_ids"] = list(ids)
+	return scope["syncable_region_ids"]
 
 
 def _claim_once(namespace, *parts):
@@ -344,7 +401,7 @@ def _resolve_full_sync(user, last_sync_time, local_counts):
 	if not _claim_once("grm_sync_escalated", user, detail):
 		return False, None
 
-	frappe.log(f"🔁 [SYNC_BACKEND] Escalating {user} to full sync; device short on {detail}")
+	frappe.log(f"[SYNC_BACKEND] Escalating {user} to full sync; device short on {detail}")
 	return True, f"missing-records ({detail})"
 
 
@@ -433,7 +490,7 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None, paging=None):
 				if isinstance(parsed_counts, dict):
 					local_counts = parsed_counts
 			except (ValueError, TypeError) as e:
-				frappe.log(f"⚠️ [SYNC_BACKEND] Ignoring unparsable counts payload: {e!s}")
+				frappe.log(f"[SYNC_BACKEND] Ignoring unparsable counts payload: {e!s}")
 
 		full_sync_reason = "requested" if full_sync else None
 
@@ -458,7 +515,7 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None, paging=None):
 				else:
 					raise ValueError(f"Unsupported timestamp format: {type(last_pulled_at)}")
 			except Exception as e:
-				frappe.log_error(f"❌ [SYNC_BACKEND] Invalid timestamp: {last_pulled_at} - {e!s}")
+				frappe.log_error(f"[SYNC_BACKEND] Invalid timestamp: {last_pulled_at} - {e!s}")
 				frappe.throw(f"Invalid lastPulledAt timestamp: {last_pulled_at} - {e!s}")
 		else:
 			# First sync - get all data from beginning of time
@@ -527,7 +584,7 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None, paging=None):
 		total_updated = sum(len(t.get("updated", [])) for t in changes.values())
 		total_deleted = sum(len(t.get("deleted", [])) for t in changes.values())
 		frappe.log(
-			f"✅ [SYNC_BACKEND] pullChanges done: +{total_created} ~{total_updated} -{total_deleted} in {total_duration:.3f}s"
+			f"[SYNC_BACKEND] pullChanges done: +{total_created} ~{total_updated} -{total_deleted} in {total_duration:.3f}s"
 			+ (f" [full: {full_sync_reason}]" if full_sync else "")
 			+ (" [page: more]" if has_more else "")
 		)
@@ -548,7 +605,7 @@ def pull_changes(lastPulledAt=None, fullSync=None, counts=None, paging=None):
 
 	except Exception as e:
 		total_duration = time.time() - start_time
-		frappe.log_error(f"❌ [SYNC_BACKEND] pullChanges failed after {total_duration:.3f}s: {e!s}")
+		frappe.log_error(f"[SYNC_BACKEND] pullChanges failed after {total_duration:.3f}s: {e!s}")
 		frappe.throw(_("Sync failed. Please try again."))
 
 
@@ -566,7 +623,7 @@ def push_changes():
 	Returns: void (204 No Content) on success, HTTP error on failure
 	"""
 	start_time = time.time()
-	frappe.log("🔄 [SYNC_BACKEND] Starting pushChanges operation")
+	frappe.log("[SYNC_BACKEND] Starting pushChanges operation")
 
 	try:
 		# Parse request data with timing
@@ -576,7 +633,7 @@ def push_changes():
 		data.get("lastPulledAt")
 
 		# ------------------------------------------------------------------
-		# 🔄  Accept Issue Actions sync: grm_issues (created/updated) and
+		# Accept Issue Actions sync: grm_issues (created/updated) and
 		#      child tables (grm_issue_logs, grm_issue_comments, grm_issue_attachments created only)
 		# ------------------------------------------------------------------
 		filtered_changes = {}
@@ -645,11 +702,11 @@ def push_changes():
 			# mobile client (and AQE contract suite) can parse the
 			# response uniformly. The empty `file_urls` dict signals
 			# "nothing to remap".
-			frappe.log("📤 [SYNC_BACKEND] No Issue Actions changes to process – returning empty envelope")
+			frappe.log("[SYNC_BACKEND] No Issue Actions changes to process – returning empty envelope")
 			return {"file_urls": {}}
 
 		parse_duration = time.time() - parse_start
-		frappe.log(f"⏱️ [SYNC_BACKEND] Request parsing took: {parse_duration:.3f}s")
+		frappe.log(f"⏱[SYNC_BACKEND] Request parsing took: {parse_duration:.3f}s")
 
 		# Log push statistics
 		total_created = total_updated = total_deleted = 0
@@ -660,16 +717,14 @@ def push_changes():
 			total_created += created
 			total_updated += updated
 			total_deleted += deleted
-			frappe.log(f"📋 [SYNC_BACKEND] Push {table_name}: +{created} ~{updated} -{deleted}")
+			frappe.log(f"[SYNC_BACKEND] Push {table_name}: +{created} ~{updated} -{deleted}")
 
-		frappe.log(
-			f"📊 [SYNC_BACKEND] Total push changes: +{total_created} ~{total_updated} -{total_deleted}"
-		)
+		frappe.log(f"[SYNC_BACKEND] Total push changes: +{total_created} ~{total_updated} -{total_deleted}")
 
 		# Process changes in transaction with timing
 		transaction_start = time.time()
 		try:
-			frappe.log("💾 [SYNC_BACKEND] Starting database transaction...")
+			frappe.log("[SYNC_BACKEND] Starting database transaction...")
 			frappe.db.begin()
 
 			# Collect file URLs for uploaded attachments
@@ -685,32 +740,53 @@ def push_changes():
 				else:
 					process_table_changes(table_name, table_changes)
 				table_duration = time.time() - table_start
-				frappe.log(f"⏱️ [SYNC_BACKEND] Processing {table_name} took: {table_duration:.3f}s")
+				frappe.log(f"⏱[SYNC_BACKEND] Processing {table_name} took: {table_duration:.3f}s")
 
 			frappe.db.commit()
 			transaction_duration = time.time() - transaction_start
-			frappe.log(f"✅ [SYNC_BACKEND] Database transaction completed in {transaction_duration:.3f}s")
+			frappe.log(f"[SYNC_BACKEND] Database transaction completed in {transaction_duration:.3f}s")
 
 			# API-5 contract: always return a JSON envelope with
 			# `file_urls` so the client can do `body.file_urls`
 			# unconditionally. When no attachments were processed this is
 			# an empty dict (NOT a 204). The mobile client treats an
 			# empty dict identically to "no remap needed".
-			frappe.log(f"📤 [SYNC_BACKEND] Returning file URLs: {file_url_mappings}")
+			frappe.log(f"[SYNC_BACKEND] Returning file URLs: {file_url_mappings}")
 			return {"file_urls": file_url_mappings}
+
+		except frappe.PermissionError as e:
+			# A scope rejection is not a transient failure, so it must not
+			# wear the generic "please try again" copy — that sent one
+			# field agent into three identical retries against a record
+			# whose region he will never be allowed to write.
+			frappe.db.rollback()
+			frappe.log_error(f"[SYNC_BACKEND] Push rejected on scope: {e!s}")
+			frappe.throw(
+				_(
+					"You do not have access to the location on one of these records. "
+					"Pick a location inside your assigned area, or ask your supervisor "
+					"to extend your assignment. Retrying will not help."
+				),
+				frappe.PermissionError,
+			)
 
 		except Exception as e:
 			frappe.db.rollback()
 			transaction_duration = time.time() - transaction_start
-			frappe.log_error(f"❌ [SYNC_BACKEND] Transaction failed after {transaction_duration:.3f}s: {e!s}")
+			frappe.log_error(f"[SYNC_BACKEND] Transaction failed after {transaction_duration:.3f}s: {e!s}")
 			frappe.throw(_("Failed to save changes. Please try again."))
 
 		total_duration = time.time() - start_time
-		frappe.log(f"✅ [SYNC_BACKEND] pushChanges completed successfully in {total_duration:.3f}s")
+		frappe.log(f"[SYNC_BACKEND] pushChanges completed successfully in {total_duration:.3f}s")
+
+	except frappe.PermissionError:
+		# Already carries a specific, actionable message — re-raise verbatim
+		# instead of flattening it into the generic failure text below.
+		raise
 
 	except Exception as e:
 		total_duration = time.time() - start_time
-		frappe.log_error(f"❌ [SYNC_BACKEND] pushChanges failed after {total_duration:.3f}s: {e!s}")
+		frappe.log_error(f"[SYNC_BACKEND] pushChanges failed after {total_duration:.3f}s: {e!s}")
 		frappe.throw(_("Failed to process push changes request."))
 
 
@@ -757,7 +833,7 @@ def get_deleted_records_by_doctype(doctypes, since_timestamp, until_timestamp=No
 
 	except Exception as e:
 		duration = time.time() - start_time
-		frappe.log_error(f"❌ [SYNC_BACKEND] Failed to get deleted records after {duration:.3f}s: {e!s}")
+		frappe.log_error(f"[SYNC_BACKEND] Failed to get deleted records after {duration:.3f}s: {e!s}")
 		# Return empty lists on error - don't fail the entire sync
 		return results
 
@@ -977,16 +1053,14 @@ def get_changes_since(last_sync_time, page_boundary=None):
 
 			# Single-line per-table summary (instead of ~10 chatty lines)
 			frappe.log(
-				f"✅ [SYNC_BACKEND] {table_name}: +{len(created_records)} ~{len(updated_records)} -{len(deleted_ids)} ({table_duration:.3f}s)"
+				f"[SYNC_BACKEND] {table_name}: +{len(created_records)} ~{len(updated_records)} -{len(deleted_ids)} ({table_duration:.3f}s)"
 			)
 
 			total_records_processed += len(created_records) + len(updated_records) + len(deleted_ids)
 
 		except Exception as e:
 			table_duration = time.time() - table_start
-			frappe.log_error(
-				f"❌ [SYNC_BACKEND] Error processing {doctype} after {table_duration:.3f}s: {e!s}"
-			)
+			frappe.log_error(f"[SYNC_BACKEND] Error processing {doctype} after {table_duration:.3f}s: {e!s}")
 			frappe.log_error(f"Error getting changes for {doctype}: {e!s}")
 			# Continue with other tables even if one fails
 			continue
@@ -999,7 +1073,7 @@ def get_changes_since(last_sync_time, page_boundary=None):
 
 	function_duration = time.time() - function_start
 	frappe.log(
-		f"✅ [SYNC_BACKEND] get_changes_since done: {total_records_processed} records in {function_duration:.3f}s"
+		f"[SYNC_BACKEND] get_changes_since done: {total_records_processed} records in {function_duration:.3f}s"
 	)
 
 	return changes
@@ -1032,7 +1106,7 @@ def get_user_filters_for_doctype(doctype, user):
 
 	# If user has no project access, they get no data
 	if not user_accessible_projects:
-		log.warning(f"⚠️ [SYNC_BACKEND] User {user} has no project assignments")
+		log.warning(f"[SYNC_BACKEND] User {user} has no project assignments")
 		frappe.throw(_("User has no access to any project"))
 
 	filters = {}
@@ -1057,14 +1131,17 @@ def get_user_filters_for_doctype(doctype, user):
 			filters["administrative_region"] = expanded_region_ids  # Return just the list
 
 	elif doctype == "GRM Administrative Region":
-		# Regions themselves are scoped to what the user is directly assigned,
-		# not the hierarchy expansion used for issues.
-		assigned_region_ids = _sync_scope(user)["region_ids"]
+		# The region table must cover at least the scope the issue table is
+		# filtered by, or the device holds issues pointing at regions it never
+		# received. Shipping only the directly-assigned rows did exactly that,
+		# and it also starved the location picker of anything to cascade
+		# through. ``_syncable_region_ids`` is that scope plus its ancestors.
+		syncable_region_ids = _syncable_region_ids(user)
 
-		if assigned_region_ids:
-			# Filter regions by both user-assigned regions AND projects
+		if syncable_region_ids:
+			# Filter regions by both user-accessible regions AND projects
 			filters = {
-				"name": assigned_region_ids,  # Return just the list
+				"name": syncable_region_ids,  # Return just the list
 				"project": user_accessible_projects,  # Return just the list
 			}
 		else:
@@ -1095,7 +1172,7 @@ def get_user_filters_for_doctype(doctype, user):
 		}
 
 	else:
-		log.warning(f"⚠️ [SYNC_BACKEND] Unknown doctype for filtering: {doctype}")
+		log.warning(f"[SYNC_BACKEND] Unknown doctype for filtering: {doctype}")
 		# Default to no filtering for unknown doctypes
 		return {}
 
@@ -1120,12 +1197,12 @@ def validate_user_record_access(doctype, record_data, user):
 
 	# Check if user is Administrator or has System Manager role (handled in get_user_accessible_projects)
 	if user == "Administrator" or "System Manager" in frappe.get_roles(user):
-		frappe.log(f"🔓 [SYNC_BACKEND] User {user} has admin access - allowing record operation")
+		frappe.log(f"[SYNC_BACKEND] User {user} has admin access - allowing record operation")
 		return True
 
 	# If user has no project access, deny access
 	if not user_accessible_projects:
-		log.warning(f"❌ [SYNC_BACKEND] User {user} has no project assignments")
+		log.warning(f"[SYNC_BACKEND] User {user} has no project assignments")
 		return False
 
 	if doctype == "GRM Issue":
@@ -1150,7 +1227,7 @@ def validate_user_record_access(doctype, record_data, user):
 				and not _user_can_see_others_drafts(user)
 			):
 				log.warning(
-					f"❌ [SYNC_BACKEND] User {user} cannot access draft "
+					f"[SYNC_BACKEND] User {user} cannot access draft "
 					f"GRM Issue {record_id} owned by {row.get('owner')}"
 				)
 				return False
@@ -1159,7 +1236,7 @@ def validate_user_record_access(doctype, record_data, user):
 		issue_project = record_data.get("project")
 
 		if issue_project not in user_accessible_projects:
-			log.warning(f"❌ [SYNC_BACKEND] User {user} cannot access project {issue_project}")
+			log.warning(f"[SYNC_BACKEND] User {user} cannot access project {issue_project}")
 			return False
 
 		# Also check region access for issues, but use the user's full
@@ -1185,7 +1262,7 @@ def validate_user_record_access(doctype, record_data, user):
 
 			if issue_region not in accessible_region_ids:
 				log.warning(
-					f"❌ [SYNC_BACKEND] User {user} cannot access region {issue_region} "
+					f"[SYNC_BACKEND] User {user} cannot access region {issue_region} "
 					f"(accessible regions: {len(accessible_region_ids)} via hierarchy)"
 				)
 				return False
@@ -1198,7 +1275,7 @@ def validate_user_record_access(doctype, record_data, user):
 		# Check project access first
 		if region_project not in user_accessible_projects:
 			log.warning(
-				f"❌ [SYNC_BACKEND] User {user} cannot access project {region_project} for region {region_id}"
+				f"[SYNC_BACKEND] User {user} cannot access project {region_project} for region {region_id}"
 			)
 			return False
 
@@ -1207,14 +1284,14 @@ def validate_user_record_access(doctype, record_data, user):
 		assigned_region_ids = list(set([assignment.administrative_region for assignment in user_assignments]))
 
 		if region_id not in assigned_region_ids:
-			log.warning(f"❌ [SYNC_BACKEND] User {user} is not assigned to region {region_id}")
+			log.warning(f"[SYNC_BACKEND] User {user} is not assigned to region {region_id}")
 			return False
 
 	elif doctype == "GRM Project":
 		# Check if project is accessible to user
 		project_id = record_data.get("name") or record_data.get("id")
 		if project_id not in user_accessible_projects:
-			log.warning(f"❌ [SYNC_BACKEND] User {user} cannot access project {project_id}")
+			log.warning(f"[SYNC_BACKEND] User {user} cannot access project {project_id}")
 			return False
 
 	elif doctype in [
@@ -1228,14 +1305,14 @@ def validate_user_record_access(doctype, record_data, user):
 		# For lookup tables, check project access if they have a project field
 		record_project = record_data.get("project")
 		if record_project and record_project not in user_accessible_projects:
-			log.warning(f"❌ [SYNC_BACKEND] User {user} cannot access project {record_project} for {doctype}")
+			log.warning(f"[SYNC_BACKEND] User {user} cannot access project {record_project} for {doctype}")
 			return False
 
 	elif doctype == "User":
 		# Only allow access to current user's own record
 		record_user = record_data.get("name") or record_data.get("id")
 		if record_user != user:
-			log.warning(f"❌ [SYNC_BACKEND] User {user} cannot access other user's record {record_user}")
+			log.warning(f"[SYNC_BACKEND] User {user} cannot access other user's record {record_user}")
 			return False
 
 	elif doctype in ["GRM Issue Log", "GRM Issue Comment"]:
@@ -1244,30 +1321,30 @@ def validate_user_record_access(doctype, record_data, user):
 		record_user = record_data.get("user")
 		if record_user and record_user != user:
 			log.warning(
-				f"❌ [SYNC_BACKEND] User {user} cannot create {doctype} record for other user {record_user}"
+				f"[SYNC_BACKEND] User {user} cannot create {doctype} record for other user {record_user}"
 			)
 			return False
 
 		# Note: Additional validation for parent issue access is handled by the mobile app
 		# before sending the sync request, so we trust that the user has access to the related issue
-		frappe.log(f"✅ [SYNC_BACKEND] User {user} can create {doctype} record")
+		frappe.log(f"[SYNC_BACKEND] User {user} can create {doctype} record")
 
-	frappe.log(f"✅ [SYNC_BACKEND] User {user} has access to {doctype} record")
+	frappe.log(f"[SYNC_BACKEND] User {user} has access to {doctype} record")
 	return True
 
 
 def process_table_changes(table_name, table_changes):
 	"""Process changes for a specific table with detailed logging"""
 	start_time = time.time()
-	frappe.log(f"📋 [SYNC_BACKEND] Processing changes for table: {table_name}")
+	frappe.log(f"[SYNC_BACKEND] Processing changes for table: {table_name}")
 
 	# Convert table name back to DocType
 	doctype = SYNC_TABLES.get(table_name)
 	if not doctype:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Unknown table name: {table_name}")
+		frappe.log_error(f"[SYNC_BACKEND] Unknown table name: {table_name}")
 		raise ValueError(f"Unknown table name: {table_name}")
 
-	frappe.log(f"📋 [SYNC_BACKEND] Mapped {table_name} -> {doctype}")
+	frappe.log(f"[SYNC_BACKEND] Mapped {table_name} -> {doctype}")
 
 	# Track file URLs for attachments
 	file_urls = {}
@@ -1276,12 +1353,12 @@ def process_table_changes(table_name, table_changes):
 	created_records = table_changes.get("created", [])
 	if created_records:
 		created_start = time.time()
-		frappe.log(f"📝 [SYNC_BACKEND] Processing {len(created_records)} created records...")
+		frappe.log(f"[SYNC_BACKEND] Processing {len(created_records)} created records...")
 
 		for i, raw_record in enumerate(created_records):
 			try:
 				record_start = time.time()
-				frappe.log(f"✏️ [SYNC_BACKEND] raw_record record {raw_record}")
+				frappe.log(f"[SYNC_BACKEND] raw_record record {raw_record}")
 
 				# Special handling for attachments to collect file URLs
 				if doctype == "GRM Issue Attachment":
@@ -1293,20 +1370,20 @@ def process_table_changes(table_name, table_changes):
 
 				record_duration = time.time() - record_start
 				frappe.log(
-					f"📝 [SYNC_BACKEND] Created record {i+1}/{len(created_records)} in {record_duration:.3f}s"
+					f"[SYNC_BACKEND] Created record {i+1}/{len(created_records)} in {record_duration:.3f}s"
 				)
 			except Exception as e:
-				frappe.log_error(f"❌ [SYNC_BACKEND] Failed to create {doctype} record {i+1}: {e!s}")
+				frappe.log_error(f"[SYNC_BACKEND] Failed to create {doctype} record {i+1}: {e!s}")
 				raise
 
 		created_duration = time.time() - created_start
-		frappe.log(f"✅ [SYNC_BACKEND] Created {len(created_records)} records in {created_duration:.3f}s")
+		frappe.log(f"[SYNC_BACKEND] Created {len(created_records)} records in {created_duration:.3f}s")
 
 	# Process updated records
 	updated_records = table_changes.get("updated", [])
 	if updated_records:
 		updated_start = time.time()
-		frappe.log(f"✏️ [SYNC_BACKEND] Processing {len(updated_records)} updated records...")
+		frappe.log(f"[SYNC_BACKEND] Processing {len(updated_records)} updated records...")
 
 		for i, raw_record in enumerate(updated_records):
 			try:
@@ -1314,20 +1391,20 @@ def process_table_changes(table_name, table_changes):
 				update_record(doctype, raw_record)
 				record_duration = time.time() - record_start
 				frappe.log(
-					f"✏️ [SYNC_BACKEND] Updated record {i+1}/{len(updated_records)} in {record_duration:.3f}s"
+					f"[SYNC_BACKEND] Updated record {i+1}/{len(updated_records)} in {record_duration:.3f}s"
 				)
 			except Exception as e:
-				frappe.log_error(f"❌ [SYNC_BACKEND] Failed to update {doctype} record {i+1}: {e!s}")
+				frappe.log_error(f"[SYNC_BACKEND] Failed to update {doctype} record {i+1}: {e!s}")
 				raise
 
 		updated_duration = time.time() - updated_start
-		frappe.log(f"✅ [SYNC_BACKEND] Updated {len(updated_records)} records in {updated_duration:.3f}s")
+		frappe.log(f"[SYNC_BACKEND] Updated {len(updated_records)} records in {updated_duration:.3f}s")
 
 	# Process deleted records
 	deleted_ids = table_changes.get("deleted", [])
 	if deleted_ids:
 		deleted_start = time.time()
-		frappe.log(f"🗑️ [SYNC_BACKEND] Processing {len(deleted_ids)} deleted records...")
+		frappe.log(f"[SYNC_BACKEND] Processing {len(deleted_ids)} deleted records...")
 
 		for i, record_id in enumerate(deleted_ids):
 			try:
@@ -1335,24 +1412,24 @@ def process_table_changes(table_name, table_changes):
 				delete_record(doctype, record_id)
 				record_duration = time.time() - record_start
 				frappe.log(
-					f"🗑️ [SYNC_BACKEND] Deleted record {i+1}/{len(deleted_ids)} in {record_duration:.3f}s"
+					f"[SYNC_BACKEND] Deleted record {i+1}/{len(deleted_ids)} in {record_duration:.3f}s"
 				)
 			except Exception as e:
-				log.warning(f"⚠️ [SYNC_BACKEND] Failed to delete {doctype} record {record_id}: {e!s}")
+				log.warning(f"[SYNC_BACKEND] Failed to delete {doctype} record {record_id}: {e!s}")
 				# Don't raise for delete failures - record might already be deleted
 
 		deleted_duration = time.time() - deleted_start
-		frappe.log(f"✅ [SYNC_BACKEND] Processed {len(deleted_ids)} deletions in {deleted_duration:.3f}s")
+		frappe.log(f"[SYNC_BACKEND] Processed {len(deleted_ids)} deletions in {deleted_duration:.3f}s")
 
 	total_duration = time.time() - start_time
 	total_records = len(created_records) + len(updated_records) + len(deleted_ids)
 	frappe.log(
-		f"✅ [SYNC_BACKEND] Completed {table_name} processing: {total_records} total records in {total_duration:.3f}s"
+		f"[SYNC_BACKEND] Completed {table_name} processing: {total_records} total records in {total_duration:.3f}s"
 	)
 
 	# Return file URLs for attachments
 	if doctype == "GRM Issue Attachment" and file_urls:
-		frappe.log(f"📎 [SYNC_BACKEND] Returning file URLs for {len(file_urls)} attachments")
+		frappe.log(f"[SYNC_BACKEND] Returning file URLs for {len(file_urls)} attachments")
 		return file_urls
 
 	return None
@@ -1363,10 +1440,10 @@ def create_record(doctype, raw_record, return_file_url=False):
 	create_start = time.time()
 	record_id = raw_record.get("id")
 	user = frappe.session.user
-	frappe.log(f"📝 [SYNC_BACKEND] Creating {doctype} record with ID: {record_id} by user: {user}")
+	frappe.log(f"[SYNC_BACKEND] Creating {doctype} record with ID: {record_id} by user: {user}")
 
 	if not record_id:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Missing ID in raw record for {doctype}")
+		frappe.log_error(f"[SYNC_BACKEND] Missing ID in raw record for {doctype}")
 		raise ValueError("Missing record ID for creation")
 
 	# Validate user has permission to create this record
@@ -1374,11 +1451,11 @@ def create_record(doctype, raw_record, return_file_url=False):
 	if not validate_user_record_access(doctype, raw_record, user):
 		validation_duration = time.time() - validation_start
 		frappe.log_error(
-			f"❌ [SYNC_BACKEND] User {user} lacks permission to create {doctype} record {record_id} (validation took {validation_duration:.4f}s)"
+			f"[SYNC_BACKEND] User {user} lacks permission to create {doctype} record {record_id} (validation took {validation_duration:.4f}s)"
 		)
 		raise frappe.PermissionError(f"Permission denied to create {doctype} record")
 	validation_duration = time.time() - validation_start
-	frappe.log(f"🔒 [SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s")
+	frappe.log(f"[SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s")
 
 	# Handle child table creation differently
 	if doctype in ["GRM Issue Log", "GRM Issue Comment", "GRM Issue Attachment"]:
@@ -1388,24 +1465,24 @@ def create_record(doctype, raw_record, return_file_url=False):
 	existence_check_start = time.time()
 	record_exists = frappe.db.exists(doctype, record_id)
 	existence_check_duration = time.time() - existence_check_start
-	frappe.log(f"🔍 [SYNC_BACKEND] Existence check took: {existence_check_duration:.4f}s")
+	frappe.log(f"[SYNC_BACKEND] Existence check took: {existence_check_duration:.4f}s")
 
 	if record_exists:
-		log.warning(f"⚠️ [SYNC_BACKEND] Record {record_id} already exists, updating instead")
+		log.warning(f"[SYNC_BACKEND] Record {record_id} already exists, updating instead")
 		return update_record(doctype, raw_record)
 
 	# Convert WatermelonDB data to Frappe format
 	conversion_start = time.time()
 	frappe_data = watermelon_to_frappe_data(raw_record)
 	conversion_duration = time.time() - conversion_start
-	frappe.log(f"🔄 [SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
+	frappe.log(f"[SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
 
 	# Create new document
 	doc_creation_start = time.time()
 	doc = frappe.new_doc(doctype)
 	doc_creation_duration = time.time() - doc_creation_start
 	frappe.log(f"Final frappe_data {frappe_data}")
-	frappe.log(f"📄 [SYNC_BACKEND] Document creation took: {doc_creation_duration:.4f}s")
+	frappe.log(f"[SYNC_BACKEND] Document creation took: {doc_creation_duration:.4f}s")
 
 	# Set the name for sync records - store the desired name in a temporary attribute
 	doc._sync_name = record_id
@@ -1424,7 +1501,7 @@ def create_record(doctype, raw_record, return_file_url=False):
 			field_count += 1
 	field_setting_duration = time.time() - field_setting_start
 	frappe.log(f"Final fields after conversion {doc.__dict__}")
-	frappe.log(f"🏗️ [SYNC_BACKEND] Field setting took: {field_setting_duration:.4f}s ({field_count} fields)")
+	frappe.log(f"[SYNC_BACKEND] Field setting took: {field_setting_duration:.4f}s ({field_count} fields)")
 
 	# Insert the document
 	insert_start = time.time()
@@ -1444,11 +1521,11 @@ def create_record(doctype, raw_record, return_file_url=False):
 			doc.flags.ignore_permissions = True
 			doc.submit()
 	insert_duration = time.time() - insert_start
-	frappe.log(f"💾 [SYNC_BACKEND] Document insertion took: {insert_duration:.4f}s")
+	frappe.log(f"[SYNC_BACKEND] Document insertion took: {insert_duration:.4f}s")
 
 	create_duration = time.time() - create_start
-	frappe.log(f"✅ [SYNC_BACKEND] Created {doctype} record {record_id} in {create_duration:.4f}s")
-	frappe.log("📊 [SYNC_BACKEND] Create breakdown:")
+	frappe.log(f"[SYNC_BACKEND] Created {doctype} record {record_id} in {create_duration:.4f}s")
+	frappe.log("[SYNC_BACKEND] Create breakdown:")
 	frappe.log(f"  - Permission validation: {validation_duration:.4f}s")
 	frappe.log(f"  - Existence check: {existence_check_duration:.4f}s")
 	frappe.log(f"  - Data conversion: {conversion_duration:.4f}s")
@@ -1462,52 +1539,50 @@ def create_child_record(doctype, raw_record, return_file_url=False):
 	create_start = time.time()
 	record_id = raw_record.get("id")
 	user = frappe.session.user
-	frappe.log(
-		f"📝 [SYNC_BACKEND] Creating child table {doctype} record with ID: {record_id} by user: {user}"
-	)
+	frappe.log(f"[SYNC_BACKEND] Creating child table {doctype} record with ID: {record_id} by user: {user}")
 
 	# Get parent issue ID from raw record
 	parent_issue_id = raw_record.get("grm_issue")
 	if not parent_issue_id:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Missing parent issue ID in {doctype} record {record_id}")
+		frappe.log_error(f"[SYNC_BACKEND] Missing parent issue ID in {doctype} record {record_id}")
 		raise ValueError(f"Missing parent issue ID for {doctype} child record")
 
 	# Check if parent issue exists
 	parent_exists = frappe.db.exists("GRM Issue", parent_issue_id)
 	if not parent_exists:
 		frappe.log_error(
-			f"❌ [SYNC_BACKEND] Parent issue {parent_issue_id} does not exist for {doctype} record {record_id}"
+			f"[SYNC_BACKEND] Parent issue {parent_issue_id} does not exist for {doctype} record {record_id}"
 		)
 		raise ValueError(f"Parent issue {parent_issue_id} does not exist")
 
 	# Get parent document
 	parent_doc = frappe.get_doc("GRM Issue", parent_issue_id)
-	frappe.log(f"📋 [SYNC_BACKEND] Retrieved parent issue {parent_issue_id}")
+	frappe.log(f"[SYNC_BACKEND] Retrieved parent issue {parent_issue_id}")
 
 	# Convert WatermelonDB data to Frappe format
 	conversion_start = time.time()
 	frappe_data = watermelon_to_frappe_data(raw_record)
 	conversion_duration = time.time() - conversion_start
-	frappe.log(f"🔄 [SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
+	frappe.log(f"[SYNC_BACKEND] Data conversion took: {conversion_duration:.4f}s")
 
 	# Special handling for GRM Issue Attachment with file data
 	created_file_url = None
 	if doctype == "GRM Issue Attachment" and raw_record.get("file_data") and raw_record.get("needs_upload"):
-		frappe.log(f"📎 [SYNC_BACKEND] Processing file upload for attachment {record_id}")
+		frappe.log(f"[SYNC_BACKEND] Processing file upload for attachment {record_id}")
 		frappe.log(
-			f"📎 [SYNC_BACKEND] File details: name={raw_record.get('file_name')}, has_data={bool(raw_record.get('file_data'))}"
+			f"[SYNC_BACKEND] File details: name={raw_record.get('file_name')}, has_data={bool(raw_record.get('file_data'))}"
 		)
 
 		file_url = create_file_from_base64(raw_record, parent_issue_id)
 		if file_url:
 			frappe_data["attachment"] = file_url
 			created_file_url = file_url
-			frappe.log(f"📎 [SYNC_BACKEND] Created file attachment: {file_url}")
+			frappe.log(f"[SYNC_BACKEND] Created file attachment: {file_url}")
 		else:
-			frappe.log_error(f"❌ [SYNC_BACKEND] Failed to create file for attachment {record_id}")
-			frappe.log_error(f"❌ [SYNC_BACKEND] Raw record debug info: {raw_record}")
+			frappe.log_error(f"[SYNC_BACKEND] Failed to create file for attachment {record_id}")
+			frappe.log_error(f"[SYNC_BACKEND] Raw record debug info: {raw_record}")
 			# Don't raise error - continue without file, let attachment record be created
-			frappe.log(f"⚠️ [SYNC_BACKEND] Continuing without file for attachment {record_id}")
+			frappe.log(f"[SYNC_BACKEND] Continuing without file for attachment {record_id}")
 			# Set attachment field to the original attachment value if it exists, or file_name as fallback
 			if raw_record.get("attachment"):
 				frappe_data["attachment"] = raw_record.get("attachment")
@@ -1517,10 +1592,10 @@ def create_child_record(doctype, raw_record, return_file_url=False):
 	# Determine the child table field name dynamically using Frappe meta
 	child_table_field = get_child_table_field_name("GRM Issue", doctype)
 	if not child_table_field:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Cannot find child table field for {doctype} in GRM Issue")
+		frappe.log_error(f"[SYNC_BACKEND] Cannot find child table field for {doctype} in GRM Issue")
 		raise ValueError(f"Cannot find child table field for {doctype} in GRM Issue")
 
-	frappe.log(f"🔍 [SYNC_BACKEND] Using child table field: {child_table_field}")
+	frappe.log(f"[SYNC_BACKEND] Using child table field: {child_table_field}")
 
 	# WatermelonDB <-> Frappe field-name mapping for issue child rows.
 	#
@@ -1563,7 +1638,7 @@ def create_child_record(doctype, raw_record, return_file_url=False):
 			if hasattr(child_doc, field):
 				setattr(child_doc, field, value)
 
-	frappe.log(f"📝 [SYNC_BACKEND] Child record data: {child_doc.as_dict()}")
+	frappe.log(f"[SYNC_BACKEND] Child record data: {child_doc.as_dict()}")
 
 	# Add child record to parent document
 	if not hasattr(parent_doc, child_table_field):
@@ -1579,7 +1654,7 @@ def create_child_record(doctype, raw_record, return_file_url=False):
 
 	# Add new child record as Document object
 	child_table.append(child_doc)
-	frappe.log(f"📝 [SYNC_BACKEND] Added child record {record_id} to parent {parent_issue_id}")
+	frappe.log(f"[SYNC_BACKEND] Added child record {record_id} to parent {parent_issue_id}")
 
 	# Save parent document. The L1 'write' duty is restricted to
 	# Review/Assignment/Investigate&Resolve users, but the canonical
@@ -1599,17 +1674,15 @@ def create_child_record(doctype, raw_record, return_file_url=False):
 		parent_doc.save(ignore_permissions=True)
 	except frappe.exceptions.UpdateAfterSubmitError:
 		# Issue is already submitted, we need to allow updates to child table
-		frappe.log("⚠️ [SYNC_BACKEND] Issue is submitted, allowing child table updates")
+		frappe.log("[SYNC_BACKEND] Issue is submitted, allowing child table updates")
 		parent_doc.flags.ignore_validate_update_after_submit = True
 		parent_doc.save(ignore_permissions=True)
 	save_duration = time.time() - save_start
-	frappe.log(f"💾 [SYNC_BACKEND] Parent document save took: {save_duration:.4f}s")
+	frappe.log(f"[SYNC_BACKEND] Parent document save took: {save_duration:.4f}s")
 
 	create_duration = time.time() - create_start
-	frappe.log(
-		f"✅ [SYNC_BACKEND] Created child table {doctype} record {record_id} in {create_duration:.4f}s"
-	)
-	frappe.log("📊 [SYNC_BACKEND] Child create breakdown:")
+	frappe.log(f"[SYNC_BACKEND] Created child table {doctype} record {record_id} in {create_duration:.4f}s")
+	frappe.log("[SYNC_BACKEND] Child create breakdown:")
 	frappe.log(f"  - Data conversion: {conversion_duration:.4f}s")
 	frappe.log(f"  - Parent document save: {save_duration:.4f}s")
 
@@ -1628,11 +1701,11 @@ def update_record(doctype, raw_record):
 	update_start = time.time()
 	record_id = raw_record.get("id")
 	user = frappe.session.user
-	frappe.log(f"✏️ [SYNC_BACKEND] Updating {doctype} record with ID: {record_id} by user: {user}")
-	frappe.log(f"✏️ [SYNC_BACKEND] Update raw data {raw_record}")
+	frappe.log(f"[SYNC_BACKEND] Updating {doctype} record with ID: {record_id} by user: {user}")
+	frappe.log(f"[SYNC_BACKEND] Update raw data {raw_record}")
 
 	if not record_id:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Missing ID in raw record for {doctype}")
+		frappe.log_error(f"[SYNC_BACKEND] Missing ID in raw record for {doctype}")
 		raise ValueError("Missing record ID for update")
 
 	# Validate user has permission to update this record
@@ -1670,7 +1743,7 @@ def update_record(doctype, raw_record):
 
 	update_duration = time.time() - update_start
 	frappe.log(
-		f"✅ [SYNC_BACKEND] Updated {doctype} record {record_id} "
+		f"[SYNC_BACKEND] Updated {doctype} record {record_id} "
 		f"with {len(fields_to_update)} fields in {update_duration:.4f}s"
 	)
 
@@ -1679,16 +1752,16 @@ def delete_record(doctype, record_id):
 	"""Delete record (soft delete) with enhanced logging"""
 	delete_start = time.time()
 	user = frappe.session.user
-	frappe.log(f"🗑️ [SYNC_BACKEND] Deleting {doctype} record: {record_id} by user: {user}")
+	frappe.log(f"[SYNC_BACKEND] Deleting {doctype} record: {record_id} by user: {user}")
 
 	# Check if record exists
 	existence_check_start = time.time()
 	record_exists = frappe.db.exists(doctype, record_id)
 	existence_check_duration = time.time() - existence_check_start
-	frappe.log(f"🔍 [SYNC_BACKEND] Existence check took: {existence_check_duration:.4f}s")
+	frappe.log(f"[SYNC_BACKEND] Existence check took: {existence_check_duration:.4f}s")
 
 	if not record_exists:
-		frappe.log(f"🗑️ [SYNC_BACKEND] Record {record_id} already deleted or doesn't exist")
+		frappe.log(f"[SYNC_BACKEND] Record {record_id} already deleted or doesn't exist")
 		return
 
 	try:
@@ -1696,7 +1769,7 @@ def delete_record(doctype, record_id):
 		doc_fetch_start = time.time()
 		doc = frappe.get_doc(doctype, record_id)
 		doc_fetch_duration = time.time() - doc_fetch_start
-		frappe.log(f"📄 [SYNC_BACKEND] Document fetch took: {doc_fetch_duration:.4f}s")
+		frappe.log(f"[SYNC_BACKEND] Document fetch took: {doc_fetch_duration:.4f}s")
 
 		# Validate user has permission to delete this record
 		validation_start = time.time()
@@ -1704,21 +1777,21 @@ def delete_record(doctype, record_id):
 		if not validate_user_record_access(doctype, record_data, user):
 			validation_duration = time.time() - validation_start
 			frappe.log_error(
-				f"❌ [SYNC_BACKEND] User {user} lacks permission to delete {doctype} record {record_id} (validation took {validation_duration:.4f}s)"
+				f"[SYNC_BACKEND] User {user} lacks permission to delete {doctype} record {record_id} (validation took {validation_duration:.4f}s)"
 			)
 			return  # Don't raise exception, just skip this delete
 		validation_duration = time.time() - validation_start
-		frappe.log(f"🔒 [SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s")
+		frappe.log(f"[SYNC_BACKEND] Permission validation took: {validation_duration:.4f}s")
 
 		# Delete document
 		delete_operation_start = time.time()
 		doc.delete()
 		delete_operation_duration = time.time() - delete_operation_start
-		frappe.log(f"🗑️ [SYNC_BACKEND] Delete operation took: {delete_operation_duration:.4f}s")
+		frappe.log(f"[SYNC_BACKEND] Delete operation took: {delete_operation_duration:.4f}s")
 
 		delete_duration = time.time() - delete_start
-		frappe.log(f"✅ [SYNC_BACKEND] Deleted {doctype} record {record_id} in {delete_duration:.4f}s")
-		frappe.log("📊 [SYNC_BACKEND] Delete breakdown:")
+		frappe.log(f"[SYNC_BACKEND] Deleted {doctype} record {record_id} in {delete_duration:.4f}s")
+		frappe.log("[SYNC_BACKEND] Delete breakdown:")
 		frappe.log(f"  - Existence check: {existence_check_duration:.4f}s")
 		frappe.log(f"  - Document fetch: {doc_fetch_duration:.4f}s")
 		frappe.log(f"  - Permission validation: {validation_duration:.4f}s")
@@ -1727,13 +1800,13 @@ def delete_record(doctype, record_id):
 	except frappe.PermissionError:
 		delete_duration = time.time() - delete_start
 		log.warning(
-			f"⚠️ [SYNC_BACKEND] No permission to delete {doctype} {record_id} (took {delete_duration:.4f}s)"
+			f"[SYNC_BACKEND] No permission to delete {doctype} {record_id} (took {delete_duration:.4f}s)"
 		)
 		# Don't raise - just log the issue
 	except Exception as e:
 		delete_duration = time.time() - delete_start
 		frappe.log_error(
-			f"❌ [SYNC_BACKEND] Failed to delete {doctype} {record_id} after {delete_duration:.4f}s: {e!s}"
+			f"[SYNC_BACKEND] Failed to delete {doctype} {record_id} after {delete_duration:.4f}s: {e!s}"
 		)
 		# Don't raise - continue with other operations
 
@@ -1769,7 +1842,7 @@ def frappe_to_watermelon_raw(frappe_doc):
 	# `name`; mobile clients reference it by `id`. Return both.
 	doc_name = doc_dict.get("name")
 	if not doc_name:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Missing 'name' field in Frappe document: {doc_dict}")
+		frappe.log_error(f"[SYNC_BACKEND] Missing 'name' field in Frappe document: {doc_dict}")
 		raise ValueError("Frappe document missing 'name' field - cannot create WatermelonDB record")
 	raw_record = {"id": doc_name, "name": doc_name}
 
@@ -1858,7 +1931,7 @@ def frappe_to_watermelon_raw(frappe_doc):
 def watermelon_to_frappe_data(raw_record):
 	"""Convert WatermelonDB raw record to Frappe data - MINIMAL TRANSFORMATION"""
 	conversion_start = time.time()
-	frappe.log("🔄 [SYNC_BACKEND] Converting WatermelonDB raw record to Frappe data")
+	frappe.log("[SYNC_BACKEND] Converting WatermelonDB raw record to Frappe data")
 
 	frappe_data = {}
 	processed_fields = 0
@@ -1894,7 +1967,7 @@ def watermelon_to_frappe_data(raw_record):
 				timestamp_duration = time.time() - timestamp_start
 				timestamp_conversions += 1
 				frappe.log(
-					f"🕐 [SYNC_BACKEND] Converted {key} timestamp in {timestamp_duration:.4f}s: {value} -> {frappe_data[key]}"
+					f"[SYNC_BACKEND] Converted {key} timestamp in {timestamp_duration:.4f}s: {value} -> {frappe_data[key]}"
 				)
 		else:
 			# Direct assignment - fields already aligned
@@ -1903,15 +1976,15 @@ def watermelon_to_frappe_data(raw_record):
 	# Special field mapping for attachments: map 'grm_issue' back to 'parent'
 	if raw_record.get("grm_issue"):
 		frappe_data["parent"] = raw_record.get("grm_issue")
-		frappe.log(f"📎 [SYNC_BACKEND] Mapped grm_issue field to parent: {raw_record.get('grm_issue')}")
+		frappe.log(f"[SYNC_BACKEND] Mapped grm_issue field to parent: {raw_record.get('grm_issue')}")
 
 	frappe_data["name"] = raw_record["id"]
 
 	field_processing_duration = time.time() - field_processing_start
 	conversion_duration = time.time() - conversion_start
 
-	frappe.log(f"✅ [SYNC_BACKEND] WatermelonDB-to-Frappe conversion completed in {conversion_duration:.4f}s")
-	frappe.log("🔍 [SYNC_BACKEND] Conversion breakdown:")
+	frappe.log(f"[SYNC_BACKEND] WatermelonDB-to-Frappe conversion completed in {conversion_duration:.4f}s")
+	frappe.log("[SYNC_BACKEND] Conversion breakdown:")
 	frappe.log(f"  - Field processing: {field_processing_duration:.4f}s ({processed_fields} fields)")
 	frappe.log(f"  - Timestamp conversions: {timestamp_conversions} conversions")
 
@@ -1966,16 +2039,14 @@ def get_child_table_field_name(parent_doctype, child_doctype):
 		# Find table fields that link to the child doctype
 		for field in parent_meta.fields:
 			if field.fieldtype == "Table" and field.options == child_doctype:
-				frappe.log(
-					f"🔍 [SYNC_BACKEND] Found child table field: {field.fieldname} for {child_doctype}"
-				)
+				frappe.log(f"[SYNC_BACKEND] Found child table field: {field.fieldname} for {child_doctype}")
 				return field.fieldname
 
-		frappe.log_error(f"❌ [SYNC_BACKEND] No table field found for {child_doctype} in {parent_doctype}")
+		frappe.log_error(f"[SYNC_BACKEND] No table field found for {child_doctype} in {parent_doctype}")
 		return None
 
 	except Exception as e:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Error finding child table field: {e!s}")
+		frappe.log_error(f"[SYNC_BACKEND] Error finding child table field: {e!s}")
 		return None
 
 
@@ -1995,10 +2066,10 @@ def create_file_from_base64(raw_record, parent_issue_id):
 		file_name = raw_record.get("file_name")
 
 		if not file_data or not file_name:
-			frappe.log_error("❌ [SYNC_BACKEND] Missing file data or filename")
+			frappe.log_error("[SYNC_BACKEND] Missing file data or filename")
 			return None
 
-		frappe.log(f"📎 [SYNC_BACKEND] Creating file from Base64 data: {file_name}")
+		frappe.log(f"[SYNC_BACKEND] Creating file from Base64 data: {file_name}")
 
 		# Import necessary modules
 		import base64
@@ -2007,42 +2078,42 @@ def create_file_from_base64(raw_record, parent_issue_id):
 		from frappe.utils.file_manager import save_file
 
 		# Validate file name and extension
-		frappe.log(f"📎 [SYNC_BACKEND] Validating file name: {file_name}")
+		frappe.log(f"[SYNC_BACKEND] Validating file name: {file_name}")
 		if not validate_file_name(file_name):
-			frappe.log_error(f"❌ [SYNC_BACKEND] Invalid file name: {file_name}")
+			frappe.log_error(f"[SYNC_BACKEND] Invalid file name: {file_name}")
 			return None
-		frappe.log("📎 [SYNC_BACKEND] File name validation passed")
+		frappe.log("[SYNC_BACKEND] File name validation passed")
 
 		# Decode Base64 data
-		frappe.log(f"📎 [SYNC_BACKEND] Decoding Base64 data (length: {len(file_data)})")
+		frappe.log(f"[SYNC_BACKEND] Decoding Base64 data (length: {len(file_data)})")
 		try:
 			file_content = base64.b64decode(file_data)
 		except Exception as decode_error:
-			frappe.log_error(f"❌ [SYNC_BACKEND] Invalid Base64 data: {decode_error!s}")
+			frappe.log_error(f"[SYNC_BACKEND] Invalid Base64 data: {decode_error!s}")
 			return None
-		frappe.log("📎 [SYNC_BACKEND] Base64 decoding successful")
+		frappe.log("[SYNC_BACKEND] Base64 decoding successful")
 
 		# Validate file size
 		file_size = len(file_content)
 		max_size = get_max_file_size()
-		frappe.log(f"📎 [SYNC_BACKEND] File size check: {file_size} bytes (max: {max_size} bytes)")
+		frappe.log(f"[SYNC_BACKEND] File size check: {file_size} bytes (max: {max_size} bytes)")
 		if file_size > max_size:
-			frappe.log_error(f"❌ [SYNC_BACKEND] File too large: {file_size} bytes > {max_size} bytes")
+			frappe.log_error(f"[SYNC_BACKEND] File too large: {file_size} bytes > {max_size} bytes")
 			return None
-		frappe.log("📎 [SYNC_BACKEND] File size validation passed")
+		frappe.log("[SYNC_BACKEND] File size validation passed")
 
 		# Validate file type
-		frappe.log(f"📎 [SYNC_BACKEND] Validating file type for: {file_name}")
+		frappe.log(f"[SYNC_BACKEND] Validating file type for: {file_name}")
 		if not validate_file_type(file_name, file_content):
-			frappe.log_error(f"❌ [SYNC_BACKEND] Invalid file type: {file_name}")
+			frappe.log_error(f"[SYNC_BACKEND] Invalid file type: {file_name}")
 			return None
-		frappe.log("📎 [SYNC_BACKEND] File type validation passed")
+		frappe.log("[SYNC_BACKEND] File type validation passed")
 
-		frappe.log(f"📎 [SYNC_BACKEND] File validation passed: {file_name} ({file_size} bytes)")
+		frappe.log(f"[SYNC_BACKEND] File validation passed: {file_name} ({file_size} bytes)")
 
 		# Create file using Frappe's file manager
 		frappe.log(
-			f"📎 [SYNC_BACKEND] Calling save_file with fname={file_name}, dt=GRM Issue, dn={parent_issue_id}"
+			f"[SYNC_BACKEND] Calling save_file with fname={file_name}, dt=GRM Issue, dn={parent_issue_id}"
 		)
 		try:
 			file_doc = save_file(
@@ -2053,23 +2124,23 @@ def create_file_from_base64(raw_record, parent_issue_id):
 				folder=None,
 				is_private=0,  # Public files for issue attachments
 			)
-			frappe.log(f"📎 [SYNC_BACKEND] save_file returned: {file_doc}")
-			frappe.log(f"📎 [SYNC_BACKEND] File doc type: {type(file_doc)}")
-			frappe.log(f"📎 [SYNC_BACKEND] File doc attributes: {dir(file_doc) if file_doc else 'None'}")
+			frappe.log(f"[SYNC_BACKEND] save_file returned: {file_doc}")
+			frappe.log(f"[SYNC_BACKEND] File doc type: {type(file_doc)}")
+			frappe.log(f"[SYNC_BACKEND] File doc attributes: {dir(file_doc) if file_doc else 'None'}")
 
 			if file_doc and hasattr(file_doc, "file_url"):
 				file_url = file_doc.file_url
-				frappe.log(f"📎 [SYNC_BACKEND] Successfully created file: {file_url}")
+				frappe.log(f"[SYNC_BACKEND] Successfully created file: {file_url}")
 				return file_url
 			else:
-				frappe.log_error(f"❌ [SYNC_BACKEND] save_file returned invalid result: {file_doc}")
+				frappe.log_error(f"[SYNC_BACKEND] save_file returned invalid result: {file_doc}")
 				return None
 		except Exception as save_error:
-			frappe.log_error(f"❌ [SYNC_BACKEND] save_file failed: {save_error!s}")
+			frappe.log_error(f"[SYNC_BACKEND] save_file failed: {save_error!s}")
 			return None
 
 	except Exception as e:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Error creating file from Base64: {e!s}")
+		frappe.log_error(f"[SYNC_BACKEND] Error creating file from Base64: {e!s}")
 		return None
 
 
@@ -2098,9 +2169,7 @@ def validate_file_name(file_name):
 	dangerous_chars = ["..", "/", "\\", ":", "*", "?", '"', "<", ">", "|", "\0"]
 	for char in dangerous_chars:
 		if char in file_name:
-			frappe.log_error(
-				f"❌ [SYNC_BACKEND] File name contains dangerous character '{char}': {file_name}"
-			)
+			frappe.log_error(f"[SYNC_BACKEND] File name contains dangerous character '{char}': {file_name}")
 			return False
 
 	# Check for valid extension
@@ -2130,12 +2199,12 @@ def validate_file_name(file_name):
 	]
 
 	file_ext = os.path.splitext(file_name)[1].lower()
-	frappe.log(f"📎 [SYNC_BACKEND] File extension: '{file_ext}' (allowed: {allowed_extensions})")
+	frappe.log(f"[SYNC_BACKEND] File extension: '{file_ext}' (allowed: {allowed_extensions})")
 	if file_ext not in allowed_extensions:
-		frappe.log_error(f"❌ [SYNC_BACKEND] File extension '{file_ext}' not allowed for file: {file_name}")
+		frappe.log_error(f"[SYNC_BACKEND] File extension '{file_ext}' not allowed for file: {file_name}")
 		return False
 
-	frappe.log(f"📎 [SYNC_BACKEND] File name validation successful: {file_name}")
+	frappe.log(f"[SYNC_BACKEND] File name validation successful: {file_name}")
 	return True
 
 
@@ -2178,13 +2247,13 @@ def validate_file_type(file_name, file_content):
 		expected_signatures = magic_bytes[file_ext]
 		file_header = file_content[:16]  # Check first 16 bytes
 
-		frappe.log(f"📎 [SYNC_BACKEND] Checking magic bytes for {file_ext}")
-		frappe.log(f"📎 [SYNC_BACKEND] File header: {file_header.hex()}")
-		frappe.log(f"📎 [SYNC_BACKEND] Expected signatures: {[sig.hex() for sig in expected_signatures]}")
+		frappe.log(f"[SYNC_BACKEND] Checking magic bytes for {file_ext}")
+		frappe.log(f"[SYNC_BACKEND] File header: {file_header.hex()}")
+		frappe.log(f"[SYNC_BACKEND] Expected signatures: {[sig.hex() for sig in expected_signatures]}")
 
 		for signature in expected_signatures:
 			if file_header.startswith(signature):
-				frappe.log(f"📎 [SYNC_BACKEND] Magic bytes match for {file_ext}")
+				frappe.log(f"[SYNC_BACKEND] Magic bytes match for {file_ext}")
 				return True
 
 		# Check if it's actually a different image type with wrong extension
@@ -2203,27 +2272,23 @@ def validate_file_type(file_name, file_content):
 
 		if detected_type and file_ext in [".jpg", ".jpeg", ".png", ".gif"]:
 			frappe.log(
-				f"⚠️ [SYNC_BACKEND] File extension mismatch: {file_name} has {file_ext} extension but is actually {detected_type}"
+				f"[SYNC_BACKEND] File extension mismatch: {file_name} has {file_ext} extension but is actually {detected_type}"
 			)
-			frappe.log("⚠️ [SYNC_BACKEND] Allowing image with mismatched extension")
+			frappe.log("[SYNC_BACKEND] Allowing image with mismatched extension")
 			return True
 
 		# For audio files, be more lenient with validation
 		audio_extensions = [".3gp", ".mp3", ".wav", ".ogg", ".aac", ".flac"]
 		if file_ext in audio_extensions:
-			frappe.log(
-				f"📎 [SYNC_BACKEND] Audio file with potential signature mismatch, allowing: {file_name}"
-			)
+			frappe.log(f"[SYNC_BACKEND] Audio file with potential signature mismatch, allowing: {file_name}")
 			return True
 
 		# If no magic bytes match for non-audio files, it's suspicious
-		frappe.log_error(
-			f"❌ [SYNC_BACKEND] File type mismatch: {file_name} does not match expected signature"
-		)
+		frappe.log_error(f"[SYNC_BACKEND] File type mismatch: {file_name} does not match expected signature")
 		return False
 
 	# For file types without magic byte checking, allow them
-	frappe.log(f"📎 [SYNC_BACKEND] No magic byte check for {file_ext}, allowing")
+	frappe.log(f"[SYNC_BACKEND] No magic byte check for {file_ext}, allowing")
 	return True
 
 
@@ -2262,14 +2327,14 @@ def optimize_attachment_sync(attachment_changes, last_sync_time, page_boundary=N
 	    dict: Optimized attachment changes with file data
 	"""
 	start_time = time.time()
-	frappe.log("📎 [SYNC_BACKEND] Starting optimized attachment sync")
+	frappe.log("[SYNC_BACKEND] Starting optimized attachment sync")
 
 	try:
 		# Use Frappe QB for efficient attachment querying
 		attachment_table = frappe.qb.DocType("GRM Issue Attachment")
 		accessible_issues = accessible_issue_subquery(frappe.session.user)
 		if accessible_issues is None:
-			frappe.log("⚠️ [SYNC_BACKEND] No accessible issues found for attachment filtering")
+			frappe.log("[SYNC_BACKEND] No accessible issues found for attachment filtering")
 			return {"created": [], "updated": [], "deleted": attachment_changes.get("deleted", [])}
 
 		# Only GRM Issue uses this child table; naming the parenttype lets the
@@ -2304,7 +2369,7 @@ def optimize_attachment_sync(attachment_changes, last_sync_time, page_boundary=N
 		updated_attachments = updated_query.run(as_dict=True)
 
 		frappe.log(
-			f"📎 [SYNC_BACKEND] Found {len(created_attachments)} created, {len(updated_attachments)} updated attachments"
+			f"[SYNC_BACKEND] Found {len(created_attachments)} created, {len(updated_attachments)} updated attachments"
 		)
 
 		# Process created attachments with file data
@@ -2318,7 +2383,7 @@ def optimize_attachment_sync(attachment_changes, last_sync_time, page_boundary=N
 				if file_data:
 					raw_record["file_data"] = file_data
 					frappe.log(
-						f"📎 [SYNC_BACKEND] Added file data for created attachment: {attachment.get('name')}"
+						f"[SYNC_BACKEND] Added file data for created attachment: {attachment.get('name')}"
 					)
 
 			processed_created.append(raw_record)
@@ -2334,13 +2399,13 @@ def optimize_attachment_sync(attachment_changes, last_sync_time, page_boundary=N
 				if file_data:
 					raw_record["file_data"] = file_data
 					frappe.log(
-						f"📎 [SYNC_BACKEND] Added file data for updated attachment: {attachment.get('name')}"
+						f"[SYNC_BACKEND] Added file data for updated attachment: {attachment.get('name')}"
 					)
 
 			processed_updated.append(raw_record)
 
 		duration = time.time() - start_time
-		frappe.log(f"📎 [SYNC_BACKEND] Optimized attachment sync completed in {duration:.3f}s")
+		frappe.log(f"[SYNC_BACKEND] Optimized attachment sync completed in {duration:.3f}s")
 
 		return {
 			"created": processed_created,
@@ -2349,7 +2414,7 @@ def optimize_attachment_sync(attachment_changes, last_sync_time, page_boundary=N
 		}
 
 	except Exception as e:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Error in optimized attachment sync: {e!s}")
+		frappe.log_error(f"[SYNC_BACKEND] Error in optimized attachment sync: {e!s}")
 		# Fallback to original data
 		return attachment_changes
 
@@ -2426,11 +2491,11 @@ def get_attachment_file_data(file_url):
 			# Get the full file path using Frappe's file utilities
 			file_path = frappe.get_site_path("public", "files", filename)
 
-			frappe.log(f"📎 [SYNC_BACKEND] Reading file from path: {file_path}")
+			frappe.log(f"[SYNC_BACKEND] Reading file from path: {file_path}")
 
 			# Check if file exists
 			if not os.path.exists(file_path):
-				frappe.log(f"⚠️ [SYNC_BACKEND] File not found: {file_path}")
+				frappe.log(f"[SYNC_BACKEND] File not found: {file_path}")
 				return None
 
 			# Read file and encode as base64
@@ -2438,15 +2503,13 @@ def get_attachment_file_data(file_url):
 				file_content = file.read()
 				file_base64 = base64.b64encode(file_content).decode("utf-8")
 
-				frappe.log(
-					f"📎 [SYNC_BACKEND] Successfully read file: {filename} ({len(file_content)} bytes)"
-				)
+				frappe.log(f"[SYNC_BACKEND] Successfully read file: {filename} ({len(file_content)} bytes)")
 				return file_base64
 
 		else:
-			frappe.log(f"⚠️ [SYNC_BACKEND] Unsupported file URL format: {file_url}")
+			frappe.log(f"[SYNC_BACKEND] Unsupported file URL format: {file_url}")
 			return None
 
 	except Exception as e:
-		frappe.log_error(f"❌ [SYNC_BACKEND] Error reading file {file_url}: {e!s}")
+		frappe.log_error(f"[SYNC_BACKEND] Error reading file {file_url}: {e!s}")
 		return None

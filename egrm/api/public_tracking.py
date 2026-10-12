@@ -38,6 +38,7 @@ def track_complaint(tracking_code):
 				"creation",
 				"category",
 				"resolution_date",
+				"resolution_text",
 				"appeal_submitted",
 				"appeal_date",
 				"appeal_reason",
@@ -83,6 +84,11 @@ def track_complaint(tracking_code):
 				"resolution_date": issue.resolution_date.strftime("%Y-%m-%d")
 				if issue.resolution_date
 				else None,
+				# Staff-authored explanation of HOW the complaint was settled.
+				# Safe to publish: it describes the remedy, not the reporter.
+				# A citizen who is told only "Resolved on 2026-10-11" has no
+				# basis to accept the outcome or to appeal it.
+				"resolution_text": issue.resolution_text or "",
 				"appeal_submitted": bool(issue.appeal_submitted),
 				"appeal_date": issue.appeal_date.strftime("%Y-%m-%d %H:%M") if issue.appeal_date else None,
 				"appeal_reason": issue.appeal_reason or "",

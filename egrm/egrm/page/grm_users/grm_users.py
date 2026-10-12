@@ -346,7 +346,67 @@ def search_users(txt: str = "", project: str | None = None) -> list[dict]:
 			"email": ["like", like],
 		}
 
-	return frappe.get_all("User", **kwargs)
+	# ``_gate()`` plus the project-admin / supervised-projects scoping above
+	# are the authorisation for this directory read. Without
+	# ``ignore_permissions`` Frappe layers its own ``User`` doctype check on
+	# top, so a legitimate GRM Platform Administrator who happens to lack
+	# read on ``User`` gets a silently empty typeahead and cannot add anyone.
+	return frappe.get_all("User", ignore_permissions=True, **kwargs)
+
+
+@frappe.whitelist()
+def create_user(payload: Any) -> dict:
+	"""Find-or-create a Frappe User so admins can add staff who have no
+	account yet, without needing ``User`` doctype permissions.
+
+	Authorisation mirrors :func:`create_assignment`: page role gate plus
+	Supervise duty on the project the user is being created for. The
+	heavy lifting is delegated to :func:`egrm.services.user_import._ensure_user`
+	so an account created here is identical to one created by the bulk
+	import wizard (duty roles seeded, welcome email muted, optional
+	phone-as-username).
+
+	Returns ``{"name", "full_name", "email", "created"}``; ``created`` is
+	False when the email already existed, in which case the existing user
+	is returned rather than an error.
+	"""
+	_gate()
+	data = _coerce_payload(payload)
+
+	email = (data.get("email") or "").strip().lower()
+	if not email:
+		frappe.throw(_("Email is required"))
+	from frappe.utils import validate_email_address
+
+	if not validate_email_address(email):
+		frappe.throw(_("{0} is not a valid email address").format(email))
+
+	project = (data.get("project") or "").strip()
+	if not project:
+		frappe.throw(_("Project is required"))
+	assert_project_admin(project)
+
+	from egrm.services.user_import import _ensure_user
+
+	mobile = (data.get("mobile_no") or "").strip()
+	name, created = _ensure_user(
+		email=email,
+		first_name=(data.get("first_name") or "").strip(),
+		last_name=(data.get("last_name") or "").strip(),
+		phone=mobile,
+		project_role=(data.get("role") or "").strip(),
+		phone_as_username=bool(mobile),
+		mobile_no=mobile,
+		language=frappe.db.get_value("GRM Project", project, "default_language") or "",
+	)
+
+	row = frappe.db.get_value("User", name, ["name", "full_name", "email"], as_dict=True) or {}
+	return {
+		"name": name,
+		"full_name": row.get("full_name") or name,
+		"email": row.get("email") or name,
+		"created": created,
+	}
 
 
 @frappe.whitelist()

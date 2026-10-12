@@ -1,0 +1,10 @@
+{
+  "name": "egrm",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Build entry point for bench build. frappe/esbuild/esbuild.js runs this package's `build` script for every app that has one, so the grm-portal bundle is produced by `bench build --apps egrm` rather than by hand and committed.",
+  "scripts": {
+    "check:strings": "python3 scripts/extract_portal_strings.py --check",
+    "build": "yarn check:strings && yarn --cwd grm-portal install --frozen-lockfile && yarn --cwd grm-portal build"
+  }
+}
